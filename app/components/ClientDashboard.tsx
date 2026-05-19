@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
-import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft } from "lucide-react";
+import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users } from "lucide-react";
 
 interface StreamerHistory {
   date: string;
   hours: number;
+  followers?: number;
 }
 
 interface Streamer {
@@ -17,6 +18,7 @@ interface Streamer {
   totalLiveHours: number;
   lastMilestone: number;
   cheerCount: number;
+  followerCount?: number;
   color: string;
   lastUpdated: string;
   history: StreamerHistory[];
@@ -27,6 +29,7 @@ interface Milestone {
   channelName: string;
   channelImageUrl?: string;
   milestone: number;
+  type?: "hours" | "followers";
   date: string;
 }
 
@@ -314,6 +317,109 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     return uniquePoints;
   };
 
+  // Compile a comprehensive list of follower milestone achievements (every 10,000 followers)
+  const getStreamerFollowerMilestones = (streamer: Streamer) => {
+    const followerCount = streamer.followerCount || 0;
+    const milestoneCount = Math.floor(followerCount / 10000);
+    const list = [];
+
+    for (let m = 1; m <= milestoneCount; m++) {
+      const milestoneVal = m * 10000;
+
+      // Find exact match in database milestone list if exists
+      const exactRecord = milestones.find(
+        (rec) => rec.channelId === streamer.channelId && rec.milestone === milestoneVal && rec.type === "followers"
+      );
+
+      if (exactRecord) {
+        list.push({
+          milestone: milestoneVal,
+          date: exactRecord.date,
+          isEstimated: false,
+        });
+      } else {
+        // Fallback: estimate date using linear interpolation
+        try {
+          const startDate = parseSafeDate(streamer.firstLiveDate);
+          const endDate = parseSafeDate(streamer.lastUpdated || new Date().toISOString());
+          const totalFollowers = followerCount;
+          if (totalFollowers > 0) {
+            const timeSpan = endDate.getTime() - startDate.getTime();
+            const msPerFollower = timeSpan / totalFollowers;
+            const estimatedMs = startDate.getTime() + (milestoneVal * msPerFollower);
+            list.push({
+              milestone: milestoneVal,
+              date: new Date(estimatedMs).toISOString(),
+              isEstimated: true,
+            });
+          }
+        } catch (err) {
+          console.warn("Follower milestone estimation failed:", err);
+        }
+      }
+    }
+
+    return list;
+  };
+
+  // Generate monotonically increasing curve data starting from (firstLiveDate, 0) for followers
+  const getFullFollowerHistoryData = (streamer: Streamer, followerMilestones: { milestone: number; date: string }[]) => {
+    const points: { date: Date; followers: number; label: string; isMilestone: boolean }[] = [];
+
+    if (streamer.firstLiveDate) {
+      points.push({
+        date: parseSafeDate(streamer.firstLiveDate),
+        followers: 0,
+        label: "방송 시작일",
+        isMilestone: false,
+      });
+    }
+
+    followerMilestones.forEach((m) => {
+      points.push({
+        date: parseSafeDate(m.date),
+        followers: m.milestone,
+        label: `${formatFollowers(m.milestone)} 돌파`,
+        isMilestone: true,
+      });
+    });
+
+    if (streamer.history && streamer.history.length > 0) {
+      streamer.history.forEach((h) => {
+        const hFollowers = h.followers !== undefined ? h.followers : (streamer.followerCount || 0);
+        points.push({
+          date: parseSafeDate(h.date),
+          followers: hFollowers,
+          label: `${formatFollowers(hFollowers)}`,
+          isMilestone: false,
+        });
+      });
+    }
+
+    points.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    const uniquePoints: typeof points = [];
+    let lastFollowers = -1;
+    points.forEach((p) => {
+      if (p.followers >= lastFollowers) {
+        const dateKey = formatDateShort(p.date);
+        const existingIdx = uniquePoints.findIndex(
+          (up) => formatDateShort(up.date) === dateKey
+        );
+        if (existingIdx !== -1) {
+          if (p.isMilestone) {
+            uniquePoints[existingIdx] = p;
+          }
+        } else {
+          uniquePoints.push(p);
+          lastFollowers = p.followers;
+        }
+      }
+    });
+
+    return uniquePoints;
+  };
+
   // Helper date utilities
   const formatDateKorean = (dateStr: string) => {
     try {
@@ -322,6 +428,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     } catch {
       return dateStr;
     }
+  };
+
+  // Helper to format followers in Korean standard units of 10,000 (만)
+  const formatFollowers = (count?: number) => {
+    if (count === undefined || count === null) return "0명";
+    if (count >= 10000) {
+      const value = count / 10000;
+      const formatted = value % 1 === 0 ? value.toFixed(0) : value.toFixed(1);
+      return `${formatted}만명`;
+    }
+    return `${count.toLocaleString()}명`;
   };
 
   const formatDateShort = (dateStr: string | Date) => {
@@ -502,6 +619,166 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     );
   };
 
+  const renderFullFollowerHistoryChart = (streamer: Streamer) => {
+    const followerMilestones = getStreamerFollowerMilestones(streamer);
+    const chartPoints = getFullFollowerHistoryData(streamer, followerMilestones);
+
+    if (chartPoints.length < 2) return null;
+
+    const width = 800;
+    const height = 360;
+    const paddingLeft = 70;
+    const paddingRight = 40;
+    const paddingTop = 40;
+    const paddingBottom = 60;
+
+    const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
+
+    const minTime = chartPoints[0].date.getTime();
+    const maxTime = chartPoints[chartPoints.length - 1].date.getTime();
+    const timeRange = maxTime - minTime || 1;
+
+    // Follower milestones are every 10,000
+    const maxFollowers = Math.ceil((streamer.followerCount || 10000) / 10000) * 10000;
+
+    const points = chartPoints.map((p) => {
+      const x = paddingLeft + ((p.date.getTime() - minTime) / timeRange) * (width - paddingLeft - paddingRight);
+      const y = height - paddingBottom - (p.followers / maxFollowers) * (height - paddingTop - paddingBottom);
+      return { x, y, raw: p };
+    });
+
+    const pathData = `M ${points.map((p) => `${p.x} ${p.y}`).join(" L ")}`;
+
+    const horizontalGridLines = [];
+    const step = maxFollowers > 100000 ? 30000 : maxFollowers > 50000 ? 20000 : 10000;
+    for (let fVal = step; fVal <= maxFollowers; fVal += step) {
+      const yLine = height - paddingBottom - (fVal / maxFollowers) * (height - paddingTop - paddingBottom);
+      horizontalGridLines.push({ value: fVal, y: yLine });
+    }
+
+    return (
+      <div className="w-full overflow-x-auto">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[640px] h-auto overflow-visible select-none bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
+          <defs>
+            <linearGradient id={`grad-fol-${streamer.channelId}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={colorSet.rawHex} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={colorSet.rawHex} stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {horizontalGridLines.map((line, idx) => (
+            <g key={idx}>
+              <line
+                x1={paddingLeft}
+                y1={line.y}
+                x2={width - paddingRight}
+                y2={line.y}
+                stroke={colorSet.rawHex}
+                strokeWidth="1.5"
+                strokeDasharray="4,4"
+                strokeOpacity="0.2"
+              />
+              <text
+                x={paddingLeft - 10}
+                y={line.y + 3}
+                textAnchor="end"
+                className="font-mono text-[11px] font-bold fill-neutral-400"
+              >
+                {formatFollowers(line.value)}
+              </text>
+            </g>
+          ))}
+
+          <line
+            x1={paddingLeft}
+            y1={height - paddingBottom}
+            x2={width - paddingRight}
+            y2={height - paddingBottom}
+            stroke="#000000"
+            strokeWidth="1.5"
+            strokeOpacity="0.1"
+          />
+
+          <path
+            d={`${pathData} L ${points[points.length - 1].x} ${height - paddingBottom} L ${points[0].x} ${height - paddingBottom} Z`}
+            fill={`url(#grad-fol-${streamer.channelId})`}
+          />
+
+          <path
+            d={pathData}
+            fill="none"
+            stroke={colorSet.rawHex}
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {points.map((p, idx) => {
+            if (!p.raw.isMilestone) return null;
+            return (
+              <g key={idx} className="group">
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r="8"
+                  fill={colorSet.rawHex}
+                  fillOpacity="0.2"
+                />
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r="4.5"
+                  fill="#ffffff"
+                  stroke={colorSet.rawHex}
+                  strokeWidth="3"
+                  className="cursor-pointer"
+                />
+                <text
+                  x={p.x}
+                  y={p.y - 14}
+                  textAnchor="middle"
+                  className="font-mono text-[12px] font-bold fill-black"
+                >
+                  {p.raw.followers ? `${p.raw.followers / 10000}만` : ""}
+                </text>
+                <title>{`${p.raw.label}\n달성일자: ${formatDateShort(p.raw.date)}`}</title>
+              </g>
+            );
+          })}
+
+          {points.length > 0 && (
+            <g>
+              <circle
+                cx={points[points.length - 1].x}
+                cy={points[points.length - 1].y}
+                r="6"
+                fill={colorSet.rawHex}
+              />
+              <text
+                x={points[points.length - 1].x + 10}
+                y={points[points.length - 1].y + 3}
+                className="font-sans text-[11px] font-bold fill-neutral-600"
+              >
+                현재
+              </text>
+            </g>
+          )}
+
+          {points.length > 0 && (
+            <g className="font-mono text-[11px] fill-neutral-400 font-bold">
+              <text x={paddingLeft} y={height - paddingBottom + 25} textAnchor="start" suppressHydrationWarning>
+                {formatDateShort(streamer.firstLiveDate)} (방송 시작)
+              </text>
+              <text x={width - paddingRight} y={height - paddingBottom + 25} textAnchor="end" suppressHydrationWarning>
+                {formatDateShort(streamer.lastUpdated)} (현재 집계)
+              </text>
+            </g>
+          )}
+        </svg>
+      </div>
+    );
+  };
+
   const selectedStreamer = streamers.find((s) => s.channelId === activeStreamerId);
 
   // If a streamer is selected, render their DEDICATED FULL-SCREEN PROFILE PAGE
@@ -579,6 +856,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   <span className="bg-white/60 px-3 py-1 rounded-full text-[12px] border border-hairline-soft font-bold">
                     🥇 {selectedStreamer.lastMilestone.toLocaleString()}H 클럽 가입됨
                   </span>
+                  {selectedStreamer.followerCount !== undefined && (
+                    <span className="bg-white/60 px-3 py-1 rounded-full text-[12px] border border-hairline-soft font-bold flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-neutral-500" />
+                      팔로워 {formatFollowers(selectedStreamer.followerCount)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Next Milestone Remaining Indicator */}
@@ -610,43 +893,75 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           </div>
         </div>
 
-        {/* 2. MIDDLE SECTION: Big Growth Curve Graph */}
-        <div className="bg-white border border-hairline rounded-[32px] p-6 md:p-8 mb-10 space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-hairline-soft pb-4">
-            <div>
-              <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
-                GROWTH LINE CHART
-              </span>
-              <h3 className="font-sans text-[22px] font-bold text-black tracking-tight mt-0.5">
-                누적 방송 시간 성장 그래프
-              </h3>
+        {/* 2. MIDDLE SECTION: Two Big Growth Curve Graphs */}
+        <div className="space-y-10 mb-10">
+          {/* Hour Growth Graph */}
+          <div className="bg-white border border-hairline rounded-[32px] p-6 md:p-8 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-hairline-soft pb-4">
+              <div>
+                <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
+                  GROWTH LINE CHART (HOURS)
+                </span>
+                <h3 className="font-sans text-[22px] font-bold text-black tracking-tight mt-0.5">
+                  누적 방송 시간 성장 그래프
+                </h3>
+              </div>
+              <div className="flex items-center gap-4 text-[12px] font-medium text-neutral-500">
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-3 h-1.5 rounded-full ${colorSet.accent}`} /> 성장 곡선
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-1.5 border-b border-dashed border-neutral-300" /> 1,000H 마일스톤
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-4 text-[12px] font-medium text-neutral-500">
-              <span className="flex items-center gap-1.5">
-                <span className={`w-3 h-1.5 rounded-full ${colorSet.accent}`} /> 성장 곡선
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-1.5 border-b border-dashed border-neutral-300" /> 1,000H 마일스톤 장벽
-              </span>
+
+            <div className="space-y-4">
+              {renderFullHistoryChart(selectedStreamer)}
+              <div className="bg-neutral-50 p-4 rounded-2xl border border-hairline-soft text-[13px] text-neutral-600 leading-relaxed text-center font-medium">
+                ✨ 데뷔일로부터의 일대기를 담은 방송 누적 성장 곡선입니다. 원형 노드 점은 해당 스트리머가 매 1,000시간 마일스톤 고지를 넘어선 순간들을 가리킵니다.
+              </div>
             </div>
           </div>
 
-          <div className="space-y-4">
-            {renderFullHistoryChart(selectedStreamer)}
-            <div className="bg-neutral-50 p-4 rounded-2xl border border-hairline-soft text-[13px] text-neutral-600 leading-relaxed text-center font-medium">
-              ✨ 데뷔일로부터의 일대기를 담은 방송 누적 성장 곡선입니다. 원형 노드 점은 해당 스트리머가 매 1,000시간 마일스톤 고지를 넘어선 순간들을 가리킵니다.
+          {/* Follower Growth Graph */}
+          <div className="bg-white border border-hairline rounded-[32px] p-6 md:p-8 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-hairline-soft pb-4">
+              <div>
+                <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
+                  GROWTH LINE CHART (FOLLOWERS)
+                </span>
+                <h3 className="font-sans text-[22px] font-bold text-black tracking-tight mt-0.5">
+                  누적 팔로워 수 성장 그래프
+                </h3>
+              </div>
+              <div className="flex items-center gap-4 text-[12px] font-medium text-neutral-500">
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-3 h-1.5 rounded-full ${colorSet.accent}`} /> 성장 곡선
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-1.5 border-b border-dashed border-neutral-300" /> 1만명 마일스톤
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {renderFullFollowerHistoryChart(selectedStreamer)}
+              <div className="bg-neutral-50 p-4 rounded-2xl border border-hairline-soft text-[13px] text-neutral-600 leading-relaxed text-center font-medium">
+                ✨ 데뷔일로부터의 실시간 팔로워 성장 곡선입니다. 원형 노드 점은 해당 스트리머가 매 10,000명(1만명) 팔로워 마일스톤 고지를 넘어선 순간들을 가리킵니다.
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 3. BOTTOM SECTION: Milestone Achievements Table */}
+        {/* 3. BOTTOM SECTION: Combined Milestone Achievements Table */}
         <div className="bg-white border border-hairline rounded-[32px] p-6 md:p-8">
           <div className="border-b border-hairline pb-4 mb-6">
             <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
               MILESTONE ARCHIVES
             </span>
             <h3 className="font-sans text-[22px] font-bold text-black flex items-center gap-2 mt-0.5">
-              <Trophy className="w-5 h-5 text-yellow-500" /> 마일스톤 1000시간 단위 달성 일지
+              <Trophy className="w-5 h-5 text-yellow-500" /> 누적 마일스톤 달성 일지
             </h3>
           </div>
 
@@ -655,28 +970,58 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <thead>
                 <tr className="border-b border-hairline-soft text-[12px] font-mono tracking-mono text-neutral-400 uppercase font-bold">
                   <th className="pb-3 pl-4">달성 고지</th>
+                  <th className="pb-3">유형</th>
                   <th className="pb-3">달성 날짜</th>
-                  <th className="pb-3">소요 소요일수</th>
+                  <th className="pb-3">소요 기간</th>
                   <th className="pb-3 pr-4 text-right">상태</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline-soft font-sans text-[14px]">
-                {streamerMilestones.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-8 text-center text-neutral-400 font-medium font-sans">
-                      수집 전 달성된 과거 마일스톤 돌파 기록은 상세 일자 수집 목록에서 제외됩니다.
-                    </td>
-                  </tr>
-                ) : (
-                  streamerMilestones.map((mRecord, idx, arr) => {
-                    const previousDate = idx === 0 ? selectedStreamer.firstLiveDate : arr[idx - 1].date;
-                    const daysTaken = getDaysDiff(previousDate, mRecord.date);
+                {(() => {
+                  const hoursMilestonesMapped = streamerMilestones.map(m => ({ ...m, type: "hours" }));
+                  const followerMilestonesMapped = getStreamerFollowerMilestones(selectedStreamer).map(m => ({ ...m, type: "followers" }));
+                  const allStreamerMilestones = [...hoursMilestonesMapped, ...followerMilestonesMapped].sort(
+                    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+                  );
+
+                  if (allStreamerMilestones.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-neutral-400 font-medium font-sans">
+                          수집 전 달성된 과거 마일스톤 돌파 기록은 상세 일자 수집 목록에서 제외됩니다.
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return allStreamerMilestones.map((mRecord, idx) => {
+                    const daysTaken = getDaysDiff(selectedStreamer.firstLiveDate, mRecord.date);
 
                     return (
                       <tr key={idx} className="hover:bg-neutral-50/50 transition-colors">
                         <td className="py-4 pl-4 font-bold text-black flex items-center gap-2 text-[15px]">
-                          <Trophy className="w-4 h-4 text-yellow-500" />
-                          {mRecord.milestone.toLocaleString()}시간 돌파
+                          {mRecord.type === "hours" ? (
+                            <>
+                              <Trophy className="w-4 h-4 text-yellow-500" />
+                              {mRecord.milestone.toLocaleString()}시간 돌파
+                            </>
+                          ) : (
+                            <>
+                              <Users className="w-4 h-4 text-[#a46cfc]" />
+                              팔로워 {formatFollowers(mRecord.milestone)} 돌파
+                            </>
+                          )}
+                        </td>
+                        <td className="py-4 font-medium">
+                          {mRecord.type === "hours" ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                              🕒 방송시간
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                              👥 팔로워
+                            </span>
+                          )}
                         </td>
                         <td className="py-4 text-neutral-800 font-medium" suppressHydrationWarning>
                           {mRecord.isEstimated ? (
@@ -691,11 +1036,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                           )}
                         </td>
                         <td className="py-4 font-medium text-neutral-600">
-                          {idx === 0 ? (
-                            <span>첫 방송일로부터 <strong className="text-black font-bold">+{daysTaken}일</strong> 만에 돌파{mRecord.isEstimated && <span className="text-[11px] text-neutral-400"> (추정)</span>}</span>
-                          ) : (
-                            <span>이전 돌파 대비 <strong className="text-black font-bold">+{daysTaken}일</strong> 소요{mRecord.isEstimated && <span className="text-[11px] text-neutral-400"> (추정)</span>}</span>
-                          )}
+                          <span>데뷔 후 <strong className="text-black font-bold">+{daysTaken}일</strong> 만에 돌파{mRecord.isEstimated && <span className="text-[11px] text-neutral-400"> (추정)</span>}</span>
                         </td>
                         <td className="py-4 pr-4 text-right">
                           {mRecord.isEstimated ? (
@@ -710,8 +1051,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         </td>
                       </tr>
                     );
-                  })
-                )}
+                  });
+                })()}
               </tbody>
             </table>
           </div>
@@ -784,7 +1125,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                     </div>
                     {/* Micro tooltip label showing name on hover */}
                     <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold font-sans px-2.5 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
-                      {streamer.channelName}
+                      {streamer.channelName} {streamer.followerCount !== undefined && `(${formatFollowers(streamer.followerCount)})`}
                     </div>
                   </div>
                 ))}
@@ -842,9 +1183,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   </div>
 
                   <div className="space-y-1">
-                    <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 block uppercase">
-                      CHZZK STREAMER
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 block uppercase">
+                        CHZZK STREAMER
+                      </span>
+                      {streamer.followerCount !== undefined && (
+                        <span className="font-mono text-[11px] font-bold text-neutral-500 flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded-full border border-hairline-soft">
+                          <Users className="w-3 h-3 text-neutral-400" />
+                          {formatFollowers(streamer.followerCount)}
+                        </span>
+                      )}
+                    </div>
                     <h3 className="font-sans text-[24px] font-bold text-black tracking-tight">
                       {streamer.channelName}
                     </h3>
@@ -871,16 +1220,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         })}
       </div>
 
-      {/* Grid of Achievement logs */}
-      <div id="milestones" className="grid grid-cols-1 gap-8 mt-20">
+      {/* Grid of Achievement logs - Separating Broadcast Hours and Followers */}
+      <div id="milestones" className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-20">
+        {/* Left Column: Broadcast Hours Milestones */}
         <div className="bg-white p-6 md:p-8 rounded-[24px] border border-hairline">
           <div className="flex items-center justify-between mb-8 border-b border-hairline pb-4">
             <div className="flex items-center gap-3">
               <Trophy className="w-6 h-6 text-black" />
-              <h3 className="font-sans text-[20px] font-bold">명예의 전당 (최근 마일스톤 돌파)</h3>
+              <h3 className="font-sans text-[20px] font-bold">최근 방송 시간 마일스톤 달성</h3>
             </div>
             <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
-              ACHIEVEMENT LOGS
+              1,000H BOUNDARIES
             </span>
           </div>
 
@@ -901,6 +1251,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               </thead>
               <tbody className="divide-y divide-hairline-soft">
                 {[...milestones]
+                  .filter(log => !log.type || log.type === "hours")
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .slice(0, 5)
                   .map((log, index) => {
@@ -938,6 +1289,86 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         <td className="py-4 font-sans text-center">
                           <span className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-50 text-yellow-800 text-[13px] font-bold border border-yellow-100 group-hover:bg-yellow-100/80 transition-colors">
                             {log.milestone.toLocaleString()}시간 🎉
+                          </span>
+                        </td>
+                        <td className="py-4 font-mono text-[13px] text-neutral-500 text-right group-hover:text-neutral-700 transition-colors" suppressHydrationWarning>
+                          {formatDateKorean(log.date)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Right Column: Follower Milestones */}
+        <div className="bg-white p-6 md:p-8 rounded-[24px] border border-hairline">
+          <div className="flex items-center justify-between mb-8 border-b border-hairline pb-4">
+            <div className="flex items-center gap-3">
+              <Users className="w-6 h-6 text-black" />
+              <h3 className="font-sans text-[20px] font-bold">최근 팔로워 마일스톤 달성</h3>
+            </div>
+            <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
+              10,000 F BOUNDARIES
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-hairline-soft">
+                  <th className="pb-3 font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
+                    CREATOR
+                  </th>
+                  <th className="pb-3 font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase text-center">
+                    MILESTONE
+                  </th>
+                  <th className="pb-3 font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase text-right">
+                    ACHIEVED DATE
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-hairline-soft">
+                {[...milestones]
+                  .filter(log => log.type === "followers")
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .slice(0, 5)
+                  .map((log, index) => {
+                    const matchingStreamer = streamers.find(s => s.channelId === log.channelId);
+                    const displayImageUrl = log.channelImageUrl || matchingStreamer?.channelImageUrl;
+
+                    return (
+                      <tr
+                        key={index}
+                        onClick={() => {
+                          if (matchingStreamer) {
+                            handleSelectStreamer(log.channelId);
+                          }
+                        }}
+                        className="group hover:bg-neutral-50/50 transition-colors cursor-pointer"
+                      >
+                        <td className="py-4 font-sans text-[15px] font-medium flex items-center gap-3">
+                          <div className="w-7 h-7 rounded-md overflow-hidden bg-neutral-100 border border-hairline flex-shrink-0">
+                            {displayImageUrl ? (
+                              <img
+                                src={displayImageUrl}
+                                alt={log.channelName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] bg-neutral-200">
+                                ⭐
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-black font-semibold group-hover:text-neutral-900 transition-colors">
+                            {log.channelName}
+                          </span>
+                        </td>
+                        <td className="py-4 font-sans text-center">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-800 text-[13px] font-bold border border-indigo-100 group-hover:bg-indigo-100/80 transition-colors">
+                            {formatFollowers(log.milestone)} 🎉
                           </span>
                         </td>
                         <td className="py-4 font-mono text-[13px] text-neutral-500 text-right group-hover:text-neutral-700 transition-colors" suppressHydrationWarning>

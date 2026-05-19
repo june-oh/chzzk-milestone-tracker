@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
       const chData = await chRes.json();
       const name = chData.content?.channelName || streamer.defaultName;
       const imageUrl = chData.content?.channelImageUrl || "";
+      const followerCount = chData.content?.followerCount || 0;
 
       // 2. Scrape broadcast history (firstLiveDate, totalLiveHours)
       const historyRes = await fetch(`https://api.chzzk.naver.com/service/v1/channels/${cid}/data?fields=channelHistory`, {
@@ -58,14 +59,17 @@ export async function GET(req: NextRequest) {
       const prevData: any = await kv.hgetall(`streamer:${cid}`);
 
       let lastMilestone = 0;
+      let lastFollowerMilestone = 0;
       let cheerCount = 0;
 
       if (prevData) {
         lastMilestone = Number(prevData.lastMilestone) || 0;
+        lastFollowerMilestone = Number(prevData.lastFollowerMilestone) || 0;
         cheerCount = Number(prevData.cheerCount) || 0;
       } else {
-        // First run initialization: set lastMilestone to nearest lower 1000h boundary
+        // First run initialization: set milestones
         lastMilestone = Math.floor(totalLiveHours / 1000) * 1000;
+        lastFollowerMilestone = Math.floor(followerCount / 10000) * 10000;
       }
 
       const currentMilestoneBoundary = Math.floor(totalLiveHours / 1000) * 1000;
@@ -82,6 +86,7 @@ export async function GET(req: NextRequest) {
           channelName: name,
           channelImageUrl: imageUrl,
           milestone: currentMilestoneBoundary,
+          type: "hours",
           date: new Date().toISOString(),
         };
 
@@ -117,6 +122,55 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // Check if a new 10,000 follower milestone has been crossed
+      const currentFollowerBoundary = Math.floor(followerCount / 10000) * 10000;
+      let followerMilestoneCrossed = false;
+
+      if (currentFollowerBoundary > lastFollowerMilestone) {
+        followerMilestoneCrossed = true;
+        lastFollowerMilestone = currentFollowerBoundary;
+
+        // Save a follower milestone log
+        const followerMilestoneEvent = {
+          channelId: cid,
+          channelName: name,
+          channelImageUrl: imageUrl,
+          milestone: currentFollowerBoundary,
+          type: "followers",
+          date: new Date().toISOString(),
+        };
+
+        // Push new milestone to front of list
+        await kv.lpush("milestones", JSON.stringify(followerMilestoneEvent));
+
+        // Trigger Discord Webhook Notification if configured
+        if (process.env.DISCORD_WEBHOOK_URL) {
+          try {
+            await fetch(process.env.DISCORD_WEBHOOK_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                embeds: [
+                  {
+                    title: `👥 ${name} 채널 팔로워 ${currentFollowerBoundary / 10000}만 명 돌파! 🎉`,
+                    description: `스트리머 **${name}**님이 누적 팔로워 **${(currentFollowerBoundary / 10000)}만 명**을 돌파하였습니다!\n모두 축하해 주세요! 🙌`,
+                    color: streamer.color === "lime" ? 14875730 : streamer.color === "lilac" ? 16051199 : 14798036,
+                    thumbnail: { url: imageUrl },
+                    fields: [
+                      { name: "현재 팔로워 수", value: `${followerCount.toLocaleString()}명`, inline: true }
+                    ],
+                    timestamp: new Date().toISOString(),
+                    footer: { text: "Chzzk Milestone Tracker" }
+                  }
+                ]
+              }),
+            });
+          } catch (webhookErr: any) {
+            console.error("Failed to send Discord follower webhook:", webhookErr.message);
+          }
+        }
+      }
+
       // 4. Update core streamer states in KV
       const updatedStreamerState = {
         channelId: cid,
@@ -125,7 +179,9 @@ export async function GET(req: NextRequest) {
         firstLiveDate,
         totalLiveHours,
         lastMilestone,
+        lastFollowerMilestone,
         cheerCount,
+        followerCount,
         lastUpdated: new Date().toISOString(),
         color: streamer.color,
       };
@@ -138,11 +194,12 @@ export async function GET(req: NextRequest) {
       const todayRecordIdx = currentHistory.findIndex((record: any) => record.date === todayStr);
 
       if (todayRecordIdx !== -1) {
-        // Update today's hours if already exists
+        // Update today's hours and followers if already exists
         currentHistory[todayRecordIdx].hours = totalLiveHours;
+        currentHistory[todayRecordIdx].followers = followerCount;
       } else {
         // Add new record
-        currentHistory.push({ date: todayStr, hours: totalLiveHours });
+        currentHistory.push({ date: todayStr, hours: totalLiveHours, followers: followerCount });
       }
 
       // Limit history to last 30 entries to keep it responsive and stay inside KV limits
