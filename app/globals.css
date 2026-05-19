@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+/* Custom design classes based on design.md */
+.tracking-display-xl {
+  letter-spacing: -1.72px;
+}
+
+.tracking-display-lg {
+  letter-spacing: -0.96px;
+}
+
+.tracking-headline, .tracking-subhead {
+  letter-spacing: -0.26px;
+}
+
+.tracking-mono {
+  letter-spacing: 0.06em;
+}
+
+/* Custom colors based on design.md */
+.bg-block-lilac {
+  background-color: #f4ebff;
+}
+
+.bg-block-pink {
+  background-color: #ffebeb;
+}
+
+.bg-block-mint {
+  background-color: #e1fbf4;
+}
+
+.bg-block-coral {
+  background-color: #fff0eb;
+}
+
+.bg-block-cream {
+  background-color: #fffbf0;
+}
+
+.bg-block-lime {
+  background-color: #e2fc52;
+}
+
+.text-ink {
+  color: #000000;
+}
+
+.border-hairline {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.border-hairline-soft {
+  border-color: rgba(0, 0, 0, 0.04);
+}
+
+/* 3D Card Flip Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Retro Split-Flap Flip Clock Styles */
+.flip-clock-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background-color: #09090b;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.flip-clock-digit {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 48px;
+  font-family: var(--font-mono), monospace;
+  font-size: 30px;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #18181b;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.flip-clock-digit-text {
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-clock-digit-small {
+  width: 24px;
+  height: 36px;
+  font-size: 22px;
+  border-radius: 3px;
+}
+
+.flip-clock-digit-large {
+  width: 60px;
+  height: 90px;
+  font-size: 54px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Horizontal split crease line */
+.flip-clock-digit-crease {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.05);
+  z-index: 5;
+}
+
+/* Infinite Marquee Slider for Partner/Streamer circular profiles */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+
+
