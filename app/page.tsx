@@ -77,9 +77,10 @@ export default async function Home() {
     if (milestones.length === 0) {
       milestones = [
         { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
-        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 130000, type: "followers", date: "2026-05-08T14:30:00.000Z" },
+        { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 60000, type: "followers", date: "2026-05-08T14:30:00.000Z" },
         { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", channelName: "달콤레나 씨", milestone: 6000, type: "hours", date: "2026-05-02T10:00:00.000Z" },
-        { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 100000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
+        { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
         { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },
         { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" }
       ];
@@ -98,9 +99,10 @@ export default async function Home() {
     }));
     milestones = [
       { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 130000, type: "followers", date: "2026-05-08T14:30:00.000Z" },
+      { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
+      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 60000, type: "followers", date: "2026-05-08T14:30:00.000Z" },
       { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", channelName: "달콤레나 씨", milestone: 6000, type: "hours", date: "2026-05-02T10:00:00.000Z" },
-      { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 100000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
+      { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
       { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },
       { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" }
     ];
