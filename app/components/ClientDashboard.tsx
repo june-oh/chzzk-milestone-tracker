@@ -134,6 +134,46 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones);
   const [activeStreamerId, setActiveStreamerId] = useState<string | null>(null);
 
+  // Sync state with browser's Back/Forward buttons and URL query params
+  useEffect(() => {
+    // 1. Initial Load: Check if there's a ?streamer=xxx parameter in the URL
+    const params = new URLSearchParams(window.location.search);
+    const initialCid = params.get("streamer");
+    if (initialCid) {
+      const exists = initialStreamers.some((s) => s.channelId === initialCid);
+      if (exists) {
+        setActiveStreamerId(initialCid);
+      }
+    }
+
+    // 2. Listen to browser Back / Forward buttons (popstate event)
+    const handlePopState = (event: PopStateEvent) => {
+      const popParams = new URLSearchParams(window.location.search);
+      const streamerCid = popParams.get("streamer");
+      setActiveStreamerId(streamerCid);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [initialStreamers]);
+
+  // Handle setting active streamer with HTML5 pushState to create history entries
+  const handleSelectStreamer = (cid: string | null) => {
+    const params = new URLSearchParams(window.location.search);
+    
+    if (cid) {
+      params.set("streamer", cid);
+      window.history.pushState({ streamer: cid }, "", `?${params.toString()}`);
+    } else {
+      params.delete("streamer");
+      window.history.pushState({}, "", window.location.pathname);
+    }
+    
+    setActiveStreamerId(cid);
+  };
+
   // Automatically scroll to the dashboard section when the active streamer changes
   useEffect(() => {
     if (activeStreamerId) {
@@ -477,11 +517,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         <div className="fixed bottom-8 right-8 z-50 animate-in fade-in zoom-in duration-300">
           <button
             onClick={() => {
-              setActiveStreamerId(null);
-              setTimeout(() => {
-                const element = document.getElementById("dashboard");
-                if (element) element.scrollIntoView({ behavior: "instant" });
-              }, 50);
+              handleSelectStreamer(null);
             }}
             className="flex items-center gap-2 px-6 py-3.5 rounded-full bg-black text-white hover:bg-neutral-900 border border-neutral-800 text-[14px] font-bold shadow-2xl active:scale-95 transition-all hover:scale-105"
           >
@@ -494,11 +530,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         <div className="mb-8 flex items-center justify-between">
           <button
             onClick={() => {
-              setActiveStreamerId(null);
-              setTimeout(() => {
-                const element = document.getElementById("dashboard");
-                if (element) element.scrollIntoView({ behavior: "instant" });
-              }, 50);
+              handleSelectStreamer(null);
             }}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-hairline hover:bg-neutral-50 text-neutral-800 text-[14px] font-bold transition-all shadow-sm active:scale-95"
           >
@@ -736,12 +768,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             <div className="relative w-full flex pt-4 pb-10 overflow-hidden">
               <div className="animate-marquee flex gap-10 items-center">
                 {/* Duplicated to create seamless loop. Circles only, sliding infinitely! */}
-                {[...streamers, ...streamers, ...streamers, ...streamers].map((streamer, idx) => (
-                  <div
-                    key={idx}
-                    className="relative group cursor-pointer flex-shrink-0"
-                    onClick={() => setActiveStreamerId(streamer.channelId)}
-                  >
+            {[...streamers, ...streamers, ...streamers, ...streamers].map((streamer, idx) => (
+              <div
+                key={idx}
+                className="relative group cursor-pointer flex-shrink-0"
+                onClick={() => handleSelectStreamer(streamer.channelId)}
+              >
                     {/* Infinite marquee profiles display: Clean, sleek circles with custom hover effects */}
                     <div className={`w-[84px] h-[84px] rounded-full overflow-hidden border-4 border-white shadow-md transition-all duration-300 group-hover:scale-110 group-active:scale-95 group-hover:border-${streamer.color}`}>
                       <img
@@ -789,7 +821,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           return (
             <div
               key={streamer.channelId}
-              onClick={() => setActiveStreamerId(streamer.channelId)}
+              onClick={() => handleSelectStreamer(streamer.channelId)}
               className="w-full h-[400px] cursor-pointer hover:-translate-y-1.5 transition-transform duration-300"
             >
               <div
@@ -880,7 +912,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         key={index}
                         onClick={() => {
                           if (matchingStreamer) {
-                            setActiveStreamerId(log.channelId);
+                            handleSelectStreamer(log.channelId);
                           }
                         }}
                         className="group hover:bg-neutral-50/50 transition-colors cursor-pointer"
