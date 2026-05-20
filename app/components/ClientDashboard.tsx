@@ -162,6 +162,65 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     };
   }, [initialStreamers]);
 
+  // Helper to resolve milestone dates and flag estimated status for those not verified in static fallbacks.
+  // This avoids auto-created 20th May dates for other streamers from taking over the dashboard recent achievements lists.
+  const resolveMilestoneDateAndStatus = (log: Milestone) => {
+    const matchingStreamer = streamers.find(s => s.channelId === log.channelId);
+    if (!matchingStreamer) {
+      return { date: log.date, isEstimated: false };
+    }
+
+    const verifiedMilestones = [
+      { channelId: "4de764d9dad3b25602284be6db3ac647", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
+      { channelId: "4de764d9dad3b25602284be6db3ac647", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
+      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", milestone: 60000, type: "followers", date: "2025-06-02T12:00:00.000Z" },
+      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", milestone: 50000, type: "followers", date: "2025-01-12T12:00:00.000Z" },
+      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", milestone: 30000, type: "followers", date: "2024-04-21T12:00:00.000Z" },
+      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", milestone: 10000, type: "followers", date: "2024-02-28T12:00:00.000Z" },
+      { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", milestone: 6000, type: "hours", date: "2026-05-02T10:00:00.000Z" },
+      { channelId: "475313e6c26639d5763628313b4c130e", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
+      { channelId: "475313e6c26639d5763628313b4c130e", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },
+      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" }
+    ];
+
+    const type = log.type || "hours";
+    const verified = verifiedMilestones.find(
+      v => v.channelId === log.channelId && v.milestone === log.milestone && v.type === type
+    );
+
+    if (verified) {
+      return { date: verified.date, isEstimated: false };
+    }
+
+    // Estimate using linear interpolation based on current stats and debut
+    try {
+      const startDate = parseSafeDate(matchingStreamer.firstLiveDate);
+      const endDate = parseSafeDate(matchingStreamer.lastUpdated || new Date().toISOString());
+      
+      if (type === "hours") {
+        const totalHours = matchingStreamer.totalLiveHours;
+        if (totalHours > 0) {
+          const timeSpan = endDate.getTime() - startDate.getTime();
+          const msPerHour = timeSpan / totalHours;
+          const estimatedMs = startDate.getTime() + (log.milestone * msPerHour);
+          return { date: new Date(estimatedMs).toISOString(), isEstimated: true };
+        }
+      } else {
+        const totalFollowers = matchingStreamer.followerCount || 0;
+        if (totalFollowers > 0) {
+          const timeSpan = endDate.getTime() - startDate.getTime();
+          const msPerFollower = timeSpan / totalFollowers;
+          const estimatedMs = startDate.getTime() + (log.milestone * msPerFollower);
+          return { date: new Date(estimatedMs).toISOString(), isEstimated: true };
+        }
+      }
+    } catch (err) {
+      console.warn("Milestone estimation on dashboard failed:", err);
+    }
+
+    return { date: log.date, isEstimated: false };
+  };
+
   // Handle setting active streamer with HTML5 pushState to create history entries
   const handleSelectStreamer = (cid: string | null) => {
     const params = new URLSearchParams(window.location.search);
@@ -1326,11 +1385,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline-soft">
-                {[...milestones]
-                  .filter(log => !log.type || log.type === "hours")
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .slice(0, 5)
-                  .map((log, index) => {
+                {(() => {
+                  const resolvedList = milestones
+                    .filter(log => !log.type || log.type === "hours")
+                    .map(log => {
+                      const res = resolveMilestoneDateAndStatus(log);
+                      return { ...log, date: res.date, isEstimated: res.isEstimated };
+                    })
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .slice(0, 5);
+
+                  return resolvedList.map((log, index) => {
                     const matchingStreamer = streamers.find(s => s.channelId === log.channelId);
                     const displayImageUrl = log.channelImageUrl || matchingStreamer?.channelImageUrl;
 
@@ -1369,10 +1434,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         </td>
                         <td className="py-4 font-mono text-[13px] text-neutral-500 text-right group-hover:text-neutral-700 transition-colors" suppressHydrationWarning>
                           {formatDateKorean(log.date)}
+                          {log.isEstimated && (
+                            <span className="text-[10px] text-neutral-400 font-normal bg-neutral-100 px-1 py-0.5 rounded ml-1">
+                              (추정)
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
-                  })}
+                  });
+                })()}
               </tbody>
             </table>
           </div>
@@ -1406,11 +1477,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline-soft">
-                {[...milestones]
-                  .filter(log => log.type === "followers")
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .slice(0, 5)
-                  .map((log, index) => {
+                {(() => {
+                  const resolvedList = milestones
+                    .filter(log => log.type === "followers")
+                    .map(log => {
+                      const res = resolveMilestoneDateAndStatus(log);
+                      return { ...log, date: res.date, isEstimated: res.isEstimated };
+                    })
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .slice(0, 5);
+
+                  return resolvedList.map((log, index) => {
                     const matchingStreamer = streamers.find(s => s.channelId === log.channelId);
                     const displayImageUrl = log.channelImageUrl || matchingStreamer?.channelImageUrl;
 
@@ -1449,10 +1526,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         </td>
                         <td className="py-4 font-mono text-[13px] text-neutral-500 text-right group-hover:text-neutral-700 transition-colors" suppressHydrationWarning>
                           {formatDateKorean(log.date)}
+                          {log.isEstimated && (
+                            <span className="text-[10px] text-neutral-400 font-normal bg-neutral-100 px-1 py-0.5 rounded ml-1">
+                              (추정)
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
-                  })}
+                  });
+                })()}
               </tbody>
             </table>
           </div>
