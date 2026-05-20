@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
 
       // 3. Fetch milestones log
       const milestoneRecords: any[] = await kv.lrange("milestones", 0, 49);
-      milestones = milestoneRecords.map((m) => {
+      const dbMilestones = milestoneRecords.map((m) => {
         try {
           const parsed = typeof m === "string" ? JSON.parse(m) : m;
           if (!parsed.type) parsed.type = "hours"; // Backwards compatibility
@@ -119,6 +119,32 @@ export async function GET(req: NextRequest) {
           return m;
         }
       });
+
+      const fallbackMilestones = [
+        { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
+        { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 60000, type: "followers", date: "2025-06-02T12:00:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 50000, type: "followers", date: "2025-01-12T12:00:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 30000, type: "followers", date: "2024-04-21T12:00:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 10000, type: "followers", date: "2024-02-28T12:00:00.000Z" },
+        { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", channelName: "달콤레나 씨", milestone: 6000, type: "hours", date: "2026-05-02T10:00:00.000Z" },
+        { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
+        { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" }
+      ];
+
+      const mergedMap = new Map<string, any>();
+      dbMilestones.forEach((m) => {
+        if (m && m.channelId && m.milestone) {
+          const key = `${m.channelId}-${m.milestone}-${m.type || "hours"}`;
+          mergedMap.set(key, m);
+        }
+      });
+      fallbackMilestones.forEach((m) => {
+        const key = `${m.channelId}-${m.milestone}-${m.type || "hours"}`;
+        mergedMap.set(key, m);
+      });
+      milestones = Array.from(mergedMap.values());
     } catch (kvErr) {
       console.warn("Vercel KV query failed, using fallback:", kvErr);
       streamers.length = 0; // Clear any partial data
@@ -139,16 +165,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       streamers,
-      milestones: milestones.length > 0 ? milestones : [
-        // Fallback milestone records
-        { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
-        { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
-        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 60000, type: "followers", date: "2026-05-08T14:30:00.000Z" },
-        { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", channelName: "달콤레나 씨", milestone: 6000, type: "hours", date: "2026-05-02T10:00:00.000Z" },
-        { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
-        { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },
-        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" }
-      ],
+      milestones,
     });
   } catch (error: any) {
     return NextResponse.json({
@@ -156,16 +173,19 @@ export async function GET(req: NextRequest) {
       streamers: FALLBACK_STREAMERS.map(f => ({
         ...f,
         history: [
-          { date: "2026-05-18", hours: f.totalLiveHours - 4 },
-          { date: "2026-05-19", hours: f.totalLiveHours - 2 },
-          { date: "2026-05-20", hours: f.totalLiveHours }
+          { date: "2026-05-18", hours: f.totalLiveHours - 4, followers: (f.followerCount || 10000) - 15 },
+          { date: "2026-05-19", hours: f.totalLiveHours - 2, followers: (f.followerCount || 10000) - 5 },
+          { date: "2026-05-20", hours: f.totalLiveHours, followers: f.followerCount || 10000 }
         ],
         lastUpdated: new Date().toISOString()
       })),
       milestones: [
         { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
         { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
-        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 60000, type: "followers", date: "2026-05-08T14:30:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 60000, type: "followers", date: "2025-06-02T12:00:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 50000, type: "followers", date: "2025-01-12T12:00:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 30000, type: "followers", date: "2024-04-21T12:00:00.000Z" },
+        { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 10000, type: "followers", date: "2024-02-28T12:00:00.000Z" },
         { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", channelName: "달콤레나 씨", milestone: 6000, type: "hours", date: "2026-05-02T10:00:00.000Z" },
         { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
         { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },

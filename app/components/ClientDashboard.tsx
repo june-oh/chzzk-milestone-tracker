@@ -557,6 +557,44 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             if (!p.raw.isMilestone) return null;
             return (
               <g key={idx} className="group">
+                {/* Vertical projection line to X-axis */}
+                <line
+                  x1={p.x}
+                  y1={p.y + 6}
+                  x2={p.x}
+                  y2={height - paddingBottom}
+                  stroke={colorSet.rawHex}
+                  strokeWidth="1.2"
+                  strokeDasharray="3,3"
+                  strokeOpacity="0.5"
+                />
+                {/* Small tick mark on X-axis */}
+                <circle
+                  cx={p.x}
+                  cy={height - paddingBottom}
+                  r="3"
+                  fill={colorSet.rawHex}
+                />
+                {/* Date text on X-axis */}
+                <text
+                  x={p.x}
+                  y={height - paddingBottom + 18}
+                  textAnchor="middle"
+                  className="font-mono text-[10px] font-bold fill-neutral-600"
+                >
+                  {formatDateShort(p.raw.date)}
+                </text>
+                {/* Milestone value text on X-axis */}
+                <text
+                  x={p.x}
+                  y={height - paddingBottom + 32}
+                  textAnchor="middle"
+                  className="font-sans text-[10px] font-extrabold"
+                  style={{ fill: colorSet.rawHex }}
+                >
+                  {p.raw.hours ? `${(p.raw.hours / 1000).toFixed(0)}K` : ""}
+                </text>
+
                 <circle
                   cx={p.x}
                   cy={p.y}
@@ -717,6 +755,44 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             if (!p.raw.isMilestone) return null;
             return (
               <g key={idx} className="group">
+                {/* Vertical projection line to X-axis */}
+                <line
+                  x1={p.x}
+                  y1={p.y + 6}
+                  x2={p.x}
+                  y2={height - paddingBottom}
+                  stroke={colorSet.rawHex}
+                  strokeWidth="1.2"
+                  strokeDasharray="3,3"
+                  strokeOpacity="0.5"
+                />
+                {/* Small tick mark on X-axis */}
+                <circle
+                  cx={p.x}
+                  cy={height - paddingBottom}
+                  r="3"
+                  fill={colorSet.rawHex}
+                />
+                {/* Date text on X-axis */}
+                <text
+                  x={p.x}
+                  y={height - paddingBottom + 18}
+                  textAnchor="middle"
+                  className="font-mono text-[10px] font-bold fill-neutral-600"
+                >
+                  {formatDateShort(p.raw.date)}
+                </text>
+                {/* Milestone value text on X-axis */}
+                <text
+                  x={p.x}
+                  y={height - paddingBottom + 32}
+                  textAnchor="middle"
+                  className="font-sans text-[10px] font-extrabold"
+                  style={{ fill: colorSet.rawHex }}
+                >
+                  {p.raw.followers ? `${p.raw.followers / 10000}만` : ""}
+                </text>
+
                 <circle
                   cx={p.x}
                   cy={p.y}
