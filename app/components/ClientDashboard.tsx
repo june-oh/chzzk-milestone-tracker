@@ -691,24 +691,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 r="6"
                 fill={colorSet.rawHex}
               />
-              <text
-                x={points[points.length - 1].x + 10}
-                y={points[points.length - 1].y + 3}
-                className="font-sans text-[11px] font-bold fill-neutral-600"
-              >
-                현재
-              </text>
-            </g>
-          )}
-
-          {points.length > 0 && (
-            <g className="font-mono text-[11px] fill-neutral-400 font-bold">
-              <text x={paddingLeft} y={height - paddingBottom + 25} textAnchor="start" suppressHydrationWarning>
-                {formatDateShort(streamer.firstLiveDate)} (방송 시작)
-              </text>
-              <text x={width - paddingRight} y={height - paddingBottom + 25} textAnchor="end" suppressHydrationWarning>
-                {formatDateShort(streamer.lastUpdated)} (현재 집계)
-              </text>
             </g>
           )}
         </svg>
@@ -889,24 +871,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 r="6"
                 fill={colorSet.rawHex}
               />
-              <text
-                x={points[points.length - 1].x + 10}
-                y={points[points.length - 1].y + 3}
-                className="font-sans text-[11px] font-bold fill-neutral-600"
-              >
-                현재
-              </text>
-            </g>
-          )}
-
-          {points.length > 0 && (
-            <g className="font-mono text-[11px] fill-neutral-400 font-bold">
-              <text x={paddingLeft} y={height - paddingBottom + 25} textAnchor="start" suppressHydrationWarning>
-                {formatDateShort(streamer.firstLiveDate)} (방송 시작)
-              </text>
-              <text x={width - paddingRight} y={height - paddingBottom + 25} textAnchor="end" suppressHydrationWarning>
-                {formatDateShort(streamer.lastUpdated)} (현재 집계)
-              </text>
             </g>
           )}
         </svg>
