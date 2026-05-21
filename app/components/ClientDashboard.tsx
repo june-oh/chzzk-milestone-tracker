@@ -136,6 +136,54 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [streamers, setStreamers] = useState<Streamer[]>(initialStreamers);
   const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones);
   const [activeStreamerId, setActiveStreamerId] = useState<string | null>(null);
+  const [hoveredHoursPoint, setHoveredHoursPoint] = useState<any | null>(null);
+  const [hoveredFollowersPoint, setHoveredFollowersPoint] = useState<any | null>(null);
+
+  const formatDateFull = (dateStr: string | Date) => {
+    try {
+      const d = parseSafeDate(dateStr);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    } catch {
+      return "";
+    }
+  };
+
+  const handleMouseMove = (
+    e: React.MouseEvent<SVGSVGElement, MouseEvent>,
+    points: any[],
+    type: "hours" | "followers"
+  ) => {
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    
+    // Convert client mouse X coordinate to SVG viewBox coordinates (width = 800)
+    const mouseX = ((e.clientX - rect.left) / rect.width) * 800;
+
+    let closestPoint = null;
+    let minDistance = Infinity;
+
+    for (const p of points) {
+      const distance = Math.abs(p.x - mouseX);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPoint = p;
+      }
+    }
+
+    if (closestPoint) {
+      if (type === "hours") {
+        setHoveredHoursPoint(closestPoint);
+      } else {
+        setHoveredFollowersPoint(closestPoint);
+      }
+    }
+  };
+
+  // Reset hover state on streamer navigation
+  useEffect(() => {
+    setHoveredHoursPoint(null);
+    setHoveredFollowersPoint(null);
+  }, [activeStreamerId]);
 
   // Sync state with browser's Back/Forward buttons and URL query params
   useEffect(() => {
@@ -179,6 +227,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", milestone: 10000, type: "followers", date: "2024-02-28T12:00:00.000Z" },
       { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", milestone: 6000, type: "hours", date: "2026-05-02T10:00:00.000Z" },
       { channelId: "475313e6c26639d5763628313b4c130e", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
+      { channelId: "475313e6c26639d5763628313b4c130e", milestone: 10000, type: "followers", date: "2024-02-21T12:00:00.000Z" },
       { channelId: "475313e6c26639d5763628313b4c130e", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },
       { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" }
     ];
@@ -693,6 +742,99 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               />
             </g>
           )}
+
+          {/* Interactive Hover Guides & Tooltip */}
+          {hoveredHoursPoint && (
+            <g>
+              {/* Vertical line */}
+              <line
+                x1={hoveredHoursPoint.x}
+                y1={paddingTop}
+                x2={hoveredHoursPoint.x}
+                y2={height - paddingBottom}
+                stroke="#000000"
+                strokeWidth="1.5"
+                strokeDasharray="3,3"
+                opacity="0.3"
+                className="pointer-events-none"
+              />
+              {/* Pulsing Outer circle */}
+              <circle
+                cx={hoveredHoursPoint.x}
+                cy={hoveredHoursPoint.y}
+                r="8"
+                fill={colorSet.rawHex}
+                opacity="0.4"
+                className="pointer-events-none"
+              />
+              {/* Inner intersection circle */}
+              <circle
+                cx={hoveredHoursPoint.x}
+                cy={hoveredHoursPoint.y}
+                r="4"
+                fill="#ffffff"
+                stroke={colorSet.rawHex}
+                strokeWidth="2"
+                className="pointer-events-none"
+              />
+
+              {/* Render the beautiful custom tooltip box inside SVG */}
+              {(() => {
+                const tooltipX = hoveredHoursPoint.x + 15 > width - 180 ? hoveredHoursPoint.x - 170 : hoveredHoursPoint.x + 15;
+                const tooltipY = Math.max(paddingTop, Math.min(hoveredHoursPoint.y - 45, height - paddingBottom - 75));
+                return (
+                  <g transform={`translate(${tooltipX}, ${tooltipY})`} className="pointer-events-none transition-all duration-100 ease-out">
+                    <rect
+                      width="155"
+                      height="60"
+                      rx="6"
+                      fill="#ffffff"
+                      stroke={hoveredHoursPoint.raw.isMilestone ? colorSet.rawHex : "#000000"}
+                      strokeWidth={hoveredHoursPoint.raw.isMilestone ? "2.5" : "1.5"}
+                      className="filter drop-shadow-sm"
+                    />
+                    <text
+                      x="12"
+                      y="20"
+                      className="font-mono text-[10px] font-bold fill-neutral-400"
+                    >
+                      {formatDateFull(hoveredHoursPoint.raw.date)}
+                    </text>
+                    <text
+                      x="12"
+                      y="42"
+                      className="font-mono text-[13px] font-extrabold fill-black"
+                    >
+                      {hoveredHoursPoint.raw.label}
+                    </text>
+                    {hoveredHoursPoint.raw.isMilestone && (
+                      <text
+                        x="143"
+                        y="20"
+                        textAnchor="end"
+                        className="font-sans text-[9px] font-extrabold"
+                        style={{ fill: colorSet.rawHex }}
+                      >
+                        ★ MILESTONE
+                      </text>
+                    )}
+                  </g>
+                );
+              })()}
+            </g>
+          )}
+
+          {/* Interactive Mouse Hover Overlay Rect */}
+          <rect
+            x={paddingLeft}
+            y={paddingTop}
+            width={width - paddingLeft - paddingRight}
+            height={height - paddingTop - paddingBottom}
+            fill="transparent"
+            className="cursor-crosshair"
+            onMouseMove={(e) => handleMouseMove(e, points, "hours")}
+            onMouseLeave={() => setHoveredHoursPoint(null)}
+          />
         </svg>
       </div>
     );
@@ -873,6 +1015,99 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               />
             </g>
           )}
+
+          {/* Interactive Hover Guides & Tooltip */}
+          {hoveredFollowersPoint && (
+            <g>
+              {/* Vertical line */}
+              <line
+                x1={hoveredFollowersPoint.x}
+                y1={paddingTop}
+                x2={hoveredFollowersPoint.x}
+                y2={height - paddingBottom}
+                stroke="#000000"
+                strokeWidth="1.5"
+                strokeDasharray="3,3"
+                opacity="0.3"
+                className="pointer-events-none"
+              />
+              {/* Pulsing Outer circle */}
+              <circle
+                cx={hoveredFollowersPoint.x}
+                cy={hoveredFollowersPoint.y}
+                r="8"
+                fill={colorSet.rawHex}
+                opacity="0.4"
+                className="pointer-events-none"
+              />
+              {/* Inner intersection circle */}
+              <circle
+                cx={hoveredFollowersPoint.x}
+                cy={hoveredFollowersPoint.y}
+                r="4"
+                fill="#ffffff"
+                stroke={colorSet.rawHex}
+                strokeWidth="2"
+                className="pointer-events-none"
+              />
+
+              {/* Render the beautiful custom tooltip box inside SVG */}
+              {(() => {
+                const tooltipX = hoveredFollowersPoint.x + 15 > width - 180 ? hoveredFollowersPoint.x - 170 : hoveredFollowersPoint.x + 15;
+                const tooltipY = Math.max(paddingTop, Math.min(hoveredFollowersPoint.y - 45, height - paddingBottom - 75));
+                return (
+                  <g transform={`translate(${tooltipX}, ${tooltipY})`} className="pointer-events-none transition-all duration-100 ease-out">
+                    <rect
+                      width="155"
+                      height="60"
+                      rx="6"
+                      fill="#ffffff"
+                      stroke={hoveredFollowersPoint.raw.isMilestone ? colorSet.rawHex : "#000000"}
+                      strokeWidth={hoveredFollowersPoint.raw.isMilestone ? "2.5" : "1.5"}
+                      className="filter drop-shadow-sm"
+                    />
+                    <text
+                      x="12"
+                      y="20"
+                      className="font-mono text-[10px] font-bold fill-neutral-400"
+                    >
+                      {formatDateFull(hoveredFollowersPoint.raw.date)}
+                    </text>
+                    <text
+                      x="12"
+                      y="42"
+                      className="font-mono text-[13px] font-extrabold fill-black"
+                    >
+                      {hoveredFollowersPoint.raw.label}
+                    </text>
+                    {hoveredFollowersPoint.raw.isMilestone && (
+                      <text
+                        x="143"
+                        y="20"
+                        textAnchor="end"
+                        className="font-sans text-[9px] font-extrabold"
+                        style={{ fill: colorSet.rawHex }}
+                      >
+                        ★ MILESTONE
+                      </text>
+                    )}
+                  </g>
+                );
+              })()}
+            </g>
+          )}
+
+          {/* Interactive Mouse Hover Overlay Rect */}
+          <rect
+            x={paddingLeft}
+            y={paddingTop}
+            width={width - paddingLeft - paddingRight}
+            height={height - paddingTop - paddingBottom}
+            fill="transparent"
+            className="cursor-crosshair"
+            onMouseMove={(e) => handleMouseMove(e, points, "followers")}
+            onMouseLeave={() => setHoveredFollowersPoint(null)}
+          />
         </svg>
       </div>
     );
