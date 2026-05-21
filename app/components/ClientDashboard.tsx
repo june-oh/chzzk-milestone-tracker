@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users } from "lucide-react";
+import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface StreamerHistory {
   date: string;
@@ -37,6 +38,20 @@ interface ClientDashboardProps {
   initialStreamers: Streamer[];
   initialMilestones: Milestone[];
 }
+
+type HoursChartPoint = {
+  x: number;
+  y: number;
+  raw: { date: Date; hours: number; label: string; isMilestone: boolean };
+};
+
+type FollowersChartPoint = {
+  x: number;
+  y: number;
+  raw: { date: Date; followers: number; label: string; isMilestone: boolean };
+};
+
+type HoverChartPoint = HoursChartPoint | FollowersChartPoint;
 
 const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawHex: string }> = {
   lilac: { bg: "bg-[#f4ebff]", accent: "bg-[#a46cfc]", text: "text-[#692ec7]", rawHex: "#a46cfc" },
@@ -136,8 +151,18 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [streamers, setStreamers] = useState<Streamer[]>(initialStreamers);
   const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones);
   const [activeStreamerId, setActiveStreamerId] = useState<string | null>(null);
-  const [hoveredHoursPoint, setHoveredHoursPoint] = useState<any | null>(null);
-  const [hoveredFollowersPoint, setHoveredFollowersPoint] = useState<any | null>(null);
+  const [hoveredHoursPointState, setHoveredHoursPoint] = useState<HoursChartPoint | null>(null);
+  const [hoveredFollowersPointState, setHoveredFollowersPoint] = useState<FollowersChartPoint | null>(null);
+  const hoveredHoursPoint = hoveredHoursPointState ?? {
+    x: 0,
+    y: 0,
+    raw: { date: new Date(), hours: 0, label: "", isMilestone: false },
+  };
+  const hoveredFollowersPoint = hoveredFollowersPointState ?? {
+    x: 0,
+    y: 0,
+    raw: { date: new Date(), followers: 0, label: "", isMilestone: false },
+  };
 
   const formatDateFull = (dateStr: string | Date) => {
     try {
@@ -150,16 +175,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
   const handleMouseMove = (
     e: React.MouseEvent<SVGSVGElement, MouseEvent>,
-    points: any[],
+    points: HoverChartPoint[],
     type: "hours" | "followers"
   ) => {
     const svg = e.currentTarget;
     const rect = svg.getBoundingClientRect();
-    
-    // Convert client mouse X coordinate to SVG viewBox coordinates (width = 800)
     const mouseX = ((e.clientX - rect.left) / rect.width) * 800;
 
-    let closestPoint = null;
+    let closestPoint: HoverChartPoint | null = null;
     let minDistance = Infinity;
 
     for (const p of points) {
@@ -172,18 +195,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     if (closestPoint) {
       if (type === "hours") {
-        setHoveredHoursPoint(closestPoint);
+        setHoveredHoursPoint(closestPoint as HoursChartPoint);
       } else {
-        setHoveredFollowersPoint(closestPoint);
+        setHoveredFollowersPoint(closestPoint as FollowersChartPoint);
       }
     }
   };
-
-  // Reset hover state on streamer navigation
-  useEffect(() => {
-    setHoveredHoursPoint(null);
-    setHoveredFollowersPoint(null);
-  }, [activeStreamerId]);
 
   // Sync state with browser's Back/Forward buttons and URL query params
   useEffect(() => {
@@ -575,6 +592,88 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     if (chartPoints.length < 2) return null;
 
+    const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
+    const chartMaxHours = Math.ceil((streamer.totalLiveHours + 1) / 1000) * 1000;
+    const chartData = chartPoints.map((p) => ({
+      date: formatDateShort(p.date),
+      fullDate: formatDateFull(p.date),
+      hours: p.hours,
+      label: p.label,
+      isMilestone: p.isMilestone,
+    }));
+
+    return (
+      <div className="w-full h-[360px] bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 28, right: 30, left: 14, bottom: 28 }}>
+            <CartesianGrid
+              stroke={chartColorSet.rawHex}
+              strokeOpacity={0.18}
+              strokeDasharray="4 4"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
+              tickMargin={12}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              width={58}
+              domain={[0, chartMaxHours]}
+              tickFormatter={(value) => `${Number(value).toLocaleString()}H`}
+              tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#a3a3a3" }}
+            />
+            <Tooltip
+              cursor={{ stroke: "#000000", strokeOpacity: 0.28, strokeDasharray: "3 3" }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const data = payload[0].payload;
+                return (
+                  <div className="rounded-[10px] border border-black bg-white px-4 py-3 text-left">
+                    <div className="font-mono text-[11px] font-bold text-neutral-400">{data.fullDate}</div>
+                    <div className="mt-1 font-mono text-[14px] font-extrabold text-black">{data.label}</div>
+                    {data.isMilestone && (
+                      <div className="mt-1 font-sans text-[10px] font-extrabold" style={{ color: chartColorSet.rawHex }}>
+                        MILESTONE
+                      </div>
+                    )}
+                  </div>
+                );
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="hours"
+              stroke={chartColorSet.rawHex}
+              strokeWidth={4}
+              dot={false}
+              activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
+              isAnimationActive={false}
+            />
+            {chartData.filter((p) => p.isMilestone).map((p) => (
+              <ReferenceDot
+                key={`hours-${p.date}-${p.hours}`}
+                x={p.date}
+                y={p.hours}
+                r={5}
+                fill="#ffffff"
+                stroke={chartColorSet.rawHex}
+                strokeWidth={3}
+                label={{
+                  value: `${Math.round(p.hours / 1000)}K`,
+                  position: "top",
+                  fill: chartColorSet.rawHex,
+                  fontSize: 12,
+                  fontWeight: 800,
+                }}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
+
     const width = 800;
     const height = 360;
     const paddingLeft = 70;
@@ -606,7 +705,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     return (
       <div className="w-full overflow-x-auto">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[640px] h-auto overflow-visible select-none bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-full min-w-[640px] h-auto overflow-visible select-none bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft cursor-crosshair"
+          onMouseMove={(e) => handleMouseMove(e, points, "hours")}
+          onMouseLeave={() => setHoveredHoursPoint(null)}
+        >
           <defs>
             <linearGradient id={`grad-${streamer.channelId}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={colorSet.rawHex} stopOpacity="0.25" />
@@ -824,17 +928,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </g>
           )}
 
-          {/* Interactive Mouse Hover Overlay Rect */}
-          <rect
-            x={paddingLeft}
-            y={paddingTop}
-            width={width - paddingLeft - paddingRight}
-            height={height - paddingTop - paddingBottom}
-            fill="transparent"
-            className="cursor-crosshair"
-            onMouseMove={(e) => handleMouseMove(e, points, "hours")}
-            onMouseLeave={() => setHoveredHoursPoint(null)}
-          />
         </svg>
       </div>
     );
@@ -845,6 +938,88 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     const chartPoints = getFullFollowerHistoryData(streamer, followerMilestones);
 
     if (chartPoints.length < 2) return null;
+
+    const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
+    const chartMaxFollowers = Math.ceil((streamer.followerCount || 10000) / 10000) * 10000;
+    const chartData = chartPoints.map((p) => ({
+      date: formatDateShort(p.date),
+      fullDate: formatDateFull(p.date),
+      followers: p.followers,
+      label: p.label,
+      isMilestone: p.isMilestone,
+    }));
+
+    return (
+      <div className="w-full h-[360px] bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 28, right: 30, left: 14, bottom: 28 }}>
+            <CartesianGrid
+              stroke={chartColorSet.rawHex}
+              strokeOpacity={0.18}
+              strokeDasharray="4 4"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
+              tickMargin={12}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              width={58}
+              domain={[0, chartMaxFollowers]}
+              tickFormatter={(value) => formatFollowers(Number(value))}
+              tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#a3a3a3" }}
+            />
+            <Tooltip
+              cursor={{ stroke: "#000000", strokeOpacity: 0.28, strokeDasharray: "3 3" }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const data = payload[0].payload;
+                return (
+                  <div className="rounded-[10px] border border-black bg-white px-4 py-3 text-left">
+                    <div className="font-mono text-[11px] font-bold text-neutral-400">{data.fullDate}</div>
+                    <div className="mt-1 font-mono text-[14px] font-extrabold text-black">{data.label}</div>
+                    {data.isMilestone && (
+                      <div className="mt-1 font-sans text-[10px] font-extrabold" style={{ color: chartColorSet.rawHex }}>
+                        MILESTONE
+                      </div>
+                    )}
+                  </div>
+                );
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="followers"
+              stroke={chartColorSet.rawHex}
+              strokeWidth={4}
+              dot={false}
+              activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
+              isAnimationActive={false}
+            />
+            {chartData.filter((p) => p.isMilestone).map((p) => (
+              <ReferenceDot
+                key={`followers-${p.date}-${p.followers}`}
+                x={p.date}
+                y={p.followers}
+                r={5}
+                fill="#ffffff"
+                stroke={chartColorSet.rawHex}
+                strokeWidth={3}
+                label={{
+                  value: `${Math.round(p.followers / 10000)}만`,
+                  position: "top",
+                  fill: chartColorSet.rawHex,
+                  fontSize: 12,
+                  fontWeight: 800,
+                }}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
 
     const width = 800;
     const height = 360;
@@ -879,7 +1054,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     return (
       <div className="w-full overflow-x-auto">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[640px] h-auto overflow-visible select-none bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-full min-w-[640px] h-auto overflow-visible select-none bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft cursor-crosshair"
+          onMouseMove={(e) => handleMouseMove(e, points, "followers")}
+          onMouseLeave={() => setHoveredFollowersPoint(null)}
+        >
           <defs>
             <linearGradient id={`grad-fol-${streamer.channelId}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={colorSet.rawHex} stopOpacity="0.25" />
@@ -1097,17 +1277,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </g>
           )}
 
-          {/* Interactive Mouse Hover Overlay Rect */}
-          <rect
-            x={paddingLeft}
-            y={paddingTop}
-            width={width - paddingLeft - paddingRight}
-            height={height - paddingTop - paddingBottom}
-            fill="transparent"
-            className="cursor-crosshair"
-            onMouseMove={(e) => handleMouseMove(e, points, "followers")}
-            onMouseLeave={() => setHoveredFollowersPoint(null)}
-          />
         </svg>
       </div>
     );
