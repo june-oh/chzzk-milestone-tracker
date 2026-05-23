@@ -12,6 +12,10 @@ const FALLBACK_STREAMERS = [
   { channelId: "088973112d8acc831ec20274f7ffbb99", channelName: "미하루 Miharu", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjAxMTFfMTAy/MDAxNzY4MTEyMzUyOTcx.D51vALyJMK9hGdWdzpe2NgKsyggBWJJNaKdPzh_IwKAg.7UeLbx2mM3XLtHRfbuDKwUEuvefqOXMvHX4yFwStH8og.PNG/image.png", firstLiveDate: "2025-11-29 15:55:01", totalLiveHours: 546, lastMilestone: 0, cheerCount: 0, followerCount: 11555, color: "lilac" },
   { channelId: "c8adce2ff4a3618931e07c327e1fa070", channelName: "포키쨩", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjAxMDNfMTk1/MDAxNzY3MzcwNDg2MTYy.0vTyLJqAtowVc-UjM2qzofBBv002OUQPyp05BrSPkiog.MEZvrdc9v88N0fsEVynHsBsnh1xxI27zRspK0vZm0VEg.PNG/image.png", firstLiveDate: "2024-01-08 18:57:26", totalLiveHours: 8246, lastMilestone: 8000, cheerCount: 0, followerCount: 27870, color: "pink" },
   { channelId: "6ccaebc2569f62344c6fc257f8f2b9ad", channelName: "엘시v", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjAyMDJfMiAg/MDAxNzcwMDQxMDA5OTE5.iGpluslDPntIraPLS-CPaAVfw1HFmUffcPq3bkaBXoMg.xueJx_wx_l-wFoUsW_2VCgw4JrA_Vtsz7qJUO1LmHqkg.PNG/image.png", firstLiveDate: "2025-07-18 20:02:57", totalLiveHours: 1569, lastMilestone: 1000, cheerCount: 0, followerCount: 37648, color: "coral" },
+  { channelId: "d5e2e0c14dcca4c4b10c7c9633022f52", channelName: "치치 Planeta", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA1MjNfMjA4/MDAxNzc5NTExOTg4NDgy.oOwSBYczaiXzvU9ZM6zYat5dF5g-KBAHIR7h4mqbGaQg.HPF38n-smjc3jODrNKranYrMh_4ygaHkwPrjrsko3zog.JPEG/image.jpg", firstLiveDate: "", totalLiveHours: 0, lastMilestone: 0, cheerCount: 0, followerCount: 1790, color: "cream" },
+  { channelId: "5ead7124638ac4c568f2cde0224b3b6b", channelName: "카네코 파냐 Planeta", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA1MjNfNDEg/MDAxNzc5NTExOTE0NTI1.8_meIqfRhxT27c3iDyc7GgURdOidznnVSyUenRe22B8g.4htGuISdm8VAsbEW3lv7Dhrg_HrgNkk0R5PhJaRDBD8g.JPEG/image.jpg", firstLiveDate: "", totalLiveHours: 0, lastMilestone: 0, cheerCount: 0, followerCount: 1819, color: "lilac" },
+  { channelId: "941ea3807ba8b9b7dddb1670e3e7e5af", channelName: "아마네 나기 Planeta", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA1MjNfMTk4/MDAxNzc5NTExNjcyMTg2.YtbGcBWGYhGqctudc4z3FSZqBNAKZ6aaOcXUx3TUsekg.N66CzYIWfy5llFLATDKhBXWJU9Bqr-9UGqjq5hIUyxwg.JPEG/image.jpg", firstLiveDate: "", totalLiveHours: 0, lastMilestone: 0, cheerCount: 0, followerCount: 1798, color: "mint" },
+  { channelId: "59aa824e4c4a56dd51e7a5e2e9172648", channelName: "쿠온 레이 Planeta", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA1MjNfMTEg/MDAxNzc5NTEyMTA1MzQ1.H8It320Po3JeMD9Hi7uEwuumGC_4sZLAgpfeQQIb1Q4g.85KVeKsuWhcaoPZ6cVmZp56n_6cM3AmNgs64dyrL95Ig.JPEG/image.jpg", firstLiveDate: "", totalLiveHours: 0, lastMilestone: 0, cheerCount: 0, followerCount: 1788, color: "pink" },
 ];
 
 export const revalidate = 0; // Disable server caching to ensure users always see freshly scraped hours
@@ -26,9 +30,9 @@ export default async function Home() {
       const cid = fallback.channelId;
       const data: any = await kv.hgetall(`streamer:${cid}`);
       const history: any = (await kv.get(`streamer:${cid}:history`)) || [
-        { date: "2026-05-18", hours: fallback.totalLiveHours - 4, followers: (fallback.followerCount || 10000) - 15 },
-        { date: "2026-05-19", hours: fallback.totalLiveHours - 2, followers: (fallback.followerCount || 10000) - 5 },
-        { date: "2026-05-20", hours: fallback.totalLiveHours, followers: fallback.followerCount || 10000 }
+        { date: "2026-05-18", hours: Math.max(0, fallback.totalLiveHours - 4), followers: Math.max(0, (fallback.followerCount || 10000) - 15) },
+        { date: "2026-05-19", hours: Math.max(0, fallback.totalLiveHours - 2), followers: Math.max(0, (fallback.followerCount || 10000) - 5) },
+        { date: "2026-05-20", hours: Math.max(0, fallback.totalLiveHours), followers: fallback.followerCount || 10000 }
       ];
 
       if (data) {
@@ -107,9 +111,9 @@ export default async function Home() {
       ...f,
       lastUpdated: new Date().toISOString(),
       history: [
-        { date: "2026-05-18", hours: f.totalLiveHours - 4, followers: (f.followerCount || 10000) - 15 },
-        { date: "2026-05-19", hours: f.totalLiveHours - 2, followers: (f.followerCount || 10000) - 5 },
-        { date: "2026-05-20", hours: f.totalLiveHours, followers: f.followerCount || 10000 }
+        { date: "2026-05-18", hours: Math.max(0, f.totalLiveHours - 4), followers: Math.max(0, (f.followerCount || 10000) - 15) },
+        { date: "2026-05-19", hours: Math.max(0, f.totalLiveHours - 2), followers: Math.max(0, (f.followerCount || 10000) - 5) },
+        { date: "2026-05-20", hours: Math.max(0, f.totalLiveHours), followers: f.followerCount || 10000 }
       ]
     }));
     milestones = [

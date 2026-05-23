@@ -12,6 +12,10 @@ const STREAMERS = [
   { id: "088973112d8acc831ec20274f7ffbb99", defaultName: "미하루", color: "lilac" },
   { id: "c8adce2ff4a3618931e07c327e1fa070", defaultName: "포키쨩", color: "pink" },
   { id: "6ccaebc2569f62344c6fc257f8f2b9ad", defaultName: "엘시", color: "coral" },
+  { id: "d5e2e0c14dcca4c4b10c7c9633022f52", defaultName: "치치", color: "cream" },
+  { id: "5ead7124638ac4c568f2cde0224b3b6b", defaultName: "카네코 파냐", color: "lilac" },
+  { id: "941ea3807ba8b9b7dddb1670e3e7e5af", defaultName: "아마네 나기", color: "mint" },
+  { id: "59aa824e4c4a56dd51e7a5e2e9172648", defaultName: "쿠온 레이", color: "pink" },
 ];
 
 export async function GET(req: NextRequest) {
