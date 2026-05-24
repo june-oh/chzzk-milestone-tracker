@@ -595,6 +595,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
     const chartMaxHours = Math.ceil((streamer.totalLiveHours + 1) / 1000) * 1000;
     const chartData = chartPoints.map((p) => ({
+      timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
       fullDate: formatDateFull(p.date),
       hours: p.hours,
@@ -613,7 +614,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               vertical={false}
             />
             <XAxis
-              dataKey="date"
+              dataKey="timestamp"
+              type="number"
+              scale="time"
+              domain={["dataMin", "dataMax"]}
+              tickFormatter={(value) => formatDateShort(new Date(Number(value)))}
               tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
               tickMargin={12}
               interval="preserveStartEnd"
@@ -654,7 +659,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             {chartData.filter((p) => p.isMilestone).map((p) => (
               <ReferenceDot
                 key={`hours-${p.date}-${p.hours}`}
-                x={p.date}
+                x={p.timestamp}
                 y={p.hours}
                 r={5}
                 fill="#ffffff"
@@ -942,6 +947,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
     const chartMaxFollowers = Math.ceil((streamer.followerCount || 10000) / 10000) * 10000;
     const chartData = chartPoints.map((p) => ({
+      timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
       fullDate: formatDateFull(p.date),
       followers: p.followers,
@@ -960,7 +966,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               vertical={false}
             />
             <XAxis
-              dataKey="date"
+              dataKey="timestamp"
+              type="number"
+              scale="time"
+              domain={["dataMin", "dataMax"]}
+              tickFormatter={(value) => formatDateShort(new Date(Number(value)))}
               tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
               tickMargin={12}
               interval="preserveStartEnd"
@@ -1001,7 +1011,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             {chartData.filter((p) => p.isMilestone).map((p) => (
               <ReferenceDot
                 key={`followers-${p.date}-${p.followers}`}
-                x={p.date}
+                x={p.timestamp}
                 y={p.followers}
                 r={5}
                 fill="#ffffff"
