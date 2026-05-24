@@ -674,6 +674,54 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     }
   };
 
+  const createDailyInterpolatedData = (
+    sourceData: NumericLinePoint[],
+    valueKey: "hours" | "followers",
+    formatEstimatedLabel: (value: number) => string
+  ) => {
+    const sorted = [...sourceData].sort((a, b) => a.timestamp - b.timestamp);
+    const result: NumericLinePoint[] = [];
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    sorted.forEach((point, index) => {
+      result.push(point);
+
+      const next = sorted[index + 1];
+      if (!next) return;
+
+      const startValue = Number(point[valueKey]);
+      const endValue = Number(next[valueKey]);
+      const duration = next.timestamp - point.timestamp;
+      if (!Number.isFinite(startValue) || !Number.isFinite(endValue) || duration <= DAY_MS) {
+        return;
+      }
+
+      const sample = new Date(point.timestamp);
+      sample.setHours(12, 0, 0, 0);
+      let sampleTimestamp = sample.getTime();
+      if (sampleTimestamp <= point.timestamp) {
+        sampleTimestamp += DAY_MS;
+      }
+
+      while (sampleTimestamp < next.timestamp) {
+        const ratio = (sampleTimestamp - point.timestamp) / duration;
+        const value = Math.round(startValue + (endValue - startValue) * ratio);
+        result.push({
+          timestamp: sampleTimestamp,
+          date: formatDateShort(new Date(sampleTimestamp)),
+          fullDate: formatDateFull(new Date(sampleTimestamp)),
+          [valueKey]: value,
+          label: formatEstimatedLabel(value),
+          isMilestone: false,
+          isInterpolated: true,
+        });
+        sampleTimestamp += DAY_MS;
+      }
+    });
+
+    return result.sort((a, b) => a.timestamp - b.timestamp);
+  };
+
   const getDaysDiff = (date1Str: string, date2Str: string) => {
     try {
       const d1 = parseSafeDate(date1Str).getTime();
@@ -694,7 +742,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
     const chartMaxHours = Math.ceil((streamer.totalLiveHours + 1) / 1000) * 1000;
     const hourTicks = Array.from({ length: Math.floor(chartMaxHours / 1000) + 1 }, (_, index) => index * 1000);
-    const chartData = chartPoints.map((p) => ({
+    const baseChartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
       fullDate: formatDateFull(p.date),
@@ -702,6 +750,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
+    const chartData = createDailyInterpolatedData(
+      baseChartData,
+      "hours",
+      (value) => `${value.toLocaleString()}시간 (추정)`
+    );
     const hourMarkerData = streamerMilestones
       .map((m) => {
         const fallbackTimestamp = parseSafeDate(m.date).getTime();
@@ -1076,7 +1129,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
     const chartMaxFollowers = Math.ceil((streamer.followerCount || 10000) / 10000) * 10000;
     const followerTicks = Array.from({ length: Math.floor(chartMaxFollowers / 10000) + 1 }, (_, index) => index * 10000);
-    const chartData = chartPoints.map((p) => ({
+    const baseChartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
       fullDate: formatDateFull(p.date),
@@ -1084,6 +1137,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
+    const chartData = createDailyInterpolatedData(
+      baseChartData,
+      "followers",
+      (value) => `${formatFollowers(value)} (추정)`
+    );
     const followerMarkerData = followerMilestones
       .map((m) => {
         const fallbackTimestamp = parseSafeDate(m.date).getTime();
