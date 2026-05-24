@@ -593,6 +593,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   // Generate monotonically increasing curve data starting from (firstLiveDate, 0) for followers
   const getFullFollowerHistoryData = (streamer: Streamer, followerMilestones: { milestone: number; date: string }[]) => {
     const points: { date: Date; followers: number; label: string; isMilestone: boolean }[] = [];
+    const currentFollowers = streamer.followerCount || 0;
 
     if (streamer.firstLiveDate) {
       points.push({
@@ -624,6 +625,31 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
+    if (points.length < 2 && currentFollowers > 0) {
+      const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
+      const hasSnapshot = points.some((p) => p.date.getTime() === snapshotDate.getTime());
+
+      if (!hasSnapshot) {
+        points.push({
+          date: snapshotDate,
+          followers: currentFollowers,
+          label: `${formatFollowers(currentFollowers)}`,
+          isMilestone: false,
+        });
+      }
+    }
+
+    if (points.length === 1) {
+      const onlyPoint = points[0];
+      const previousDate = new Date(onlyPoint.date.getTime() - 24 * 60 * 60 * 1000);
+      points.unshift({
+        date: previousDate,
+        followers: onlyPoint.followers,
+        label: `${formatFollowers(onlyPoint.followers)} (기준값)`,
+        isMilestone: false,
+      });
+    }
+
     points.sort((a, b) => a.date.getTime() - b.date.getTime() || a.followers - b.followers);
 
     const uniquePoints: typeof points = [];
@@ -646,6 +672,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
   // Helper date utilities
   const formatDateKorean = (dateStr: string) => {
+    if (!dateStr) return "기록 없음";
+
     try {
       const d = parseSafeDate(dateStr);
       return `${d.getFullYear()}년 ${String(d.getMonth() + 1).padStart(2, "0")}월 ${String(d.getDate()).padStart(2, "0")}일`;
