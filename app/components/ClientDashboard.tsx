@@ -703,7 +703,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               }}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="hours"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
@@ -1039,7 +1039,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               }}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="followers"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
