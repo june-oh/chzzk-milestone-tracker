@@ -61,11 +61,6 @@ type MilestoneDotProps = {
   };
 };
 
-type ChartDotProps = {
-  cx?: number;
-  cy?: number;
-};
-
 const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawHex: string }> = {
   lilac: { bg: "bg-[#f4ebff]", accent: "bg-[#a46cfc]", text: "text-[#692ec7]", rawHex: "#a46cfc" },
   pink: { bg: "bg-[#ffebeb]", accent: "bg-[#ff6c8f]", text: "text-[#d61c4e]", rawHex: "#ff6c8f" },
@@ -188,19 +183,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
   const renderMilestoneDot = (color: string) => ({ cx, cy, payload }: MilestoneDotProps) => {
     if (!payload?.isMilestone || typeof cx !== "number" || typeof cy !== "number") {
-      return <g />;
-    }
-
-    return (
-      <g>
-        <circle cx={cx} cy={cy} r={8} fill={color} fillOpacity="0.2" />
-        <circle cx={cx} cy={cy} r={4.5} fill="#ffffff" stroke={color} strokeWidth={3} />
-      </g>
-    );
-  };
-
-  const renderChartDot = (color: string) => ({ cx, cy }: ChartDotProps) => {
-    if (typeof cx !== "number" || typeof cy !== "number") {
       return <g />;
     }
 
@@ -671,7 +653,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       date: formatDateShort(p.date),
       fullDate: formatDateFull(p.date),
       hours: p.hours,
-      milestoneHours: p.isMilestone ? p.hours : null,
       label: p.label,
       isMilestone: p.isMilestone,
     }));
@@ -726,18 +707,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               dataKey="hours"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={false}
+              dot={renderMilestoneDot(chartColorSet.rawHex)}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
-              isAnimationActive={false}
-            />
-            <Line
-              type="linear"
-              dataKey="milestoneHours"
-              stroke="transparent"
-              strokeWidth={0}
-              dot={renderChartDot(chartColorSet.rawHex)}
-              activeDot={renderChartDot(chartColorSet.rawHex)}
-              connectNulls={false}
               isAnimationActive={false}
             />
           </LineChart>
@@ -1018,7 +989,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       date: formatDateShort(p.date),
       fullDate: formatDateFull(p.date),
       followers: p.followers,
-      milestoneFollowers: p.isMilestone ? p.followers : null,
       label: p.label,
       isMilestone: p.isMilestone,
     }));
@@ -1073,18 +1043,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               dataKey="followers"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={false}
+              dot={renderMilestoneDot(chartColorSet.rawHex)}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
-              isAnimationActive={false}
-            />
-            <Line
-              type="linear"
-              dataKey="milestoneFollowers"
-              stroke="transparent"
-              strokeWidth={0}
-              dot={renderChartDot(chartColorSet.rawHex)}
-              activeDot={renderChartDot(chartColorSet.rawHex)}
-              connectNulls={false}
               isAnimationActive={false}
             />
           </LineChart>
