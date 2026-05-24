@@ -594,6 +594,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
     const chartMaxHours = Math.ceil((streamer.totalLiveHours + 1) / 1000) * 1000;
+    const hourTicks = Array.from({ length: Math.floor(chartMaxHours / 1000) + 1 }, (_, index) => index * 1000);
     const chartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
@@ -626,6 +627,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             <YAxis
               width={58}
               domain={[0, chartMaxHours]}
+              ticks={hourTicks}
               tickFormatter={(value) => `${Number(value).toLocaleString()}H`}
               tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#a3a3a3" }}
             />
@@ -661,6 +663,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 key={`hours-${p.date}-${p.hours}`}
                 x={p.timestamp}
                 y={p.hours}
+                ifOverflow="visible"
                 r={5}
                 fill="#ffffff"
                 stroke={chartColorSet.rawHex}
@@ -946,6 +949,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
     const chartMaxFollowers = Math.ceil((streamer.followerCount || 10000) / 10000) * 10000;
+    const followerTicks = Array.from({ length: Math.floor(chartMaxFollowers / 10000) + 1 }, (_, index) => index * 10000);
     const chartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
@@ -978,6 +982,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             <YAxis
               width={58}
               domain={[0, chartMaxFollowers]}
+              ticks={followerTicks}
               tickFormatter={(value) => formatFollowers(Number(value))}
               tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#a3a3a3" }}
             />
@@ -1013,6 +1018,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 key={`followers-${p.date}-${p.followers}`}
                 x={p.timestamp}
                 y={p.followers}
+                ifOverflow="visible"
                 r={5}
                 fill="#ffffff"
                 stroke={chartColorSet.rawHex}
