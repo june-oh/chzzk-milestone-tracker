@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users } from "lucide-react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface StreamerHistory {
   date: string;
@@ -53,12 +53,9 @@ type FollowersChartPoint = {
 
 type HoverChartPoint = HoursChartPoint | FollowersChartPoint;
 
-type MilestoneDotProps = {
-  cx?: number;
-  cy?: number;
-  payload?: {
-    isMilestone?: boolean;
-  };
+type NumericLinePoint = {
+  timestamp: number;
+  [key: string]: number | string | boolean | null;
 };
 
 const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawHex: string }> = {
@@ -114,6 +111,34 @@ const parseHistoryDate = (dateStr: string | Date | undefined): Date => {
     d.setHours(23, 59, 59, 999);
   }
   return d;
+};
+
+const projectMilestoneTimestamp = (
+  lineData: NumericLinePoint[],
+  valueKey: "hours" | "followers",
+  milestone: number
+) => {
+  const sorted = [...lineData].sort((a, b) => a.timestamp - b.timestamp);
+
+  for (let i = 1; i < sorted.length; i++) {
+    const previous = sorted[i - 1];
+    const current = sorted[i];
+    const previousValue = Number(previous[valueKey]);
+    const currentValue = Number(current[valueKey]);
+
+    if (
+      Number.isFinite(previousValue) &&
+      Number.isFinite(currentValue) &&
+      previousValue <= milestone &&
+      milestone <= currentValue &&
+      currentValue > previousValue
+    ) {
+      const ratio = (milestone - previousValue) / (currentValue - previousValue);
+      return previous.timestamp + (current.timestamp - previous.timestamp) * ratio;
+    }
+  }
+
+  return null;
 };
 
 function FlipClock({ value, size = "normal" }: { value: number; size?: "normal" | "small" | "large" }) {
@@ -187,19 +212,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     } catch {
       return "";
     }
-  };
-
-  const renderMilestoneDot = (color: string) => ({ cx, cy, payload }: MilestoneDotProps) => {
-    if (!payload?.isMilestone || typeof cx !== "number" || typeof cy !== "number") {
-      return <g />;
-    }
-
-    return (
-      <g>
-        <circle cx={cx} cy={cy} r={8} fill={color} fillOpacity="0.2" />
-        <circle cx={cx} cy={cy} r={4.5} fill="#ffffff" stroke={color} strokeWidth={3} />
-      </g>
-    );
   };
 
   const handleMouseMove = (
@@ -482,12 +494,27 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const getStreamerFollowerMilestones = (streamer: Streamer) => {
     const followerCount = streamer.followerCount || 0;
     const milestoneCount = Math.floor(followerCount / 10000);
+    const latestSnapshotDate = [
+      streamer.lastUpdated,
+      ...(streamer.history || []).map((record) => record.date),
+    ]
+      .map((date) => parseHistoryDate(date).getTime())
+      .filter((time) => Number.isFinite(time))
+      .sort((a, b) => b - a)[0];
+    const latestSnapshotDay = latestSnapshotDate ? formatDateShort(new Date(latestSnapshotDate)) : "";
     const exactRecords = milestones
       .filter(
         (rec) =>
           rec.channelId === streamer.channelId &&
           rec.type === "followers" &&
           rec.milestone > 0
+      )
+      .filter(
+        (rec) =>
+          !(
+            formatDateShort(rec.date) === latestSnapshotDay &&
+            rec.milestone < followerCount
+          )
       )
       .map((rec) => ({
         milestone: rec.milestone,
@@ -649,7 +676,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   // Render Full detailed SVG graph inside analytical detail view
   const renderFullHistoryChart = (streamer: Streamer) => {
     const streamerMilestones = getStreamerMilestones(streamer);
-    const chartPoints = getFullHistoryData(streamer, streamerMilestones);
+    const exactStreamerMilestones = streamerMilestones.filter((m) => !m.isEstimated);
+    const chartPoints = getFullHistoryData(streamer, exactStreamerMilestones);
 
     if (chartPoints.length < 2) return null;
 
@@ -664,6 +692,20 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
+    const hourMarkerData = streamerMilestones
+      .map((m) => {
+        const fallbackTimestamp = parseSafeDate(m.date).getTime();
+        const projectedTimestamp = projectMilestoneTimestamp(chartData, "hours", m.milestone);
+        const timestamp = projectedTimestamp ?? fallbackTimestamp;
+        return {
+          timestamp,
+          milestone: m.milestone,
+          date: formatDateShort(new Date(timestamp)),
+          fullDate: formatDateFull(new Date(timestamp)),
+          label: `${m.milestone.toLocaleString()}시간 돌파${m.isEstimated ? " (추정)" : ""}`,
+        };
+      })
+      .filter((point) => Number.isFinite(point.timestamp));
 
     return (
       <div className="w-full h-[360px] bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
@@ -715,10 +757,22 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               dataKey="hours"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={renderMilestoneDot(chartColorSet.rawHex)}
+              dot={false}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
               isAnimationActive={false}
             />
+            {hourMarkerData.map((p) => (
+              <ReferenceDot
+                key={`hours-marker-${p.milestone}-${p.timestamp}`}
+                x={p.timestamp}
+                y={p.milestone}
+                ifOverflow="visible"
+                r={5}
+                fill="#ffffff"
+                stroke={chartColorSet.rawHex}
+                strokeWidth={3}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -985,7 +1039,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
   const renderFullFollowerHistoryChart = (streamer: Streamer) => {
     const followerMilestones = getStreamerFollowerMilestones(streamer);
-    const chartPoints = getFullFollowerHistoryData(streamer, followerMilestones);
+    const exactFollowerMilestones = followerMilestones.filter((m) => !m.isEstimated);
+    const chartPoints = getFullFollowerHistoryData(streamer, exactFollowerMilestones);
 
     if (chartPoints.length < 2) return null;
 
@@ -1000,6 +1055,20 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
+    const followerMarkerData = followerMilestones
+      .map((m) => {
+        const fallbackTimestamp = parseSafeDate(m.date).getTime();
+        const projectedTimestamp = projectMilestoneTimestamp(chartData, "followers", m.milestone);
+        const timestamp = projectedTimestamp ?? fallbackTimestamp;
+        return {
+          timestamp,
+          milestone: m.milestone,
+          date: formatDateShort(new Date(timestamp)),
+          fullDate: formatDateFull(new Date(timestamp)),
+          label: `${formatFollowers(m.milestone)} 돌파${m.isEstimated ? " (추정)" : ""}`,
+        };
+      })
+      .filter((point) => Number.isFinite(point.timestamp));
 
     return (
       <div className="w-full h-[360px] bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
@@ -1051,10 +1120,22 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               dataKey="followers"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={renderMilestoneDot(chartColorSet.rawHex)}
+              dot={false}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
               isAnimationActive={false}
             />
+            {followerMarkerData.map((p) => (
+              <ReferenceDot
+                key={`followers-marker-${p.milestone}-${p.timestamp}`}
+                x={p.timestamp}
+                y={p.milestone}
+                ifOverflow="visible"
+                r={5}
+                fill="#ffffff"
+                stroke={chartColorSet.rawHex}
+                strokeWidth={3}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
