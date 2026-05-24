@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users } from "lucide-react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from "recharts";
 
 interface StreamerHistory {
   date: string;
@@ -59,6 +59,11 @@ type MilestoneDotProps = {
   payload?: {
     isMilestone?: boolean;
   };
+};
+
+type ChartDotProps = {
+  cx?: number;
+  cy?: number;
 };
 
 const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawHex: string }> = {
@@ -183,6 +188,19 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
   const renderMilestoneDot = (color: string) => ({ cx, cy, payload }: MilestoneDotProps) => {
     if (!payload?.isMilestone || typeof cx !== "number" || typeof cy !== "number") {
+      return <g />;
+    }
+
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={8} fill={color} fillOpacity="0.2" />
+        <circle cx={cx} cy={cy} r={4.5} fill="#ffffff" stroke={color} strokeWidth={3} />
+      </g>
+    );
+  };
+
+  const renderChartDot = (color: string) => ({ cx, cy }: ChartDotProps) => {
+    if (typeof cx !== "number" || typeof cy !== "number") {
       return <g />;
     }
 
@@ -649,6 +667,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
+    const hourMilestoneData = chartData
+      .filter((p) => p.isMilestone)
+      .map((p) => ({ ...p, value: p.hours }));
 
     return (
       <div className="w-full h-[360px] bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
@@ -700,8 +721,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               dataKey="hours"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={renderMilestoneDot(chartColorSet.rawHex)}
+              dot={false}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
+              isAnimationActive={false}
+            />
+            <Scatter
+              data={hourMilestoneData}
+              dataKey="value"
+              shape={renderChartDot(chartColorSet.rawHex)}
               isAnimationActive={false}
             />
           </LineChart>
@@ -985,6 +1012,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
+    const followerMilestoneData = chartData
+      .filter((p) => p.isMilestone)
+      .map((p) => ({ ...p, value: p.followers }));
 
     return (
       <div className="w-full h-[360px] bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
@@ -1036,8 +1066,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               dataKey="followers"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={renderMilestoneDot(chartColorSet.rawHex)}
+              dot={false}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
+              isAnimationActive={false}
+            />
+            <Scatter
+              data={followerMilestoneData}
+              dataKey="value"
+              shape={renderChartDot(chartColorSet.rawHex)}
               isAnimationActive={false}
             />
           </LineChart>
