@@ -747,6 +747,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             <Tooltip
               cursor={{ stroke: "#000000", strokeOpacity: 0.28, strokeDasharray: "3 3" }}
               content={({ active, payload }) => {
+                if (chartMarkerTooltip) return null;
                 if (!active || !payload?.length) return null;
                 const data = payload[0].payload;
                 return (
@@ -1128,6 +1129,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             <Tooltip
               cursor={{ stroke: "#000000", strokeOpacity: 0.28, strokeDasharray: "3 3" }}
               content={({ active, payload }) => {
+                if (chartMarkerTooltip) return null;
                 if (!active || !payload?.length) return null;
                 const data = payload[0].payload;
                 return (
