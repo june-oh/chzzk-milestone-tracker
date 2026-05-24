@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users } from "lucide-react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface StreamerHistory {
   date: string;
@@ -671,12 +671,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       date: formatDateShort(p.date),
       fullDate: formatDateFull(p.date),
       hours: p.hours,
+      milestoneHours: p.isMilestone ? p.hours : null,
       label: p.label,
       isMilestone: p.isMilestone,
     }));
-    const hourMilestoneData = chartData
-      .filter((p) => p.isMilestone)
-      .map((p) => ({ ...p, value: p.hours }));
 
     return (
       <div className="w-full h-[360px] bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
@@ -732,10 +730,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
               isAnimationActive={false}
             />
-            <Scatter
-              data={hourMilestoneData}
-              dataKey="value"
-              shape={renderChartDot(chartColorSet.rawHex)}
+            <Line
+              type="linear"
+              dataKey="milestoneHours"
+              stroke="transparent"
+              strokeWidth={0}
+              dot={renderChartDot(chartColorSet.rawHex)}
+              activeDot={renderChartDot(chartColorSet.rawHex)}
+              connectNulls={false}
               isAnimationActive={false}
             />
           </LineChart>
@@ -1016,12 +1018,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       date: formatDateShort(p.date),
       fullDate: formatDateFull(p.date),
       followers: p.followers,
+      milestoneFollowers: p.isMilestone ? p.followers : null,
       label: p.label,
       isMilestone: p.isMilestone,
     }));
-    const followerMilestoneData = chartData
-      .filter((p) => p.isMilestone)
-      .map((p) => ({ ...p, value: p.followers }));
 
     return (
       <div className="w-full h-[360px] bg-neutral-50 p-4 rounded-[24px] border border-hairline-soft">
@@ -1077,10 +1077,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
               isAnimationActive={false}
             />
-            <Scatter
-              data={followerMilestoneData}
-              dataKey="value"
-              shape={renderChartDot(chartColorSet.rawHex)}
+            <Line
+              type="linear"
+              dataKey="milestoneFollowers"
+              stroke="transparent"
+              strokeWidth={0}
+              dot={renderChartDot(chartColorSet.rawHex)}
+              activeDot={renderChartDot(chartColorSet.rawHex)}
+              connectNulls={false}
               isAnimationActive={false}
             />
           </LineChart>
