@@ -502,7 +502,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   // Compile a comprehensive list of follower milestone achievements (every 10,000 followers)
   const getStreamerFollowerMilestones = (streamer: Streamer) => {
     const followerCount = streamer.followerCount || 0;
-    const milestoneCount = Math.floor(followerCount / 10000);
+    let milestoneCount = Math.floor(followerCount / 10000);
     const latestSnapshotDate = [
       streamer.lastUpdated,
       ...(streamer.history || []).map((record) => record.date),
@@ -529,6 +529,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         milestone: rec.milestone,
         date: rec.date,
       }));
+    const maxObservedFollowers = Math.max(
+      followerCount,
+      ...(streamer.history || []).map((record) => record.followers || 0),
+      ...exactRecords.map((record) => record.milestone)
+    );
+    milestoneCount = Math.max(milestoneCount, Math.floor(maxObservedFollowers / 10000));
 
     const anchors = [
       ...(streamer.firstLiveDate ? [{ milestone: 0, date: streamer.firstLiveDate }] : []),
@@ -621,7 +627,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     points.sort((a, b) => a.date.getTime() - b.date.getTime() || a.followers - b.followers);
 
     const uniquePoints: typeof points = [];
-    let lastFollowers = -1;
     points.forEach((p) => {
       const existingIdx = uniquePoints.findIndex(
         (up) => up.date.getTime() === p.date.getTime() && up.followers === p.followers
@@ -633,10 +638,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         return;
       }
 
-      if (p.followers >= lastFollowers || p.isMilestone) {
-        uniquePoints.push(p);
-        lastFollowers = Math.max(lastFollowers, p.followers);
-      }
+      uniquePoints.push(p);
     });
 
     return uniquePoints;
