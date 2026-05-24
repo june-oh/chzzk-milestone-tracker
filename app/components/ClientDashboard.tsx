@@ -58,6 +58,14 @@ type NumericLinePoint = {
   [key: string]: number | string | boolean | null;
 };
 
+type ChartMarkerTooltip = {
+  x: number;
+  y: number;
+  label: string;
+  fullDate: string;
+  color: string;
+} | null;
+
 const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawHex: string }> = {
   lilac: { bg: "bg-[#f4ebff]", accent: "bg-[#a46cfc]", text: "text-[#692ec7]", rawHex: "#a46cfc" },
   pink: { bg: "bg-[#ffebeb]", accent: "bg-[#ff6c8f]", text: "text-[#d61c4e]", rawHex: "#ff6c8f" },
@@ -194,6 +202,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [activeStreamerId, setActiveStreamerId] = useState<string | null>(null);
   const [hoveredHoursPointState, setHoveredHoursPoint] = useState<HoursChartPoint | null>(null);
   const [hoveredFollowersPointState, setHoveredFollowersPoint] = useState<FollowersChartPoint | null>(null);
+  const [chartMarkerTooltip, setChartMarkerTooltip] = useState<ChartMarkerTooltip>(null);
   const hoveredHoursPoint = hoveredHoursPointState ?? {
     x: 0,
     y: 0,
@@ -676,8 +685,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   // Render Full detailed SVG graph inside analytical detail view
   const renderFullHistoryChart = (streamer: Streamer) => {
     const streamerMilestones = getStreamerMilestones(streamer);
-    const exactStreamerMilestones = streamerMilestones.filter((m) => !m.isEstimated);
-    const chartPoints = getFullHistoryData(streamer, exactStreamerMilestones);
+    const chartPoints = getFullHistoryData(streamer, []);
 
     if (chartPoints.length < 2) return null;
 
@@ -771,6 +779,25 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 fill="#ffffff"
                 stroke={chartColorSet.rawHex}
                 strokeWidth={3}
+                onMouseEnter={(_, event) => {
+                  setChartMarkerTooltip({
+                    x: event.clientX,
+                    y: event.clientY,
+                    label: p.label,
+                    fullDate: p.fullDate,
+                    color: chartColorSet.rawHex,
+                  });
+                }}
+                onMouseMove={(_, event) => {
+                  setChartMarkerTooltip({
+                    x: event.clientX,
+                    y: event.clientY,
+                    label: p.label,
+                    fullDate: p.fullDate,
+                    color: chartColorSet.rawHex,
+                  });
+                }}
+                onMouseLeave={() => setChartMarkerTooltip(null)}
               />
             ))}
           </LineChart>
@@ -1039,8 +1066,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
   const renderFullFollowerHistoryChart = (streamer: Streamer) => {
     const followerMilestones = getStreamerFollowerMilestones(streamer);
-    const exactFollowerMilestones = followerMilestones.filter((m) => !m.isEstimated);
-    const chartPoints = getFullFollowerHistoryData(streamer, exactFollowerMilestones);
+    const chartPoints = getFullFollowerHistoryData(streamer, []);
 
     if (chartPoints.length < 2) return null;
 
@@ -1134,6 +1160,25 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 fill="#ffffff"
                 stroke={chartColorSet.rawHex}
                 strokeWidth={3}
+                onMouseEnter={(_, event) => {
+                  setChartMarkerTooltip({
+                    x: event.clientX,
+                    y: event.clientY,
+                    label: p.label,
+                    fullDate: p.fullDate,
+                    color: chartColorSet.rawHex,
+                  });
+                }}
+                onMouseMove={(_, event) => {
+                  setChartMarkerTooltip({
+                    x: event.clientX,
+                    y: event.clientY,
+                    label: p.label,
+                    fullDate: p.fullDate,
+                    color: chartColorSet.rawHex,
+                  });
+                }}
+                onMouseLeave={() => setChartMarkerTooltip(null)}
               />
             ))}
           </LineChart>
@@ -1425,6 +1470,22 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     return (
       <div className="max-w-[1040px] mx-auto px-6 py-4 animate-in fade-in slide-in-from-bottom-6 duration-300 relative">
+        {chartMarkerTooltip && (
+          <div
+            className="fixed z-[9999] pointer-events-none rounded-[10px] border border-black bg-white px-4 py-3 text-left"
+            style={{
+              left: Math.min(chartMarkerTooltip.x + 14, (typeof window !== "undefined" ? window.innerWidth : 1280) - 180),
+              top: Math.max(chartMarkerTooltip.y - 48, 12),
+            }}
+          >
+            <div className="font-mono text-[11px] font-bold text-neutral-400">{chartMarkerTooltip.fullDate}</div>
+            <div className="mt-1 font-mono text-[14px] font-extrabold text-black">{chartMarkerTooltip.label}</div>
+            <div className="mt-1 font-sans text-[10px] font-extrabold" style={{ color: chartMarkerTooltip.color }}>
+              MILESTONE
+            </div>
+          </div>
+        )}
+
         {/* Floating Back Button (FAB) that tracks scrolling */}
         <div className="fixed bottom-8 right-8 z-50 animate-in fade-in zoom-in duration-300">
           <button
