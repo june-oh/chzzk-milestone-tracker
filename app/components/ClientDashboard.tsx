@@ -108,6 +108,14 @@ const parseSafeDate = (dateStr: string | Date | undefined): Date => {
   return d;
 };
 
+const parseHistoryDate = (dateStr: string | Date | undefined): Date => {
+  const d = parseSafeDate(dateStr);
+  if (typeof dateStr === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    d.setHours(23, 59, 59, 999);
+  }
+  return d;
+};
+
 function FlipClock({ value, size = "normal" }: { value: number; size?: "normal" | "small" | "large" }) {
   // Pad total hours value with leading zeros and compute correct comma separators
   const numStr = String(value).padStart(5, "0");
@@ -438,7 +446,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     if (streamer.history && streamer.history.length > 0) {
       streamer.history.forEach((h) => {
         points.push({
-          date: parseSafeDate(h.date),
+          date: parseHistoryDate(h.date),
           hours: h.hours,
           label: `${h.hours.toLocaleString()}시간`,
           isMilestone: false,
@@ -446,24 +454,24 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
-    points.sort((a, b) => a.date.getTime() - b.date.getTime());
+    points.sort((a, b) => a.date.getTime() - b.date.getTime() || a.hours - b.hours);
 
     const uniquePoints: typeof points = [];
     let lastHours = -1;
     points.forEach((p) => {
-      if (p.hours >= lastHours) {
-        const dateKey = formatDateShort(p.date);
-        const existingIdx = uniquePoints.findIndex(
-          (up) => formatDateShort(up.date) === dateKey
-        );
-        if (existingIdx !== -1) {
-          if (p.isMilestone) {
-            uniquePoints[existingIdx] = p;
-          }
-        } else {
-          uniquePoints.push(p);
-          lastHours = p.hours;
+      const existingIdx = uniquePoints.findIndex(
+        (up) => up.date.getTime() === p.date.getTime() && up.hours === p.hours
+      );
+      if (existingIdx !== -1) {
+        if (p.isMilestone) {
+          uniquePoints[existingIdx] = p;
         }
+        return;
+      }
+
+      if (p.hours >= lastHours || p.isMilestone) {
+        uniquePoints.push(p);
+        lastHours = Math.max(lastHours, p.hours);
       }
     });
 
@@ -566,7 +574,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       streamer.history.forEach((h) => {
         const hFollowers = h.followers !== undefined ? h.followers : (streamer.followerCount || 0);
         points.push({
-          date: parseSafeDate(h.date),
+          date: parseHistoryDate(h.date),
           followers: hFollowers,
           label: `${formatFollowers(hFollowers)}`,
           isMilestone: false,
@@ -574,24 +582,24 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
-    points.sort((a, b) => a.date.getTime() - b.date.getTime());
+    points.sort((a, b) => a.date.getTime() - b.date.getTime() || a.followers - b.followers);
 
     const uniquePoints: typeof points = [];
     let lastFollowers = -1;
     points.forEach((p) => {
-      if (p.followers >= lastFollowers) {
-        const dateKey = formatDateShort(p.date);
-        const existingIdx = uniquePoints.findIndex(
-          (up) => formatDateShort(up.date) === dateKey
-        );
-        if (existingIdx !== -1) {
-          if (p.isMilestone) {
-            uniquePoints[existingIdx] = p;
-          }
-        } else {
-          uniquePoints.push(p);
-          lastFollowers = p.followers;
+      const existingIdx = uniquePoints.findIndex(
+        (up) => up.date.getTime() === p.date.getTime() && up.followers === p.followers
+      );
+      if (existingIdx !== -1) {
+        if (p.isMilestone) {
+          uniquePoints[existingIdx] = p;
         }
+        return;
+      }
+
+      if (p.followers >= lastFollowers || p.isMilestone) {
+        uniquePoints.push(p);
+        lastFollowers = Math.max(lastFollowers, p.followers);
       }
     });
 

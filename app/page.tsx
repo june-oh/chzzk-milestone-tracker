@@ -135,7 +135,9 @@ export default async function Home() {
       {/* Figma Top Nav Chrome */}
       <header className="sticky top-0 z-50 bg-white border-b border-hairline h-[56px] flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
-          <span className="font-mono text-[12px] font-bold tracking-mono uppercase">CHZZK MILESTONE</span>
+          <a href="/" className="font-mono text-[12px] font-bold tracking-mono uppercase hover:text-neutral-500 transition-colors">
+            CHZZK MILESTONE
+          </a>
         </div>
         <div className="flex items-center gap-3">
           <a
