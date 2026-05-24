@@ -380,6 +380,13 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     return { nextMilestone, progressPercent, hoursRemaining };
   };
 
+  const getFollowerMilestoneStats = (followers = 0) => {
+    const nextMilestone = Math.ceil((followers + 0.1) / 10000) * 10000;
+    const progressPercent = ((followers % 10000) / 10000) * 100;
+    const followersRemaining = nextMilestone - followers;
+    return { nextMilestone, progressPercent, followersRemaining };
+  };
+
   // Compile a comprehensive list of milestone achievements using exact recorded database dates or linear estimates
   const getStreamerMilestones = (streamer: Streamer) => {
     const milestoneCount = Math.floor(streamer.totalLiveHours / 1000);
@@ -1343,6 +1350,18 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   };
 
   const selectedStreamer = streamers.find((s) => s.channelId === activeStreamerId);
+  const topFollowerChaser = streamers
+    .map((streamer) => ({
+      streamer,
+      stats: getFollowerMilestoneStats(streamer.followerCount || 0),
+    }))
+    .sort((a, b) => a.stats.followersRemaining - b.stats.followersRemaining)[0];
+  const topHoursChaser = streamers
+    .map((streamer) => ({
+      streamer,
+      stats: getMilestoneStats(streamer.totalLiveHours),
+    }))
+    .sort((a, b) => a.stats.hoursRemaining - b.stats.hoursRemaining)[0];
 
   // If a streamer is selected, render their DEDICATED FULL-SCREEN PROFILE PAGE
   if (selectedStreamer) {
@@ -1667,6 +1686,66 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <h3 className="font-sans text-[18px] font-bold text-black mt-1">
                 추적 중인 스트리머
               </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[860px] mx-auto mb-8 px-4">
+              {topFollowerChaser && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectStreamer(topFollowerChaser.streamer.channelId)}
+                  className="group rounded-[24px] border border-hairline-soft bg-neutral-50 px-5 py-4 text-left hover:bg-white hover:-translate-y-0.5 transition-all"
+                >
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={topFollowerChaser.streamer.channelImageUrl}
+                      alt={topFollowerChaser.streamer.channelName}
+                      className="w-14 h-14 rounded-full object-cover border-2 border-white"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">
+                        TOP-1 FOLLOWER CLOSEST
+                      </div>
+                      <div className="font-sans text-[16px] font-extrabold text-black truncate">
+                        {topFollowerChaser.streamer.channelName}
+                      </div>
+                      <div className="mt-1 text-[12px] text-neutral-600 font-medium">
+                        팔로워 {formatFollowers(topFollowerChaser.stats.nextMilestone)}까지{" "}
+                        <strong className="text-black">{topFollowerChaser.stats.followersRemaining.toLocaleString()}명</strong> 남음
+                      </div>
+                    </div>
+                    <Users className="w-5 h-5 text-neutral-400 group-hover:text-black transition-colors" />
+                  </div>
+                </button>
+              )}
+
+              {topHoursChaser && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectStreamer(topHoursChaser.streamer.channelId)}
+                  className="group rounded-[24px] border border-hairline-soft bg-neutral-50 px-5 py-4 text-left hover:bg-white hover:-translate-y-0.5 transition-all"
+                >
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={topHoursChaser.streamer.channelImageUrl}
+                      alt={topHoursChaser.streamer.channelName}
+                      className="w-14 h-14 rounded-full object-cover border-2 border-white"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">
+                        TOP-1 HOURS CLOSEST
+                      </div>
+                      <div className="font-sans text-[16px] font-extrabold text-black truncate">
+                        {topHoursChaser.streamer.channelName}
+                      </div>
+                      <div className="mt-1 text-[12px] text-neutral-600 font-medium">
+                        {topHoursChaser.stats.nextMilestone.toLocaleString()}시간까지{" "}
+                        <strong className="text-black">{topHoursChaser.stats.hoursRemaining.toLocaleString()}시간</strong> 남음
+                      </div>
+                    </div>
+                    <Trophy className="w-5 h-5 text-neutral-400 group-hover:text-black transition-colors" />
+                  </div>
+                </button>
+              )}
             </div>
 
             <div className="relative w-full flex pt-4 pb-10 overflow-hidden">
