@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users } from "lucide-react";
-import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface StreamerHistory {
   date: string;
@@ -52,6 +52,14 @@ type FollowersChartPoint = {
 };
 
 type HoverChartPoint = HoursChartPoint | FollowersChartPoint;
+
+type MilestoneDotProps = {
+  cx?: number;
+  cy?: number;
+  payload?: {
+    isMilestone?: boolean;
+  };
+};
 
 const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawHex: string }> = {
   lilac: { bg: "bg-[#f4ebff]", accent: "bg-[#a46cfc]", text: "text-[#692ec7]", rawHex: "#a46cfc" },
@@ -171,6 +179,19 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     } catch {
       return "";
     }
+  };
+
+  const renderMilestoneDot = (color: string) => ({ cx, cy, payload }: MilestoneDotProps) => {
+    if (!payload?.isMilestone || typeof cx !== "number" || typeof cy !== "number") {
+      return <g />;
+    }
+
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={8} fill={color} fillOpacity="0.2" />
+        <circle cx={cx} cy={cy} r={4.5} fill="#ffffff" stroke={color} strokeWidth={3} />
+      </g>
+    );
   };
 
   const handleMouseMove = (
@@ -679,22 +700,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               dataKey="hours"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={false}
+              dot={renderMilestoneDot(chartColorSet.rawHex)}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
               isAnimationActive={false}
             />
-            {chartData.filter((p) => p.isMilestone).map((p) => (
-              <ReferenceDot
-                key={`hours-${p.date}-${p.hours}`}
-                x={p.timestamp}
-                y={p.hours}
-                ifOverflow="visible"
-                r={5}
-                fill="#ffffff"
-                stroke={chartColorSet.rawHex}
-                strokeWidth={3}
-              />
-            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -1027,22 +1036,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               dataKey="followers"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={false}
+              dot={renderMilestoneDot(chartColorSet.rawHex)}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
               isAnimationActive={false}
             />
-            {chartData.filter((p) => p.isMilestone).map((p) => (
-              <ReferenceDot
-                key={`followers-${p.date}-${p.followers}`}
-                x={p.timestamp}
-                y={p.followers}
-                ifOverflow="visible"
-                r={5}
-                fill="#ffffff"
-                stroke={chartColorSet.rawHex}
-                strokeWidth={3}
-              />
-            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
