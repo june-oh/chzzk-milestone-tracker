@@ -446,15 +446,36 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const getStreamerFollowerMilestones = (streamer: Streamer) => {
     const followerCount = streamer.followerCount || 0;
     const milestoneCount = Math.floor(followerCount / 10000);
-    const list = [];
+    const exactRecords = milestones
+      .filter(
+        (rec) =>
+          rec.channelId === streamer.channelId &&
+          rec.type === "followers" &&
+          rec.milestone > 0
+      )
+      .map((rec) => ({
+        milestone: rec.milestone,
+        date: rec.date,
+      }));
+
+    const anchors = [
+      ...(streamer.firstLiveDate ? [{ milestone: 0, date: streamer.firstLiveDate }] : []),
+      ...exactRecords,
+      {
+        milestone: followerCount,
+        date: streamer.lastUpdated || new Date().toISOString(),
+      },
+    ]
+      .filter((point) => Number.isFinite(point.milestone))
+      .sort((a, b) => a.milestone - b.milestone);
+
+    const list: { milestone: number; date: string; isEstimated: boolean }[] = [];
 
     for (let m = 1; m <= milestoneCount; m++) {
       const milestoneVal = m * 10000;
 
       // Find exact match in database milestone list if exists
-      const exactRecord = milestones.find(
-        (rec) => rec.channelId === streamer.channelId && rec.milestone === milestoneVal && rec.type === "followers"
-      );
+      const exactRecord = exactRecords.find((rec) => rec.milestone === milestoneVal);
 
       if (exactRecord) {
         list.push({
@@ -462,25 +483,29 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           date: exactRecord.date,
           isEstimated: false,
         });
-      } else {
-        // Fallback: estimate date using linear interpolation
-        try {
-          const startDate = parseSafeDate(streamer.firstLiveDate);
-          const endDate = parseSafeDate(streamer.lastUpdated || new Date().toISOString());
-          const totalFollowers = followerCount;
-          if (totalFollowers > 0) {
-            const timeSpan = endDate.getTime() - startDate.getTime();
-            const msPerFollower = timeSpan / totalFollowers;
-            const estimatedMs = startDate.getTime() + (milestoneVal * msPerFollower);
-            list.push({
-              milestone: milestoneVal,
-              date: new Date(estimatedMs).toISOString(),
-              isEstimated: true,
-            });
-          }
-        } catch (err) {
-          console.warn("Follower milestone estimation failed:", err);
-        }
+        continue;
+      }
+
+      // Estimate missing milestones between adjacent known anchors, not across the full lifetime.
+      const lowerAnchor = [...anchors].reverse().find((point) => point.milestone < milestoneVal);
+      const upperAnchor = anchors.find((point) => point.milestone > milestoneVal);
+
+      if (!lowerAnchor || !upperAnchor || upperAnchor.milestone <= lowerAnchor.milestone) {
+        continue;
+      }
+
+      try {
+        const lowerTime = parseSafeDate(lowerAnchor.date).getTime();
+        const upperTime = parseSafeDate(upperAnchor.date).getTime();
+        const ratio = (milestoneVal - lowerAnchor.milestone) / (upperAnchor.milestone - lowerAnchor.milestone);
+        const estimatedMs = lowerTime + (upperTime - lowerTime) * ratio;
+        list.push({
+          milestone: milestoneVal,
+          date: new Date(estimatedMs).toISOString(),
+          isEstimated: true,
+        });
+      } catch (err) {
+        console.warn("Follower milestone estimation failed:", err);
       }
     }
 
@@ -622,7 +647,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               tickFormatter={(value) => formatDateShort(new Date(Number(value)))}
               tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
               tickMargin={12}
-              interval="preserveStartEnd"
+              minTickGap={34}
             />
             <YAxis
               width={58}
@@ -668,13 +693,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 fill="#ffffff"
                 stroke={chartColorSet.rawHex}
                 strokeWidth={3}
-                label={{
-                  value: `${Math.round(p.hours / 1000)}K`,
-                  position: "top",
-                  fill: chartColorSet.rawHex,
-                  fontSize: 12,
-                  fontWeight: 800,
-                }}
               />
             ))}
           </LineChart>
@@ -977,7 +995,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               tickFormatter={(value) => formatDateShort(new Date(Number(value)))}
               tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
               tickMargin={12}
-              interval="preserveStartEnd"
+              minTickGap={34}
             />
             <YAxis
               width={58}
@@ -1023,13 +1041,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 fill="#ffffff"
                 stroke={chartColorSet.rawHex}
                 strokeWidth={3}
-                label={{
-                  value: `${Math.round(p.followers / 10000)}만`,
-                  position: "top",
-                  fill: chartColorSet.rawHex,
-                  fontSize: 12,
-                  fontWeight: 800,
-                }}
               />
             ))}
           </LineChart>
