@@ -1,6 +1,6 @@
 import softconHistoryJson from "@/data/softcon-history.json";
 
-export type GroupTag = "Planeta" | "ESTHER";
+export type GroupTag = "Planeta" | "AESTHER";
 
 export type ManualFollowerPoint = {
   date: string;
@@ -21,10 +21,10 @@ type SoftconChannelHistory = {
 const SOFTCON_HISTORY = softconHistoryJson as Record<string, SoftconChannelHistory>;
 
 const GROUP_TAGS: Record<string, GroupTag> = {
-  "4de764d9dad3b25602284be6db3ac647": "ESTHER", // 아리사
-  "32fb866e323242b770cdc790f991a6f6": "ESTHER", // 카린
-  "475313e6c26639d5763628313b4c130e": "ESTHER", // 엘리
-  "17d8605fc37fb5ef49f5f67ae786fe4e": "ESTHER", // 에리스
+  "4de764d9dad3b25602284be6db3ac647": "AESTHER", // 아리사
+  "32fb866e323242b770cdc790f991a6f6": "AESTHER", // 카린
+  "475313e6c26639d5763628313b4c130e": "AESTHER", // 엘리
+  "17d8605fc37fb5ef49f5f67ae786fe4e": "AESTHER", // 에리스
   "d5e2e0c14dcca4c4b10c7c9633022f52": "Planeta", // 치치
   "5ead7124638ac4c568f2cde0224b3b6b": "Planeta", // 카네코 파냐
   "941ea3807ba8b9b7dddb1670e3e7e5af": "Planeta", // 아마네 나기
@@ -52,6 +52,54 @@ export function getManualCumulativeHoursHistory(channelId: string): ManualHoursP
   const fromJson = getSoftconEntry(channelId)?.cumulativeHours;
   if (fromJson && fromJson.length > 0) return fromJson;
   return [];
+}
+
+export function hasSoftconHoursHistory(channelId: string): boolean {
+  return getManualCumulativeHoursHistory(channelId).length > 0;
+}
+
+export function hasSoftconFollowerHistory(channelId: string): boolean {
+  return getManualFollowerHistory(channelId).length > 0;
+}
+
+function parseSoftconDateMs(date: string): number {
+  if (date.includes("T")) return new Date(date).getTime();
+  return new Date(`${date}T12:00:00`).getTime();
+}
+
+/** Interpolate when a cumulative series crosses a target value (Softcon-sourced). */
+function projectSeriesCrossing(
+  history: { date: string; value: number }[],
+  target: number
+): string | null {
+  for (let i = 1; i < history.length; i++) {
+    const prev = history[i - 1];
+    const curr = history[i];
+    if (prev.value <= target && curr.value >= target && curr.value > prev.value) {
+      const ratio = (target - prev.value) / (curr.value - prev.value);
+      const ms = parseSoftconDateMs(prev.date) + ratio * (parseSoftconDateMs(curr.date) - parseSoftconDateMs(prev.date));
+      return new Date(ms).toISOString();
+    }
+  }
+  return null;
+}
+
+export function getSoftconHoursMilestoneDate(channelId: string, milestoneHours: number): string | null {
+  const history = getManualCumulativeHoursHistory(channelId);
+  if (history.length === 0) return null;
+  return projectSeriesCrossing(
+    history.map((point) => ({ date: point.date, value: point.hours })),
+    milestoneHours
+  );
+}
+
+export function getSoftconFollowerMilestoneDate(channelId: string, milestoneFollowers: number): string | null {
+  const history = getManualFollowerHistory(channelId);
+  if (history.length === 0) return null;
+  return projectSeriesCrossing(
+    history.map((point) => ({ date: point.date, value: point.followers })),
+    milestoneFollowers
+  );
 }
 
 type StreamerHistoryRow = {

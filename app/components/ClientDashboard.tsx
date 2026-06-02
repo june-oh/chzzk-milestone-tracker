@@ -8,6 +8,10 @@ import {
   getGroupTag,
   getManualCumulativeHoursHistory,
   getManualFollowerHistory,
+  getSoftconFollowerMilestoneDate,
+  getSoftconHoursMilestoneDate,
+  hasSoftconFollowerHistory,
+  hasSoftconHoursHistory,
 } from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
 
@@ -126,6 +130,26 @@ const parseHistoryDate = (dateStr: string | Date | undefined): Date => {
     d.setHours(23, 59, 59, 999);
   }
   return d;
+};
+
+const getHoursChartScale = (totalHours: number, dataPeak = 0) => {
+  const peak = Math.max(totalHours, dataPeak, 1);
+  if (peak < 1000) {
+    const max = Math.max(100, Math.ceil((peak * 1.15) / 50) * 50);
+    const step = max <= 300 ? 50 : max <= 600 ? 100 : 200;
+    const ticks: number[] = [];
+    for (let value = 0; value <= max; value += step) {
+      ticks.push(value);
+    }
+    if (ticks[ticks.length - 1] !== max) {
+      ticks.push(max);
+    }
+    return { max, ticks };
+  }
+
+  const max = Math.ceil((peak + 1) / 1000) * 1000;
+  const ticks = Array.from({ length: Math.floor(max / 1000) + 1 }, (_, index) => index * 1000);
+  return { max, ticks };
 };
 
 const renderGroupTag = (tag?: GroupTag) => {
@@ -430,6 +454,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     for (let m = 1; m <= milestoneCount; m++) {
       const milestoneVal = m * 1000;
 
+      const softconDate = getSoftconHoursMilestoneDate(streamer.channelId, milestoneVal);
+      if (softconDate) {
+        list.push({
+          milestone: milestoneVal,
+          date: softconDate,
+          isEstimated: false,
+        });
+        continue;
+      }
+
       // Find exact match in database milestone list if exists
       const exactRecord = milestones.find(
         (rec) => rec.channelId === streamer.channelId && rec.milestone === milestoneVal
@@ -441,7 +475,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           date: exactRecord.date,
           isEstimated: false,
         });
-      } else {
+      } else if (!hasSoftconHoursHistory(streamer.channelId)) {
         // Fallback: estimate date using linear interpolation
         try {
           const startDate = parseSafeDate(streamer.firstLiveDate);
@@ -595,12 +629,26 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       // Find exact match in database milestone list if exists
       const exactRecord = exactRecords.find((rec) => rec.milestone === milestoneVal);
 
+      const softconDate = getSoftconFollowerMilestoneDate(streamer.channelId, milestoneVal);
+      if (softconDate) {
+        list.push({
+          milestone: milestoneVal,
+          date: softconDate,
+          isEstimated: false,
+        });
+        continue;
+      }
+
       if (exactRecord) {
         list.push({
           milestone: milestoneVal,
           date: exactRecord.date,
           isEstimated: false,
         });
+        continue;
+      }
+
+      if (hasSoftconFollowerHistory(streamer.channelId)) {
         continue;
       }
 
@@ -850,8 +898,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     if (chartPoints.length < 2) return null;
 
     const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
-    const chartMaxHours = Math.ceil((streamer.totalLiveHours + 1) / 1000) * 1000;
-    const hourTicks = Array.from({ length: Math.floor(chartMaxHours / 1000) + 1 }, (_, index) => index * 1000);
+    const dataPeakHours = Math.max(...chartPoints.map((point) => point.hours));
+    const { max: chartMaxHours, ticks: hourTicks } = getHoursChartScale(
+      streamer.totalLiveHours,
+      dataPeakHours
+    );
+    const usesSoftconHours = hasSoftconHoursHistory(streamer.channelId);
     const baseChartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
@@ -860,11 +912,13 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
-    const chartData = createDailyInterpolatedData(
-      baseChartData,
-      "hours",
-      (value) => `${value.toLocaleString()}시간 (추정)`
-    );
+    const chartData = usesSoftconHours
+      ? baseChartData
+      : createDailyInterpolatedData(
+          baseChartData,
+          "hours",
+          (value) => `${value.toLocaleString()}시간 (추정)`
+        );
     const hourMarkerData = streamerMilestones
       .map((m) => {
         const fallbackTimestamp = parseSafeDate(m.date).getTime();
@@ -1239,6 +1293,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
     const chartMaxFollowers = Math.ceil((streamer.followerCount || 10000) / 10000) * 10000;
     const followerTicks = Array.from({ length: Math.floor(chartMaxFollowers / 10000) + 1 }, (_, index) => index * 10000);
+    const usesSoftconFollowers = hasSoftconFollowerHistory(streamer.channelId);
     const baseChartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
@@ -1247,11 +1302,13 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
-    const chartData = createDailyInterpolatedData(
-      baseChartData,
-      "followers",
-      (value) => `${formatFollowers(value)} (추정)`
-    );
+    const chartData = usesSoftconFollowers
+      ? baseChartData
+      : createDailyInterpolatedData(
+          baseChartData,
+          "followers",
+          (value) => `${formatFollowers(value)} (추정)`
+        );
     const followerMarkerData = followerMilestones
       .map((m) => {
         const fallbackTimestamp = parseSafeDate(m.date).getTime();
