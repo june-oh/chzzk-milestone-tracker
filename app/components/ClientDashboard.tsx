@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { getGroupTag, getManualFollowerHistory } from "@/lib/streamerMeta";
+import type { GroupTag } from "@/lib/streamerMeta";
 
 interface StreamerHistory {
   date: string;
@@ -20,6 +22,7 @@ interface Streamer {
   lastMilestone: number;
   cheerCount: number;
   followerCount?: number;
+  groupTag?: GroupTag;
   color: string;
   lastUpdated: string;
   history: StreamerHistory[];
@@ -119,6 +122,23 @@ const parseHistoryDate = (dateStr: string | Date | undefined): Date => {
     d.setHours(23, 59, 59, 999);
   }
   return d;
+};
+
+const renderGroupTag = (tag?: GroupTag) => {
+  if (!tag) return null;
+
+  const styles =
+    tag === "Planeta"
+      ? "bg-[#fffbf0] text-[#b45309] border-[#fef0c7]"
+      : "bg-[#ffebeb] text-[#d61c4e] border-[#ffd4d4]";
+
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-mono uppercase border ${styles}`}
+    >
+      {tag}
+    </span>
+  );
 };
 
 const projectMilestoneTimestamp = (
@@ -536,8 +556,13 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     );
     milestoneCount = Math.max(milestoneCount, Math.floor(maxObservedFollowers / 10000));
 
+    const manualFollowerHistory = getManualFollowerHistory(streamer.channelId);
     const anchors = [
-      ...(streamer.firstLiveDate ? [{ milestone: 0, date: streamer.firstLiveDate }] : []),
+      ...(manualFollowerHistory.length > 0
+        ? [{ milestone: manualFollowerHistory[0].followers, date: manualFollowerHistory[0].date }]
+        : streamer.firstLiveDate && streamer.totalLiveHours > 0
+          ? [{ milestone: 0, date: streamer.firstLiveDate }]
+          : []),
       ...exactRecords,
       {
         milestone: followerCount,
@@ -594,8 +619,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const getFullFollowerHistoryData = (streamer: Streamer, followerMilestones: { milestone: number; date: string }[]) => {
     const points: { date: Date; followers: number; label: string; isMilestone: boolean }[] = [];
     const currentFollowers = streamer.followerCount || 0;
+    const manualFollowerHistory = getManualFollowerHistory(streamer.channelId);
+    const hasManualFollowerHistory = manualFollowerHistory.length > 0;
 
-    if (streamer.firstLiveDate) {
+    if (!hasManualFollowerHistory && streamer.firstLiveDate && streamer.totalLiveHours > 0) {
       points.push({
         date: parseSafeDate(streamer.firstLiveDate),
         followers: 0,
@@ -613,7 +640,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     });
 
-    if (streamer.history && streamer.history.length > 0) {
+    if (hasManualFollowerHistory) {
+      manualFollowerHistory.forEach((point) => {
+        points.push({
+          date: parseHistoryDate(point.date),
+          followers: point.followers,
+          label: `${formatFollowers(point.followers)}`,
+          isMilestone: false,
+        });
+      });
+    } else if (streamer.history && streamer.history.length > 0) {
       streamer.history.forEach((h) => {
         const hFollowers = h.followers !== undefined ? h.followers : (streamer.followerCount || 0);
         points.push({
@@ -625,7 +661,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
-    if (points.length < 2 && currentFollowers > 0) {
+    if (!hasManualFollowerHistory && points.length < 2 && currentFollowers > 0) {
       const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
       const hasSnapshot = points.some((p) => p.date.getTime() === snapshotDate.getTime());
 
@@ -666,6 +702,37 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
       uniquePoints.push(p);
     });
+
+    if (
+      !hasManualFollowerHistory &&
+      streamer.totalLiveHours === 0 &&
+      currentFollowers > 0
+    ) {
+      const withoutZeroBaseline = uniquePoints.filter(
+        (p) => p.followers > 0 || (p.isMilestone && p.followers > 0)
+      );
+
+      if (withoutZeroBaseline.length >= 2) {
+        return withoutZeroBaseline;
+      }
+
+      const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
+      const previousDate = new Date(snapshotDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return [
+        {
+          date: previousDate,
+          followers: currentFollowers,
+          label: `${formatFollowers(currentFollowers)} (기준값)`,
+          isMilestone: false,
+        },
+        {
+          date: snapshotDate,
+          followers: currentFollowers,
+          label: `${formatFollowers(currentFollowers)}`,
+          isMilestone: false,
+        },
+      ];
+    }
 
     return uniquePoints;
   };
@@ -1631,9 +1698,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                     CHZZK PARTNER CREATOR
                   </span>
                 </div>
-                <h2 className="font-sans text-[36px] font-bold text-black tracking-tight leading-none">
-                  {selectedStreamer.channelName}
-                </h2>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                  <h2 className="font-sans text-[36px] font-bold text-black tracking-tight leading-none">
+                    {selectedStreamer.channelName}
+                  </h2>
+                  {renderGroupTag(selectedStreamer.groupTag || getGroupTag(selectedStreamer.channelId))}
+                </div>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-[13px] text-neutral-600 font-medium mb-3">
                   <span className="flex items-center gap-1.5" suppressHydrationWarning>
                     <Calendar className="w-4 h-4 text-neutral-400" />
@@ -2040,9 +2110,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         </span>
                       )}
                     </div>
-                    <h3 className="font-sans text-[24px] font-bold text-black tracking-tight">
-                      {streamer.channelName}
-                    </h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-sans text-[24px] font-bold text-black tracking-tight">
+                        {streamer.channelName}
+                      </h3>
+                      {renderGroupTag(streamer.groupTag || getGroupTag(streamer.channelId))}
+                    </div>
                   </div>
                 </div>
 

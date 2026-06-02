@@ -1,9 +1,10 @@
 import { kv } from "@vercel/kv";
 import ClientDashboard from "./components/ClientDashboard";
+import { enrichStreamer } from "@/lib/streamerMeta";
 
 const FALLBACK_STREAMERS = [
   { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA0MTlfOTQg/MDAxNzc2NTkyMjU5ODk5._TnXjfSnOt5htcBgSxPj4BKXOv2ncFPbIPvx2guxVlwg.M3PH7PH8oadbIc0SZdWyD1wY6lVh2aOpMlKQ8puG-E0g.PNG/image.png", firstLiveDate: "2024-02-26 17:06:40", totalLiveHours: 4302, lastMilestone: 4000, cheerCount: 0, followerCount: 66939, color: "lilac" },
-  { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA0MDJfMTk1/MDAxNzc1MTMzNjk5OTc1.XifMFawEqJ9B4cqYDAF9pjn2VoUNaIahdyNDtqRnDMQg.IyGl56yQUJAtB5ohqq8mUM2wqjvQ4cf4--LpB4jvzFIg.PNG/image.png", firstLiveDate: "2024-01-05 20:00:32", totalLiveHours: 7778, lastMilestone: 7000, cheerCount: 0, followerCount: 90518, color: "pink" },
+  { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA0MDJfMTk1/MDAxNzc1MTMzNjk5OTc1.XifMFawEqJ9B4cqYDAF9pjn2VoUNaIahdyNDtqRnDMQg.IyGl56yQUJAtB5ohqq8mUM2wqjvQ4cf4--LpB4jvzFIg.PNG/image.png", firstLiveDate: "2024-01-05 20:00:32", totalLiveHours: 7778, lastMilestone: 7000, cheerCount: 0, followerCount: 91646, color: "pink" },
   { channelId: "32fb866e323242b770cdc790f991a6f6", channelName: "카린", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNDA3MDdfMjAg/MDAxNzIwMzM0MTk0MjAz.GRLFSI66ByerGVPBJmX7nC9WudQCO45VsXUxAvsbEMkg.J6DZpTBwgQMSpyTrunP4wbmZO71ce9oRN3WrLnOUye0g.PNG/1000053454.png", firstLiveDate: "2024-02-19 18:03:58", totalLiveHours: 4148, lastMilestone: 4000, cheerCount: 0, followerCount: 52263, color: "mint" },
   { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNTEwMTJfMjQg/MDAxNzYwMjU5MzQwODQw.72r-pbnXpBvoFivvGK9dKk9CAO8aJN5UV6wXejRiiPwg.Oo7lN5-LX4Dd9tETgUqx5UGoHXNKZ55O5Xy6MnaX7-kg.PNG/image.png", firstLiveDate: "2024-01-04 16:26:11", totalLiveHours: 5162, lastMilestone: 5000, cheerCount: 0, followerCount: 58214, color: "coral" },
   { channelId: "17d8605fc37fb5ef49f5f67ae786fe4e", channelName: "에리스", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNDA3MTFfMjU1/MDAxNzIwNjYzNjYzMzE2.6ViLvn07CoW0FgG0DVAifAaDyRibcvuJ7Wf80lcaedog.h9LXAMib3NNk7EtCJYbHOB1fMpzdQ49Q9At7b3MnuMUg.PNG/0E954B06-FA2A-4A12-ADFE-36CFA1F6CED7-1720663663.png", firstLiveDate: "2024-02-07 22:00:56", totalLiveHours: 3542, lastMilestone: 3000, cheerCount: 0, followerCount: 48426, color: "cream" },
@@ -45,25 +46,29 @@ export default async function Home() {
           });
         }
 
-        streamers.push({
-          channelId: cid,
-          channelName: data.channelName || fallback.channelName,
-          channelImageUrl: imageUrl,
-          firstLiveDate: data.firstLiveDate || fallback.firstLiveDate,
-          totalLiveHours: Number(data.totalLiveHours) || fallback.totalLiveHours,
-          lastMilestone: Number(data.lastMilestone) || fallback.lastMilestone,
-          cheerCount: Number(data.cheerCount) || 0,
-          followerCount: Number(data.followerCount) || fallback.followerCount || 0,
-          color: data.color || fallback.color,
-          lastUpdated: data.lastUpdated || new Date().toISOString(),
-          history,
-        });
+        streamers.push(
+          enrichStreamer({
+            channelId: cid,
+            channelName: data.channelName || fallback.channelName,
+            channelImageUrl: imageUrl,
+            firstLiveDate: data.firstLiveDate || fallback.firstLiveDate,
+            totalLiveHours: Number(data.totalLiveHours) || fallback.totalLiveHours,
+            lastMilestone: Number(data.lastMilestone) || fallback.lastMilestone,
+            cheerCount: Number(data.cheerCount) || 0,
+            followerCount: Number(data.followerCount) || fallback.followerCount || 0,
+            color: data.color || fallback.color,
+            lastUpdated: data.lastUpdated || new Date().toISOString(),
+            history,
+          })
+        );
       } else {
-        streamers.push({
-          ...fallback,
-          history,
-          lastUpdated: new Date().toISOString(),
-        });
+        streamers.push(
+          enrichStreamer({
+            ...fallback,
+            history,
+            lastUpdated: new Date().toISOString(),
+          })
+        );
       }
     }
 
@@ -107,15 +112,17 @@ export default async function Home() {
   } catch (err) {
     console.warn("Vercel KV not connected or failed. Serving mock/fallback data:", err);
     // Serve fallback mockup stats in case environment variables are missing
-    streamers = FALLBACK_STREAMERS.map(f => ({
-      ...f,
-      lastUpdated: new Date().toISOString(),
-      history: [
-        { date: "2026-05-18", hours: Math.max(0, f.totalLiveHours - 4), followers: Math.max(0, (f.followerCount || 10000) - 15) },
-        { date: "2026-05-19", hours: Math.max(0, f.totalLiveHours - 2), followers: Math.max(0, (f.followerCount || 10000) - 5) },
-        { date: "2026-05-20", hours: Math.max(0, f.totalLiveHours), followers: f.followerCount || 10000 }
-      ]
-    }));
+    streamers = FALLBACK_STREAMERS.map((f) =>
+      enrichStreamer({
+        ...f,
+        lastUpdated: new Date().toISOString(),
+        history: [
+          { date: "2026-05-18", hours: Math.max(0, f.totalLiveHours - 4), followers: Math.max(0, (f.followerCount || 10000) - 15) },
+          { date: "2026-05-19", hours: Math.max(0, f.totalLiveHours - 2), followers: Math.max(0, (f.followerCount || 10000) - 5) },
+          { date: "2026-05-20", hours: Math.max(0, f.totalLiveHours), followers: f.followerCount || 10000 },
+        ],
+      })
+    );
     milestones = [
       { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
       { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
