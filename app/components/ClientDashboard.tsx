@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
-import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users } from "lucide-react";
+import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users, Check } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   getGroupTag,
@@ -197,9 +197,16 @@ const projectMilestoneTimestamp = (
   return null;
 };
 
-function FlipClock({ value, size = "normal" }: { value: number; size?: "normal" | "small" | "large" }) {
-  // Pad total hours value with leading zeros and compute correct comma separators
-  const numStr = String(value).padStart(5, "0");
+function FlipClock({
+  value,
+  size = "normal",
+  minDigits = 5,
+}: {
+  value: number;
+  size?: "normal" | "small" | "large";
+  minDigits?: number;
+}) {
+  const numStr = String(value).padStart(minDigits, "0");
   const chars: string[] = [];
   for (let i = 0; i < numStr.length; i++) {
     if (i > 0 && (numStr.length - i) % 3 === 0) {
@@ -248,6 +255,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [streamers, setStreamers] = useState<Streamer[]>(initialStreamers);
   const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones);
   const [activeStreamerId, setActiveStreamerId] = useState<string | null>(null);
+  const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set());
+  const [compareHeaderView, setCompareHeaderView] = useState(false);
   const [hoveredHoursPointState, setHoveredHoursPoint] = useState<HoursChartPoint | null>(null);
   const [hoveredFollowersPointState, setHoveredFollowersPoint] = useState<FollowersChartPoint | null>(null);
   const [chartMarkerTooltip, setChartMarkerTooltip] = useState<ChartMarkerTooltip>(null);
@@ -444,6 +453,140 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     const progressPercent = ((followers % 10000) / 10000) * 100;
     const followersRemaining = nextMilestone - followers;
     return { nextMilestone, progressPercent, followersRemaining };
+  };
+
+  const getLastFollowerMilestone = (followers = 0) => {
+    if (followers < 10000) return 0;
+    return Math.floor(followers / 10000) * 10000;
+  };
+
+  const formatFollowerMilestoneTarget = (milestone: number) => {
+    if (milestone >= 10000) {
+      return `${milestone / 10000}만명`;
+    }
+    return `${milestone.toLocaleString()}명`;
+  };
+
+  const toggleCompareSelection = (channelId: string) => {
+    setSelectedForCompare((prev) => {
+      const next = new Set(prev);
+      if (next.has(channelId)) {
+        next.delete(channelId);
+      } else {
+        next.add(channelId);
+      }
+      return next;
+    });
+  };
+
+  const renderStreamerProfileHeader = (streamer: Streamer) => {
+    const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
+    const borderSet = BORDER_COLOR_MAP[streamer.color] || "border-neutral-200";
+    const hoursStats = getMilestoneStats(streamer.totalLiveHours);
+    const followerStats = getFollowerMilestoneStats(streamer.followerCount || 0);
+    const lastFollowerClub = getLastFollowerMilestone(streamer.followerCount || 0);
+
+    return (
+      <div className={`rounded-[32px] border ${borderSet} ${colorSet.bg} p-8 md:p-12 shadow-sm relative overflow-hidden`}>
+        <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 relative z-10">
+          <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left flex-1 min-w-0">
+            <div className="w-[110px] h-[110px] rounded-[24px] overflow-hidden border-4 border-white shadow-lg shrink-0">
+              <img
+                src={streamer.channelImageUrl}
+                alt={streamer.channelName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="space-y-3 min-w-0">
+              <div className="flex items-center justify-center md:justify-start gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full ${colorSet.accent}`} />
+                <span className="font-mono text-[12px] font-bold tracking-mono text-neutral-500 uppercase">
+                  CHZZK PARTNER CREATOR
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                <h2 className="font-sans text-[32px] md:text-[36px] font-bold text-black tracking-tight leading-none">
+                  {streamer.channelName}
+                </h2>
+                {renderGroupTag(streamer.groupTag || getGroupTag(streamer.channelId))}
+              </div>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-[13px] text-neutral-600 font-medium">
+                {streamer.firstLiveDate && (
+                  <span className="flex items-center gap-1.5" suppressHydrationWarning>
+                    <Calendar className="w-4 h-4 text-neutral-400" />
+                    방송 시작: {formatDateKorean(streamer.firstLiveDate)}
+                  </span>
+                )}
+                <span className="bg-white/60 px-3 py-1 rounded-full text-[12px] border border-hairline-soft font-bold">
+                  🥇 {streamer.lastMilestone.toLocaleString()}H 클럽 가입됨
+                </span>
+                {lastFollowerClub > 0 && (
+                  <span className="bg-white/60 px-3 py-1 rounded-full text-[12px] border border-hairline-soft font-bold flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-neutral-500" />
+                    {formatFollowerMilestoneTarget(lastFollowerClub)} 클럽 가입됨
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-[640px] text-left">
+                <div className="bg-white/85 border border-hairline-soft rounded-2xl p-4 shadow-sm">
+                  <div className="flex justify-between text-[11px] font-mono font-bold tracking-mono text-neutral-500 uppercase mb-1.5">
+                    <span>PROGRESS TO {hoursStats.nextMilestone.toLocaleString()}H</span>
+                    <span>{hoursStats.progressPercent.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full h-3 bg-neutral-200/50 rounded-full overflow-hidden border border-hairline-soft mb-2.5">
+                    <div
+                      className={`h-full ${colorSet.accent} transition-all duration-500`}
+                      style={{ width: `${hoursStats.progressPercent}%` }}
+                    />
+                  </div>
+                  <p className="font-sans text-[12px] text-neutral-800 font-medium leading-snug">
+                    다음 <strong className="text-black font-extrabold">{hoursStats.nextMilestone.toLocaleString()}시간</strong>까지{" "}
+                    <strong className="text-black font-extrabold">{hoursStats.hoursRemaining.toLocaleString()}시간</strong> 남음
+                  </p>
+                </div>
+
+                {streamer.followerCount !== undefined && (
+                  <div className="bg-white/85 border border-hairline-soft rounded-2xl p-4 shadow-sm">
+                    <div className="flex justify-between text-[11px] font-mono font-bold tracking-mono text-neutral-500 uppercase mb-1.5">
+                      <span>PROGRESS TO {formatFollowerMilestoneTarget(followerStats.nextMilestone)}</span>
+                      <span>{followerStats.progressPercent.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full h-3 bg-neutral-200/50 rounded-full overflow-hidden border border-hairline-soft mb-2.5">
+                      <div
+                        className="h-full bg-indigo-500 transition-all duration-500"
+                        style={{ width: `${followerStats.progressPercent}%` }}
+                      />
+                    </div>
+                    <p className="font-sans text-[12px] text-neutral-800 font-medium leading-snug">
+                      다음 <strong className="text-black font-extrabold">{formatFollowerMilestoneTarget(followerStats.nextMilestone)}</strong>까지{" "}
+                      <strong className="text-black font-extrabold">{followerStats.followersRemaining.toLocaleString()}명</strong> 남음
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center lg:items-end gap-6 shrink-0">
+            <div className="flex flex-col items-center lg:items-end gap-3">
+              <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
+                TOTAL LIVE BROADCAST HOURS
+              </span>
+              <FlipClock value={streamer.totalLiveHours} size="large" />
+            </div>
+            {streamer.followerCount !== undefined && (
+              <div className="flex flex-col items-center lg:items-end gap-3">
+                <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
+                  TOTAL FOLLOWERS
+                </span>
+                <FlipClock value={streamer.followerCount} size="large" minDigits={5} />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Compile a comprehensive list of milestone achievements using exact recorded database dates or linear estimates
@@ -1710,8 +1853,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   // If a streamer is selected, render their DEDICATED FULL-SCREEN PROFILE PAGE
   if (selectedStreamer) {
     const colorSet = COLOR_MAP[selectedStreamer.color] || COLOR_MAP.lime;
-    const borderSet = BORDER_COLOR_MAP[selectedStreamer.color] || "border-neutral-200";
-    const stats = getMilestoneStats(selectedStreamer.totalLiveHours);
     const streamerMilestones = getStreamerMilestones(selectedStreamer);
 
     return (
@@ -1768,75 +1909,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           </a>
         </div>
 
-        {/* 1. TOP SECTION: Streamer Header & Giant Flip Clock */}
-        <div className={`rounded-[32px] border ${borderSet} ${colorSet.bg} p-8 md:p-12 mb-10 shadow-sm relative overflow-hidden`}>
-          <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8 relative z-10">
-            {/* Left Streamer Avatar & Meta */}
-            <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-              <div className="w-[110px] h-[110px] rounded-[24px] overflow-hidden border-4 border-white shadow-lg">
-                <img
-                  src={selectedStreamer.channelImageUrl}
-                  alt={selectedStreamer.channelName}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-center md:justify-start gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${colorSet.accent}`} />
-                  <span className="font-mono text-[12px] font-bold tracking-mono text-neutral-500 uppercase">
-                    CHZZK PARTNER CREATOR
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                  <h2 className="font-sans text-[36px] font-bold text-black tracking-tight leading-none">
-                    {selectedStreamer.channelName}
-                  </h2>
-                  {renderGroupTag(selectedStreamer.groupTag || getGroupTag(selectedStreamer.channelId))}
-                </div>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-[13px] text-neutral-600 font-medium mb-3">
-                  <span className="flex items-center gap-1.5" suppressHydrationWarning>
-                    <Calendar className="w-4 h-4 text-neutral-400" />
-                    방송 시작: {formatDateKorean(selectedStreamer.firstLiveDate)}
-                  </span>
-                  <span className="bg-white/60 px-3 py-1 rounded-full text-[12px] border border-hairline-soft font-bold">
-                    🥇 {selectedStreamer.lastMilestone.toLocaleString()}H 클럽 가입됨
-                  </span>
-                  {selectedStreamer.followerCount !== undefined && (
-                    <span className="bg-white/60 px-3 py-1 rounded-full text-[12px] border border-hairline-soft font-bold flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-neutral-500" />
-                      팔로워 {formatFollowers(selectedStreamer.followerCount)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Next Milestone Remaining Indicator */}
-                <div className="bg-white/85 border border-hairline-soft rounded-2xl p-4 max-w-[420px] text-left shadow-sm">
-                  <div className="flex justify-between text-[11px] font-mono font-bold tracking-mono text-neutral-500 uppercase mb-1.5">
-                    <span>PROGRESS TO {stats.nextMilestone.toLocaleString()}H</span>
-                    <span>{stats.progressPercent.toFixed(1)}%</span>
-                  </div>
-                  <div className="w-full h-3 bg-neutral-200/50 rounded-full overflow-hidden border border-hairline-soft mb-2.5">
-                    <div
-                      className={`h-full ${colorSet.accent} transition-all duration-500`}
-                      style={{ width: `${stats.progressPercent}%` }}
-                    />
-                  </div>
-                  <p className="font-sans text-[13px] text-neutral-800 font-medium">
-                    다음 마일스톤인 <strong className="text-black font-extrabold">{stats.nextMilestone.toLocaleString()}시간</strong>까지 <strong className="text-black font-extrabold text-[15px]">{stats.hoursRemaining.toLocaleString()}시간</strong> 남았습니다!
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right GIANT FLIP CLOCK displaying hours */}
-            <div className="flex flex-col items-center md:items-end gap-3 self-center">
-              <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
-                TOTAL LIVE BROADCAST HOURS
-              </span>
-              <FlipClock value={selectedStreamer.totalLiveHours} size="large" />
-            </div>
-          </div>
-        </div>
+        {/* 1. TOP SECTION: Streamer Header & Flip Clocks */}
+        <div className="mb-10">{renderStreamerProfileHeader(selectedStreamer)}</div>
 
         {/* 2. MIDDLE SECTION: Two Big Growth Curve Graphs */}
         <div className="space-y-10 mb-10">
@@ -2006,6 +2080,46 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     );
   }
 
+  if (compareHeaderView && selectedForCompare.size > 0) {
+    const selectedList = streamers.filter((s) => selectedForCompare.has(s.channelId));
+
+    return (
+      <div className="max-w-[1280px] mx-auto px-6 py-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={() => setCompareHeaderView(false)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-hairline hover:bg-neutral-50 text-neutral-800 text-[14px] font-bold transition-all shadow-sm active:scale-95 w-fit"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>카드 목록으로 돌아가기</span>
+          </button>
+          <div className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
+            SELECTED HEADERS · {selectedList.length} STREAMERS
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {selectedList.map((streamer) => (
+            <div key={streamer.channelId} className="relative">
+              {renderStreamerProfileHeader(streamer)}
+              <div className="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => handleSelectStreamer(streamer.channelId)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black text-white text-[13px] font-bold hover:bg-neutral-900 transition-colors"
+                >
+                  <span>{streamer.channelName} 전체 프로필 보기</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       {/* Hero Poster Section - Shown only on the main dashboard */}
@@ -2138,7 +2252,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </div>
           </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <span className="font-mono text-[12px] font-bold tracking-mono text-neutral-400 uppercase">
             STREAMERS CARD BOARD
@@ -2147,14 +2261,34 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             스트리머 프로필 카드
           </h2>
           <p className="font-sans text-[14px] text-neutral-500 mt-1">
-            원하는 스트리머의 프로필 카드를 클릭하면, **해당 크리에이터 전용 페이지**로 이동하여 큰 화면에서 대형 플립 시계와 전체 역사 그래프를 보실 수 있습니다.
+            카드를 클릭하면 전용 페이지로 이동합니다. 좌상단 체크로 여러 명을 선택한 뒤 헤더만 비교할 수 있습니다.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
-          <span className="font-mono text-[11px] font-bold tracking-mono uppercase text-emerald-600">
-            Realtime SWR Hourly Auto Scraping
-          </span>
+        <div className="flex flex-col items-end gap-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
+            <span className="font-mono text-[11px] font-bold tracking-mono uppercase text-emerald-600">
+              Realtime SWR Hourly Auto Scraping
+            </span>
+          </div>
+          {selectedForCompare.size > 0 && (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCompareHeaderView(true)}
+                className="px-4 py-2 rounded-full bg-black text-white text-[13px] font-bold hover:bg-neutral-900 transition-colors"
+              >
+                선택 헤더 보기 ({selectedForCompare.size})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedForCompare(new Set())}
+                className="px-4 py-2 rounded-full bg-white border border-hairline text-neutral-700 text-[13px] font-bold hover:bg-neutral-50 transition-colors"
+              >
+                선택 해제
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2163,15 +2297,33 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         {streamers.map((streamer) => {
           const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
           const borderSet = BORDER_COLOR_MAP[streamer.color] || "border-neutral-200";
+          const isSelected = selectedForCompare.has(streamer.channelId);
 
           return (
             <div
               key={streamer.channelId}
               onClick={() => handleSelectStreamer(streamer.channelId)}
-              className="w-full h-[400px] cursor-pointer hover:-translate-y-1.5 transition-transform duration-300"
+              className="w-full h-[400px] cursor-pointer hover:-translate-y-1.5 transition-transform duration-300 relative"
             >
+              <button
+                type="button"
+                aria-label={`${streamer.channelName} 비교 선택`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleCompareSelection(streamer.channelId);
+                }}
+                className={`absolute top-3 right-3 z-20 w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${
+                  isSelected
+                    ? "bg-black border-black text-white"
+                    : "bg-white/90 border-hairline text-transparent hover:text-neutral-300 hover:border-neutral-400"
+                }`}
+              >
+                <Check className={`w-4 h-4 ${isSelected ? "opacity-100" : "opacity-0"}`} />
+              </button>
               <div
-                className={`w-full h-full rounded-[24px] border ${borderSet} ${colorSet.bg} p-6 flex flex-col justify-between hover:shadow-lg transition-shadow`}
+                className={`w-full h-full rounded-[24px] border ${borderSet} ${colorSet.bg} p-6 flex flex-col justify-between hover:shadow-lg transition-shadow ${
+                  isSelected ? "ring-2 ring-black ring-offset-2" : ""
+                }`}
               >
                 {/* Top Image & Badge */}
                 <div className="space-y-4">
@@ -2208,17 +2360,27 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   </div>
                 </div>
 
-                {/* Front Footer info: Small Flip Clock */}
-                <div className="border-t border-hairline pt-4 flex items-center justify-between">
-                  <div>
-                    <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
-                      TOTAL HOURS
-                    </span>
-                    <FlipClock value={streamer.totalLiveHours} size="small" />
+                {/* Front Footer info: Small Flip Clocks */}
+                <div className="border-t border-hairline pt-4 flex items-end justify-between gap-3">
+                  <div className="flex gap-4 min-w-0">
+                    <div>
+                      <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
+                        TOTAL HOURS
+                      </span>
+                      <FlipClock value={streamer.totalLiveHours} size="small" />
+                    </div>
+                    {streamer.followerCount !== undefined && (
+                      <div>
+                        <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
+                          FOLLOWERS
+                        </span>
+                        <FlipClock value={streamer.followerCount} size="small" minDigits={5} />
+                      </div>
+                    )}
                   </div>
 
                   {/* Styled pill indicator */}
-                  <div className="h-[40px] w-[40px] rounded-full bg-black text-white hover:bg-neutral-900 flex items-center justify-center transition-colors self-end shadow-sm">
+                  <div className="h-[40px] w-[40px] rounded-full bg-black text-white hover:bg-neutral-900 flex items-center justify-center transition-colors self-end shadow-sm shrink-0">
                     <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
