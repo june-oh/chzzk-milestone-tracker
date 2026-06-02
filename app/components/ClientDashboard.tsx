@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { getGroupTag, getManualFollowerHistory } from "@/lib/streamerMeta";
+import {
+  getGroupTag,
+  getManualCumulativeHoursHistory,
+  getManualFollowerHistory,
+} from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
 
 interface StreamerHistory {
@@ -465,8 +469,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   // Generate monotonically increasing curve data starting from (firstLiveDate, 0)
   const getFullHistoryData = (streamer: Streamer, streamerMilestones: { milestone: number; date: string }[]) => {
     const points: { date: Date; hours: number; label: string; isMilestone: boolean }[] = [];
+    const manualHoursHistory = getManualCumulativeHoursHistory(streamer.channelId);
+    const hasManualHoursHistory = manualHoursHistory.length > 0;
 
-    if (streamer.firstLiveDate) {
+    if (!hasManualHoursHistory && streamer.firstLiveDate) {
       points.push({
         date: parseSafeDate(streamer.firstLiveDate),
         hours: 0,
@@ -484,7 +490,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     });
 
-    if (streamer.history && streamer.history.length > 0) {
+    if (hasManualHoursHistory) {
+      manualHoursHistory.forEach((point) => {
+        points.push({
+          date: parseHistoryDate(point.date),
+          hours: point.hours,
+          label: `${Math.round(point.hours).toLocaleString()}시간`,
+          isMilestone: false,
+        });
+      });
+    } else if (streamer.history && streamer.history.length > 0) {
       streamer.history.forEach((h) => {
         points.push({
           date: parseHistoryDate(h.date),
