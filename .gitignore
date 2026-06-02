@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# browser scrape intermediates (merged into softcon-history.json)
+/data/cdp-*.json
+/data/softcon-follower-history.json
