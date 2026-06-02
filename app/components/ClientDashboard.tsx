@@ -8,7 +8,6 @@ import {
   getGroupTag,
   getManualCumulativeHoursHistory,
   getManualFollowerHistory,
-  getManualWeeklyHoursHistory,
   getSoftconFollowerMilestoneDate,
   getSoftconHoursMilestoneDate,
   hasSoftconFollowerHistory,
@@ -531,6 +530,18 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     }
 
     if (hasManualHoursHistory) {
+      if (streamer.firstLiveDate) {
+        const debut = parseSafeDate(streamer.firstLiveDate);
+        const firstWeekly = parseHistoryDate(manualHoursHistory[0].date);
+        if (firstWeekly.getTime() > debut.getTime() && manualHoursHistory[0].hours > 0) {
+          points.push({
+            date: debut,
+            hours: 0,
+            label: "방송 시작일",
+            isMilestone: false,
+          });
+        }
+      }
       manualHoursHistory.forEach((point) => {
         points.push({
           date: parseHistoryDate(point.date),
@@ -910,7 +921,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       dataPeakHours
     );
     const usesSoftconHours = hasSoftconHoursHistory(streamer.channelId);
-    const usesWeeklySoftconHours = getManualWeeklyHoursHistory(streamer.channelId).length > 0;
     const baseChartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
@@ -919,13 +929,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
-    const chartData = usesSoftconHours
-      ? baseChartData
-      : createDailyInterpolatedData(
-          baseChartData,
-          "hours",
-          (value) => `${value.toLocaleString()}시간 (추정)`
-        );
+    const chartData = createDailyInterpolatedData(
+      baseChartData,
+      "hours",
+      (value) =>
+        usesSoftconHours
+          ? `${value.toLocaleString()}시간`
+          : `${value.toLocaleString()}시간 (추정)`
+    );
     const hourMarkerData = streamerMilestones
       .map((m) => {
         const fallbackTimestamp = parseSafeDate(m.date).getTime();
@@ -988,11 +999,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               }}
             />
             <Line
-              type={usesWeeklySoftconHours ? "stepAfter" : "linear"}
+              type="monotone"
               dataKey="hours"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={usesWeeklySoftconHours ? { r: 3, stroke: chartColorSet.rawHex, strokeWidth: 2, fill: "#ffffff" } : false}
+              dot={false}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
               isAnimationActive={false}
             />
@@ -1309,13 +1320,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       label: p.label,
       isMilestone: p.isMilestone,
     }));
-    const chartData = usesSoftconFollowers
-      ? baseChartData
-      : createDailyInterpolatedData(
-          baseChartData,
-          "followers",
-          (value) => `${formatFollowers(value)} (추정)`
-        );
+    const chartData = createDailyInterpolatedData(
+      baseChartData,
+      "followers",
+      (value) =>
+        usesSoftconFollowers ? formatFollowers(value) : `${formatFollowers(value)} (추정)`
+    );
     const followerMarkerData = followerMilestones
       .map((m) => {
         const fallbackTimestamp = parseSafeDate(m.date).getTime();
@@ -1378,7 +1388,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               }}
             />
             <Line
-              type="linear"
+              type="monotone"
               dataKey="followers"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
