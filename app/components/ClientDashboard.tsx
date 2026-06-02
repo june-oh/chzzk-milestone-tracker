@@ -2081,7 +2081,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   }
 
   if (compareHeaderView && selectedForCompare.size > 0) {
-    const selectedList = streamers.filter((s) => selectedForCompare.has(s.channelId));
+    const selectedList = streamers
+      .filter((s) => selectedForCompare.has(s.channelId))
+      .sort((a, b) => (b.followerCount ?? 0) - (a.followerCount ?? 0));
 
     return (
       <div className="max-w-[1280px] mx-auto px-6 py-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
