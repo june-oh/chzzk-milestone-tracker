@@ -568,15 +568,15 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center lg:items-end gap-6 shrink-0">
-            <div className="flex flex-col items-center lg:items-end gap-3">
+          <div className="flex flex-col items-center lg:items-end gap-8 shrink-0 w-full lg:w-auto">
+            <div className="flex flex-col items-center lg:items-end gap-3 w-full">
               <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                 TOTAL LIVE BROADCAST HOURS
               </span>
               <FlipClock value={streamer.totalLiveHours} size="large" />
             </div>
             {streamer.followerCount !== undefined && (
-              <div className="flex flex-col items-center lg:items-end gap-3">
+              <div className="flex flex-col items-center lg:items-end gap-3 w-full">
                 <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                   TOTAL FOLLOWERS
                 </span>
