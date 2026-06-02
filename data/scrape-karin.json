@@ -1,0 +1,421 @@
+{
+  "currentFollowers": 52874,
+  "followers": [
+    {
+      "date": "2024-06-09",
+      "followers": 0
+    },
+    {
+      "date": "2024-06-21",
+      "followers": 5440
+    },
+    {
+      "date": "2024-07-02",
+      "followers": 6092
+    },
+    {
+      "date": "2024-07-14",
+      "followers": 6963
+    },
+    {
+      "date": "2024-07-25",
+      "followers": 7616
+    },
+    {
+      "date": "2024-08-06",
+      "followers": 9139
+    },
+    {
+      "date": "2024-08-17",
+      "followers": 10009
+    },
+    {
+      "date": "2024-08-29",
+      "followers": 10662
+    },
+    {
+      "date": "2024-09-09",
+      "followers": 11097
+    },
+    {
+      "date": "2024-09-21",
+      "followers": 11967
+    },
+    {
+      "date": "2024-10-02",
+      "followers": 12185
+    },
+    {
+      "date": "2024-10-14",
+      "followers": 12403
+    },
+    {
+      "date": "2024-10-25",
+      "followers": 12620
+    },
+    {
+      "date": "2024-11-06",
+      "followers": 13273
+    },
+    {
+      "date": "2024-11-17",
+      "followers": 13490
+    },
+    {
+      "date": "2024-11-29",
+      "followers": 13926
+    },
+    {
+      "date": "2024-12-10",
+      "followers": 14361
+    },
+    {
+      "date": "2024-12-22",
+      "followers": 15014
+    },
+    {
+      "date": "2025-01-02",
+      "followers": 15884
+    },
+    {
+      "date": "2025-01-14",
+      "followers": 16319
+    },
+    {
+      "date": "2025-01-25",
+      "followers": 16972
+    },
+    {
+      "date": "2025-02-06",
+      "followers": 18930
+    },
+    {
+      "date": "2025-02-17",
+      "followers": 23064
+    },
+    {
+      "date": "2025-03-01",
+      "followers": 25893
+    },
+    {
+      "date": "2025-03-12",
+      "followers": 26763
+    },
+    {
+      "date": "2025-03-24",
+      "followers": 27416
+    },
+    {
+      "date": "2025-04-04",
+      "followers": 28504
+    },
+    {
+      "date": "2025-04-16",
+      "followers": 28939
+    },
+    {
+      "date": "2025-04-27",
+      "followers": 29810
+    },
+    {
+      "date": "2025-05-09",
+      "followers": 30462
+    },
+    {
+      "date": "2025-05-20",
+      "followers": 30898
+    },
+    {
+      "date": "2025-06-01",
+      "followers": 31768
+    },
+    {
+      "date": "2025-06-12",
+      "followers": 32421
+    },
+    {
+      "date": "2025-06-24",
+      "followers": 33291
+    },
+    {
+      "date": "2025-07-05",
+      "followers": 33944
+    },
+    {
+      "date": "2025-07-17",
+      "followers": 34161
+    },
+    {
+      "date": "2025-08-03",
+      "followers": 34814
+    },
+    {
+      "date": "2025-08-15",
+      "followers": 35685
+    },
+    {
+      "date": "2025-08-26",
+      "followers": 36337
+    },
+    {
+      "date": "2025-09-07",
+      "followers": 37208
+    },
+    {
+      "date": "2025-09-18",
+      "followers": 37860
+    },
+    {
+      "date": "2025-09-30",
+      "followers": 38513
+    },
+    {
+      "date": "2025-10-11",
+      "followers": 39166
+    },
+    {
+      "date": "2025-10-23",
+      "followers": 39601
+    },
+    {
+      "date": "2025-11-03",
+      "followers": 39819
+    },
+    {
+      "date": "2025-11-15",
+      "followers": 40254
+    },
+    {
+      "date": "2025-11-26",
+      "followers": 40471
+    },
+    {
+      "date": "2025-12-08",
+      "followers": 41124
+    },
+    {
+      "date": "2025-12-19",
+      "followers": 41559
+    },
+    {
+      "date": "2025-12-31",
+      "followers": 42212
+    },
+    {
+      "date": "2026-01-11",
+      "followers": 42647
+    },
+    {
+      "date": "2026-01-23",
+      "followers": 46782
+    },
+    {
+      "date": "2026-02-03",
+      "followers": 48957
+    },
+    {
+      "date": "2026-02-15",
+      "followers": 50045
+    },
+    {
+      "date": "2026-02-26",
+      "followers": 50698
+    },
+    {
+      "date": "2026-03-10",
+      "followers": 51133
+    },
+    {
+      "date": "2026-03-21",
+      "followers": 51351
+    },
+    {
+      "date": "2026-04-02",
+      "followers": 52004
+    },
+    {
+      "date": "2026-04-13",
+      "followers": 52221
+    },
+    {
+      "date": "2026-04-19",
+      "followers": 52874
+    }
+  ],
+  "weeklyHours": [
+    {
+      "date": "2024-01-01",
+      "weeklyHours": 8
+    },
+    {
+      "date": "2024-02-14",
+      "weeklyHours": 12
+    },
+    {
+      "date": "2024-03-29",
+      "weeklyHours": 6
+    },
+    {
+      "date": "2024-05-12",
+      "weeklyHours": 0
+    },
+    {
+      "date": "2024-06-26",
+      "weeklyHours": 12
+    },
+    {
+      "date": "2024-08-09",
+      "weeklyHours": 8
+    },
+    {
+      "date": "2024-09-22",
+      "weeklyHours": 11
+    },
+    {
+      "date": "2024-11-05",
+      "weeklyHours": 21
+    },
+    {
+      "date": "2024-12-19",
+      "weeklyHours": 10
+    },
+    {
+      "date": "2025-02-01",
+      "weeklyHours": 15
+    },
+    {
+      "date": "2025-03-17",
+      "weeklyHours": 14
+    },
+    {
+      "date": "2025-04-30",
+      "weeklyHours": 15
+    },
+    {
+      "date": "2025-06-13",
+      "weeklyHours": 17
+    },
+    {
+      "date": "2025-07-27",
+      "weeklyHours": 9
+    },
+    {
+      "date": "2025-09-10",
+      "weeklyHours": 0
+    },
+    {
+      "date": "2025-10-24",
+      "weeklyHours": 4
+    },
+    {
+      "date": "2025-12-07",
+      "weeklyHours": 24
+    },
+    {
+      "date": "2026-01-20",
+      "weeklyHours": 15
+    },
+    {
+      "date": "2026-03-05",
+      "weeklyHours": 2
+    },
+    {
+      "date": "2026-04-18",
+      "weeklyHours": 67
+    },
+    {
+      "date": "2026-06-01",
+      "weeklyHours": 10
+    }
+  ],
+  "cumulativeHours": [
+    {
+      "date": "2024-01-01",
+      "hours": 119
+    },
+    {
+      "date": "2024-02-14",
+      "hours": 296
+    },
+    {
+      "date": "2024-03-29",
+      "hours": 385
+    },
+    {
+      "date": "2024-05-12",
+      "hours": 385
+    },
+    {
+      "date": "2024-06-26",
+      "hours": 563
+    },
+    {
+      "date": "2024-08-09",
+      "hours": 681
+    },
+    {
+      "date": "2024-09-22",
+      "hours": 844
+    },
+    {
+      "date": "2024-11-05",
+      "hours": 1156
+    },
+    {
+      "date": "2024-12-19",
+      "hours": 1304
+    },
+    {
+      "date": "2025-02-01",
+      "hours": 1526
+    },
+    {
+      "date": "2025-03-17",
+      "hours": 1733
+    },
+    {
+      "date": "2025-04-30",
+      "hours": 1955
+    },
+    {
+      "date": "2025-06-13",
+      "hours": 2207
+    },
+    {
+      "date": "2025-07-27",
+      "hours": 2341
+    },
+    {
+      "date": "2025-09-10",
+      "hours": 2341
+    },
+    {
+      "date": "2025-10-24",
+      "hours": 2400
+    },
+    {
+      "date": "2025-12-07",
+      "hours": 2755
+    },
+    {
+      "date": "2026-01-20",
+      "hours": 2978
+    },
+    {
+      "date": "2026-03-05",
+      "hours": 3007
+    },
+    {
+      "date": "2026-04-18",
+      "hours": 4000
+    },
+    {
+      "date": "2026-06-01",
+      "hours": 4148
+    }
+  ],
+  "meta": {
+    "range": "24.01.02 ~ 26.06.02",
+    "barCount": 21
+  }
+}

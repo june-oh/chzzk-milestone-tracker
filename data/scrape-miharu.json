@@ -1,0 +1,273 @@
+{
+  "currentFollowers": 11597,
+  "followers": [
+    {
+      "date": "2025-12-21",
+      "followers": 0
+    },
+    {
+      "date": "2025-12-31",
+      "followers": 2999
+    },
+    {
+      "date": "2026-01-11",
+      "followers": 4249
+    },
+    {
+      "date": "2026-01-21",
+      "followers": 5449
+    },
+    {
+      "date": "2026-02-01",
+      "followers": 6448
+    },
+    {
+      "date": "2026-02-11",
+      "followers": 6548
+    },
+    {
+      "date": "2026-02-21",
+      "followers": 8348
+    },
+    {
+      "date": "2026-03-04",
+      "followers": 9448
+    },
+    {
+      "date": "2026-03-14",
+      "followers": 9947
+    },
+    {
+      "date": "2026-03-24",
+      "followers": 10597
+    },
+    {
+      "date": "2026-04-04",
+      "followers": 11147
+    },
+    {
+      "date": "2026-04-14",
+      "followers": 11347
+    },
+    {
+      "date": "2026-04-25",
+      "followers": 11547
+    },
+    {
+      "date": "2026-05-05",
+      "followers": 11597
+    },
+    {
+      "date": "2026-05-10",
+      "followers": 11597
+    }
+  ],
+  "weeklyHours": [
+    {
+      "date": "2024-01-01",
+      "weeklyHours": 58
+    },
+    {
+      "date": "2024-02-07",
+      "weeklyHours": 40
+    },
+    {
+      "date": "2024-03-15",
+      "weeklyHours": 52.9
+    },
+    {
+      "date": "2024-04-20",
+      "weeklyHours": 48.8
+    },
+    {
+      "date": "2024-05-27",
+      "weeklyHours": 80
+    },
+    {
+      "date": "2024-07-03",
+      "weeklyHours": 58.9
+    },
+    {
+      "date": "2024-08-09",
+      "weeklyHours": 56.7
+    },
+    {
+      "date": "2024-09-14",
+      "weeklyHours": 9.4
+    },
+    {
+      "date": "2024-10-21",
+      "weeklyHours": 6.6
+    },
+    {
+      "date": "2024-11-27",
+      "weeklyHours": 45
+    },
+    {
+      "date": "2025-01-03",
+      "weeklyHours": 77.8
+    },
+    {
+      "date": "2025-02-08",
+      "weeklyHours": 62
+    },
+    {
+      "date": "2025-03-17",
+      "weeklyHours": 76.5
+    },
+    {
+      "date": "2025-04-23",
+      "weeklyHours": 25.2
+    },
+    {
+      "date": "2025-05-30",
+      "weeklyHours": 56.7
+    },
+    {
+      "date": "2025-07-05",
+      "weeklyHours": 62.4
+    },
+    {
+      "date": "2025-08-11",
+      "weeklyHours": 46.6
+    },
+    {
+      "date": "2025-09-17",
+      "weeklyHours": 59.8
+    },
+    {
+      "date": "2025-10-24",
+      "weeklyHours": 32.4
+    },
+    {
+      "date": "2025-11-29",
+      "weeklyHours": 22
+    },
+    {
+      "date": "2026-01-05",
+      "weeklyHours": 30.2
+    },
+    {
+      "date": "2026-02-11",
+      "weeklyHours": 30.2
+    },
+    {
+      "date": "2026-03-20",
+      "weeklyHours": 6.6
+    },
+    {
+      "date": "2026-04-25",
+      "weeklyHours": 14.2
+    },
+    {
+      "date": "2026-06-01",
+      "weeklyHours": 46.6
+    }
+  ],
+  "cumulativeHours": [
+    {
+      "date": "2024-01-01",
+      "hours": 29
+    },
+    {
+      "date": "2024-02-07",
+      "hours": 48
+    },
+    {
+      "date": "2024-03-15",
+      "hours": 75
+    },
+    {
+      "date": "2024-04-20",
+      "hours": 99
+    },
+    {
+      "date": "2024-05-27",
+      "hours": 138
+    },
+    {
+      "date": "2024-07-03",
+      "hours": 168
+    },
+    {
+      "date": "2024-08-09",
+      "hours": 195
+    },
+    {
+      "date": "2024-09-14",
+      "hours": 200
+    },
+    {
+      "date": "2024-10-21",
+      "hours": 203
+    },
+    {
+      "date": "2024-11-27",
+      "hours": 225
+    },
+    {
+      "date": "2025-01-03",
+      "hours": 264
+    },
+    {
+      "date": "2025-02-08",
+      "hours": 294
+    },
+    {
+      "date": "2025-03-17",
+      "hours": 333
+    },
+    {
+      "date": "2025-04-23",
+      "hours": 345
+    },
+    {
+      "date": "2025-05-30",
+      "hours": 373
+    },
+    {
+      "date": "2025-07-05",
+      "hours": 404
+    },
+    {
+      "date": "2025-08-11",
+      "hours": 427
+    },
+    {
+      "date": "2025-09-17",
+      "hours": 456
+    },
+    {
+      "date": "2025-10-24",
+      "hours": 472
+    },
+    {
+      "date": "2025-11-29",
+      "hours": 483
+    },
+    {
+      "date": "2026-01-05",
+      "hours": 498
+    },
+    {
+      "date": "2026-02-11",
+      "hours": 513
+    },
+    {
+      "date": "2026-03-20",
+      "hours": 516
+    },
+    {
+      "date": "2026-04-25",
+      "hours": 523
+    },
+    {
+      "date": "2026-06-01",
+      "hours": 546
+    }
+  ],
+  "meta": {
+    "range": "24.01.02 ~ 26.06.02",
+    "barCount": 25
+  }
+}
