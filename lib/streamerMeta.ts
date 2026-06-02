@@ -12,8 +12,14 @@ export type ManualHoursPoint = {
   hours: number;
 };
 
+export type ManualWeeklyHoursPoint = {
+  date: string;
+  weeklyHours: number;
+};
+
 type SoftconChannelHistory = {
   followers?: ManualFollowerPoint[];
+  weeklyHours?: ManualWeeklyHoursPoint[];
   cumulativeHours?: ManualHoursPoint[];
   currentFollowers?: number;
 };
@@ -47,15 +53,66 @@ export function getManualFollowerHistory(channelId: string): ManualFollowerPoint
   return [];
 }
 
+/** Build monotonic cumulative hours from Softcon weekly bars, scaled to target total. */
+export function buildCumulativeFromWeekly(
+  weekly: ManualWeeklyHoursPoint[],
+  targetTotal?: number
+): ManualHoursPoint[] {
+  if (weekly.length === 0) return [];
+
+  let sum = 0;
+  const rawCumulative = weekly.map((week) => {
+    sum += week.weeklyHours;
+    return { date: week.date, hours: Math.round(sum) };
+  });
+
+  const target = targetTotal ?? rawCumulative[rawCumulative.length - 1]?.hours ?? 0;
+  const rawTotal = rawCumulative[rawCumulative.length - 1]?.hours ?? 0;
+  if (target <= 0 || rawTotal <= 0 || Math.abs(rawTotal - target) <= 5) {
+    if (rawCumulative.length > 0) {
+      rawCumulative[rawCumulative.length - 1] = {
+        ...rawCumulative[rawCumulative.length - 1],
+        hours: target || rawTotal,
+      };
+    }
+    return rawCumulative;
+  }
+
+  const scale = target / rawTotal;
+  let cumulative = 0;
+  return weekly.map((week, index) => {
+    cumulative += week.weeklyHours * scale;
+    const hours = index === weekly.length - 1 ? target : Math.round(cumulative);
+    return { date: week.date, hours };
+  });
+}
+
+export function getManualWeeklyHoursHistory(channelId: string): ManualWeeklyHoursPoint[] {
+  const fromJson = getSoftconEntry(channelId)?.weeklyHours;
+  if (fromJson && fromJson.length > 0) return fromJson;
+  return [];
+}
+
 /** Cumulative broadcast hours built from Softcon weekly bars. */
-export function getManualCumulativeHoursHistory(channelId: string): ManualHoursPoint[] {
-  const fromJson = getSoftconEntry(channelId)?.cumulativeHours;
+export function getManualCumulativeHoursHistory(
+  channelId: string,
+  targetTotal?: number
+): ManualHoursPoint[] {
+  const entry = getSoftconEntry(channelId);
+  const weekly = entry?.weeklyHours;
+  if (weekly && weekly.length > 0) {
+    return buildCumulativeFromWeekly(weekly, targetTotal);
+  }
+  const fromJson = entry?.cumulativeHours;
   if (fromJson && fromJson.length > 0) return fromJson;
   return [];
 }
 
 export function hasSoftconHoursHistory(channelId: string): boolean {
-  return getManualCumulativeHoursHistory(channelId).length > 0;
+  return (
+    getManualWeeklyHoursHistory(channelId).length > 0 ||
+    getManualCumulativeHoursHistory(channelId).length > 0
+  );
 }
 
 export function hasSoftconFollowerHistory(channelId: string): boolean {
@@ -85,7 +142,11 @@ function projectSeriesCrossing(
 }
 
 export function getSoftconHoursMilestoneDate(channelId: string, milestoneHours: number): string | null {
-  const history = getManualCumulativeHoursHistory(channelId);
+  const entry = getSoftconEntry(channelId);
+  const history = getManualCumulativeHoursHistory(
+    channelId,
+    entry?.cumulativeHours?.[entry.cumulativeHours.length - 1]?.hours
+  );
   if (history.length === 0) return null;
   return projectSeriesCrossing(
     history.map((point) => ({ date: point.date, value: point.hours })),
@@ -119,7 +180,10 @@ type EnrichableStreamer = {
 export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
   const groupTag = getGroupTag(streamer.channelId);
   const manualFollowers = getManualFollowerHistory(streamer.channelId);
-  const manualHours = getManualCumulativeHoursHistory(streamer.channelId);
+  const manualHours = getManualCumulativeHoursHistory(
+    streamer.channelId,
+    streamer.totalLiveHours
+  );
   const historyByDate = new Map<string, StreamerHistoryRow>();
 
   (streamer.history || []).forEach((row) => {

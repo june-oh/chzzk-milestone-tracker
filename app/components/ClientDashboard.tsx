@@ -8,6 +8,7 @@ import {
   getGroupTag,
   getManualCumulativeHoursHistory,
   getManualFollowerHistory,
+  getManualWeeklyHoursHistory,
   getSoftconFollowerMilestoneDate,
   getSoftconHoursMilestoneDate,
   hasSoftconFollowerHistory,
@@ -503,7 +504,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   // Generate monotonically increasing curve data starting from (firstLiveDate, 0)
   const getFullHistoryData = (streamer: Streamer, streamerMilestones: { milestone: number; date: string }[]) => {
     const points: { date: Date; hours: number; label: string; isMilestone: boolean }[] = [];
-    const manualHoursHistory = getManualCumulativeHoursHistory(streamer.channelId);
+    const manualHoursHistory = getManualCumulativeHoursHistory(
+      streamer.channelId,
+      streamer.totalLiveHours
+    );
     const hasManualHoursHistory = manualHoursHistory.length > 0;
 
     if (!hasManualHoursHistory && streamer.firstLiveDate) {
@@ -515,14 +519,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
-    streamerMilestones.forEach((m) => {
-      points.push({
-        date: parseSafeDate(m.date),
-        hours: m.milestone,
-        label: `${m.milestone.toLocaleString()}시간 돌파`,
-        isMilestone: true,
+    if (!hasManualHoursHistory) {
+      streamerMilestones.forEach((m) => {
+        points.push({
+          date: parseSafeDate(m.date),
+          hours: m.milestone,
+          label: `${m.milestone.toLocaleString()}시간 돌파`,
+          isMilestone: true,
+        });
       });
-    });
+    }
 
     if (hasManualHoursHistory) {
       manualHoursHistory.forEach((point) => {
@@ -904,6 +910,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       dataPeakHours
     );
     const usesSoftconHours = hasSoftconHoursHistory(streamer.channelId);
+    const usesWeeklySoftconHours = getManualWeeklyHoursHistory(streamer.channelId).length > 0;
     const baseChartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
@@ -981,11 +988,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               }}
             />
             <Line
-              type="linear"
+              type={usesWeeklySoftconHours ? "stepAfter" : "linear"}
               dataKey="hours"
               stroke={chartColorSet.rawHex}
               strokeWidth={4}
-              dot={false}
+              dot={usesWeeklySoftconHours ? { r: 3, stroke: chartColorSet.rawHex, strokeWidth: 2, fill: "#ffffff" } : false}
               activeDot={{ r: 6, stroke: chartColorSet.rawHex, strokeWidth: 3, fill: "#ffffff" }}
               isAnimationActive={false}
             />
