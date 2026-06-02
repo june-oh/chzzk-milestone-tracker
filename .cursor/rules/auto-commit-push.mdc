@@ -1,0 +1,32 @@
+---
+description: Auto commit and push to origin after completing work (no confirmation needed)
+alwaysApply: true
+---
+
+# Auto commit & push
+
+After completing a task that changes the repo, **commit and push without asking**.
+
+## When to commit
+
+- Feature fixes, data updates (`data/softcon-history.json`), scripts, UI changes — any intentional project change
+- Skip commit only when: user explicitly says not to, question-only/review-only with no file edits, or changes contain secrets (`.env`, credentials)
+
+## Workflow
+
+1. Run `npm run build` when app code changed (skip for data-only JSON updates if build already verified)
+2. `git status` + `git diff` — review what will ship; never commit secrets
+3. Stage relevant files only
+4. Commit with a concise message (why, not a file list). Use a HEREDOC-style message on Windows PowerShell here-strings if needed
+5. `git push -u origin HEAD` (or `git push` if tracking exists)
+6. Tell the user the commit hash briefly; mention if push failed
+
+## Git safety (still required)
+
+- Never `git config` changes, force-push to main, or `--no-verify` unless user asks
+- Never amend unless user asks and amend rules are met
+- Do not commit `.env` or credential files
+
+## Deploy
+
+This repo deploys via Vercel on push to `main`. Pushing is part of finishing the task.
