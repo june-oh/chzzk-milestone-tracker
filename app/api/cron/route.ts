@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import { toGlassSurfacePalette } from "@/lib/cardPaletteUtils";
 import { extractPaletteFromImageUrl } from "@/lib/imagePalette";
 import { CRON_STREAMERS } from "@/lib/streamersConfig";
 
@@ -172,6 +173,11 @@ export async function GET(req: NextRequest) {
           cardBorder = palette.cardBorder;
           accentHex = palette.accentHex;
         }
+      } else if (cardBg && cardBorder && !cardBg.startsWith("rgba(")) {
+        const glass = toGlassSurfacePalette({ cardBg, cardBorder });
+        cardBg = glass.cardBg;
+        cardBorder = glass.cardBorder;
+        accentHex = glass.accentHex;
       }
 
       const updatedStreamerState = {

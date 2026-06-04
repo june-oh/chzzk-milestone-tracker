@@ -15,6 +15,7 @@ import {
   hasSoftconHoursHistory,
 } from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
+import { toGlassSurfacePalette, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
 import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
@@ -94,19 +95,20 @@ const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawH
 type CardSortField = "hours" | "followers" | null;
 type CardSortDir = "asc" | "desc";
 
-type CardSurfacePalette = {
-  cardBg: string;
-  cardBorder: string;
-};
+type CardSurfacePalette = GlassPalette;
 
 function getCardSurfacePalette(
   streamer: Streamer,
   extractedPalettes: Record<string, CardSurfacePalette>
 ): CardSurfacePalette | null {
   if (streamer.cardBg && streamer.cardBorder) {
-    return { cardBg: streamer.cardBg, cardBorder: streamer.cardBorder };
+    return toGlassSurfacePalette({
+      cardBg: streamer.cardBg,
+      cardBorder: streamer.cardBorder,
+    });
   }
-  return extractedPalettes[streamer.channelId] ?? null;
+  const extracted = extractedPalettes[streamer.channelId];
+  return extracted ? toGlassSurfacePalette(extracted) : null;
 }
 
 function StreamerChannelImage({
@@ -128,15 +130,17 @@ function StreamerChannelImage({
         : "object-cover object-[center_22%]";
 
   return (
-    <Image
-      src={src}
-      alt={alt}
-      fill
-      sizes={variant === "card" ? "(max-width: 768px) 45vw, 22vw" : variant === "avatar" ? "56px" : "84px"}
-      quality={90}
-      className={`${objectClass} ${className}`}
-      unoptimized={!src.includes("pstatic.net")}
-    />
+    <div className="relative w-full h-full">
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes={variant === "card" ? "(max-width: 768px) 45vw, 22vw" : variant === "avatar" ? "56px" : "84px"}
+        quality={90}
+        className={`${objectClass} ${className}`}
+        unoptimized={!src.includes("pstatic.net")}
+      />
+    </div>
   );
 }
 
@@ -465,30 +469,39 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
       targets.forEach((streamer) => fetchedPaletteIds.current.add(streamer.channelId));
 
-      const results = await Promise.all(
-        targets.map(async (streamer) => {
-          try {
-            const res = await fetch(`/api/image-palette?url=${encodeURIComponent(streamer.channelImageUrl)}`);
-            if (!res.ok) {
+      const batchSize = 4;
+      const results: Array<(CardSurfacePalette & { channelId: string }) | null> = [];
+
+      for (let i = 0; i < targets.length; i += batchSize) {
+        const batch = targets.slice(i, i + batchSize);
+        const batchResults = await Promise.all(
+          batch.map(async (streamer) => {
+            try {
+              const res = await fetch(`/api/image-palette?url=${encodeURIComponent(streamer.channelImageUrl)}`);
+              if (!res.ok) {
+                fetchedPaletteIds.current.delete(streamer.channelId);
+                return null;
+              }
+              const data = await res.json();
+              if (!data.success || !data.cardBg || !data.cardBorder) {
+                fetchedPaletteIds.current.delete(streamer.channelId);
+                return null;
+              }
+              return {
+                channelId: streamer.channelId,
+                cardBg: data.cardBg as string,
+                cardBorder: data.cardBorder as string,
+                accentHex: data.accentHex as string | undefined,
+                accentRgb: data.accentRgb as string | undefined,
+              };
+            } catch {
               fetchedPaletteIds.current.delete(streamer.channelId);
               return null;
             }
-            const data = await res.json();
-            if (!data.success || !data.cardBg || !data.cardBorder) {
-              fetchedPaletteIds.current.delete(streamer.channelId);
-              return null;
-            }
-            return {
-              channelId: streamer.channelId,
-              cardBg: data.cardBg as string,
-              cardBorder: data.cardBorder as string,
-            };
-          } catch {
-            fetchedPaletteIds.current.delete(streamer.channelId);
-            return null;
-          }
-        })
-      );
+          })
+        );
+        results.push(...batchResults);
+      }
 
       if (cancelled) return;
 
@@ -498,7 +511,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       setExtractedPalettes((prev) => {
         const next = { ...prev };
         nextEntries.forEach((entry) => {
-          next[entry.channelId] = { cardBg: entry.cardBg, cardBorder: entry.cardBorder };
+          next[entry.channelId] = {
+            cardBg: entry.cardBg,
+            cardBorder: entry.cardBorder,
+            accentHex: entry.accentHex,
+            accentRgb: entry.accentRgb,
+          };
         });
         return next;
       });
@@ -1965,59 +1983,40 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     entries: T[],
     title: string,
     icon: ReactNode,
-    getLeaderDetail: (entry: T) => ReactNode,
-    getRestDetail: (entry: T) => ReactNode
+    getDetail: (entry: T) => ReactNode
   ) => {
     if (entries.length === 0) return null;
 
-    const [leader, ...rest] = entries;
-
     return (
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">{title}</span>
-          <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400">TOP 5</span>
+      <div className="rounded-[20px] border border-hairline bg-white/80 backdrop-blur-sm overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-hairline bg-neutral-50/70">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-neutral-400 shrink-0">{icon}</span>
+            <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-500 uppercase truncate">
+              {title}
+            </span>
+          </div>
+          <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 shrink-0">TOP 5</span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => handleSelectStreamer(leader.streamer.channelId)}
-          className="group w-full rounded-[24px] border-2 border-black bg-white px-5 py-5 text-left shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all"
-        >
-          <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <div className="w-16 h-16 rounded-full overflow-hidden border-[3px] border-black bg-neutral-100 ring-4 ring-black/5">
-                <StreamerChannelImage
-                  src={leader.streamer.channelImageUrl}
-                  alt={leader.streamer.channelName}
-                  variant="avatar"
-                />
-              </div>
-              <span className="absolute -top-1.5 -left-1.5 bg-black text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-full">
-                #1
+        <div className="divide-y divide-hairline-soft">
+          {entries.map((entry, index) => (
+            <button
+              key={entry.streamer.channelId}
+              type="button"
+              onClick={() => handleSelectStreamer(entry.streamer.channelId)}
+              className={`group w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-neutral-50/90 ${
+                index === 0 ? "bg-neutral-50/60" : "bg-white/40"
+              }`}
+            >
+              <span
+                className={`font-mono text-[11px] font-bold w-7 shrink-0 ${
+                  index === 0 ? "text-black" : "text-neutral-400"
+                }`}
+              >
+                #{index + 1}
               </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">Closest</div>
-              <div className="font-sans text-[18px] font-extrabold text-black truncate leading-tight">
-                {leader.streamer.channelName}
-              </div>
-              <div className="mt-1.5 text-[13px] text-neutral-600 font-medium leading-snug">{getLeaderDetail(leader)}</div>
-            </div>
-            <div className="shrink-0 text-neutral-400 group-hover:text-black transition-colors">{icon}</div>
-          </div>
-        </button>
-
-        {rest.map((entry, index) => (
-          <button
-            key={entry.streamer.channelId}
-            type="button"
-            onClick={() => handleSelectStreamer(entry.streamer.channelId)}
-            className="group w-full rounded-[16px] border border-hairline-soft bg-neutral-50 px-3 py-2.5 text-left hover:bg-white hover:border-hairline transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-[11px] font-bold text-neutral-400 w-6 shrink-0">#{index + 2}</span>
-              <div className="w-9 h-9 rounded-full overflow-hidden border border-white shrink-0 bg-neutral-100">
+              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-hairline shrink-0 bg-neutral-100">
                 <StreamerChannelImage
                   src={entry.streamer.channelImageUrl}
                   alt={entry.streamer.channelName}
@@ -2025,12 +2024,23 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-sans text-[14px] font-bold text-black truncate">{entry.streamer.channelName}</div>
-                <div className="text-[11px] text-neutral-500 font-medium">{getRestDetail(entry)}</div>
+                <div
+                  className={`font-sans truncate leading-tight ${
+                    index === 0 ? "text-[15px] font-extrabold text-black" : "text-[13px] font-bold text-neutral-800"
+                  }`}
+                >
+                  {entry.streamer.channelName}
+                </div>
+                <div className="text-[11px] text-neutral-500 font-medium leading-snug mt-0.5">{getDetail(entry)}</div>
               </div>
-            </div>
-          </button>
-        ))}
+              {index === 0 && (
+                <span className="shrink-0 font-mono text-[9px] font-bold tracking-mono text-black/70 uppercase px-2 py-0.5 rounded-full border border-black/10 bg-white/70">
+                  Closest
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
     );
   };
@@ -2356,26 +2366,24 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               {renderChaserColumn(
                 topFollowerChasers,
                 "Follower Closest",
-                <Users className="w-6 h-6" />,
+                <Users className="w-4 h-4" />,
                 (entry) => (
                   <>
-                    팔로워 {formatFollowers(entry.stats.nextMilestone)}까지{" "}
+                    {entry.stats.nextMilestone.toLocaleString()}명까지{" "}
                     <strong className="text-black">{entry.stats.followersRemaining.toLocaleString()}명</strong> 남음
                   </>
-                ),
-                (entry) => <>{entry.stats.followersRemaining.toLocaleString()}명 남음</>
+                )
               )}
               {renderChaserColumn(
                 topHoursChasers,
                 "Hours Closest",
-                <Trophy className="w-6 h-6" />,
+                <Trophy className="w-4 h-4" />,
                 (entry) => (
                   <>
                     {entry.stats.nextMilestone.toLocaleString()}시간까지{" "}
                     <strong className="text-black">{entry.stats.hoursRemaining.toLocaleString()}시간</strong> 남음
                   </>
-                ),
-                (entry) => <>{entry.stats.hoursRemaining.toLocaleString()}시간 남음</>
+                )
               )}
             </div>
 
@@ -2506,13 +2514,18 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             >
               <div
                 className={`relative w-full h-full rounded-[20px] sm:rounded-[24px] border p-3 sm:p-4 lg:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-lg transition-shadow overflow-hidden ${
-                  cardPalette ? "" : `${borderSet} ${colorSet.bg}`
+                  cardPalette
+                    ? "backdrop-blur-md backdrop-saturate-150 bg-white/30"
+                    : `${borderSet} ${colorSet.bg}`
                 } ${isSelected ? "ring-2 ring-black ring-offset-2" : ""}`}
                 style={
                   cardPalette
                     ? {
                         backgroundColor: cardPalette.cardBg,
                         borderColor: cardPalette.cardBorder,
+                        boxShadow: cardPalette.accentRgb
+                          ? `0 8px 28px rgba(${cardPalette.accentRgb}, 0.12)`
+                          : "0 8px 28px rgba(0, 0, 0, 0.06)",
                       }
                     : undefined
                 }

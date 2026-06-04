@@ -2,7 +2,6 @@ import { kv } from "@vercel/kv";
 import ClientDashboard from "./components/ClientDashboard";
 import { enrichStreamer } from "@/lib/streamerMeta";
 import { fetchLiveStreamers, mergeStreamerWithLiveScrape } from "@/lib/chzzkScrape";
-import { ensureStreamerPalettes } from "@/lib/imagePalette";
 import { FALLBACK_STREAMERS } from "@/lib/streamersConfig";
 
 export const revalidate = 0; // Disable server caching to ensure users always see freshly scraped hours
@@ -104,7 +103,6 @@ export default async function Home() {
       );
     }
 
-    streamers = await ensureStreamerPalettes(streamers);
   } catch (err) {
     console.warn("Vercel KV not connected or failed. Scraping Chzzk API directly:", err);
     const liveStreamers = await fetchLiveStreamers(FALLBACK_STREAMERS);
@@ -119,7 +117,6 @@ export default async function Home() {
         ],
       })
     );
-    streamers = await ensureStreamerPalettes(streamers);
     milestones = [
       { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
       { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { enrichStreamer } from "@/lib/streamerMeta";
 import { fetchLiveStreamers, mergeStreamerWithLiveScrape } from "@/lib/chzzkScrape";
-import { ensureStreamerPalettes } from "@/lib/imagePalette";
 import { FALLBACK_STREAMERS, STREAMER_IDS } from "@/lib/streamersConfig";
 
 export async function GET(req: NextRequest) {
@@ -156,8 +155,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    streamers = await ensureStreamerPalettes(streamers);
-
     return NextResponse.json({
       success: true,
       streamers,
@@ -165,8 +162,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     const liveStreamers = await fetchLiveStreamers(FALLBACK_STREAMERS);
-    const streamers = await ensureStreamerPalettes(
-      liveStreamers.map((f) =>
+    const streamers = liveStreamers.map((f) =>
         enrichStreamer({
           ...f,
           history: [
@@ -176,7 +172,6 @@ export async function GET(req: NextRequest) {
           ],
           lastUpdated: new Date().toISOString(),
         })
-      )
     );
     return NextResponse.json({
       success: true,
