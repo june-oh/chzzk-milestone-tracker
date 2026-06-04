@@ -57,7 +57,7 @@ export default async function Home() {
         </div>
       </header>
 
-      <main id="dashboard" className="flex-1 bg-[#f4f6fb]">
+      <main id="dashboard" className="flex-1 bg-[#f4f6f8]">
         <ClientDashboard
           initialStreamers={streamers as ComponentProps<typeof ClientDashboard>["initialStreamers"]}
           initialMilestones={milestones as ComponentProps<typeof ClientDashboard>["initialMilestones"]}

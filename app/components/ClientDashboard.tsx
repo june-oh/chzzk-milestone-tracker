@@ -16,7 +16,7 @@ import {
   hasSoftconHoursHistory,
 } from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
-import { toGlassSurfacePalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
+import { resolveCardPalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
 import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
@@ -101,15 +101,14 @@ type CardSurfacePalette = GlassPalette;
 function getCardSurfacePalette(
   streamer: Streamer,
   extractedPalettes: Record<string, CardSurfacePalette>
-): CardSurfacePalette | null {
-  if (streamer.cardBg && streamer.cardBorder) {
-    return toGlassSurfacePalette({
-      cardBg: streamer.cardBg,
-      cardBorder: streamer.cardBorder,
-    });
-  }
-  const extracted = extractedPalettes[streamer.channelId];
-  return extracted ? toGlassSurfacePalette(extracted) : null;
+): CardSurfacePalette {
+  const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
+  return resolveCardPalette({
+    cardBg: streamer.cardBg,
+    cardBorder: streamer.cardBorder,
+    extracted: extractedPalettes[streamer.channelId] ?? null,
+    fallbackHex: colorSet.rawHex,
+  });
 }
 
 function StreamerChannelImage({
@@ -219,7 +218,7 @@ const GROUP_TAG_STYLES: Record<GroupTag, string> = {
   AESTHER: "bg-[#ffebeb] text-[#d61c4e] border-[#ffd4d4]",
   ACAXIA: "bg-[#f5f0ff] text-[#7c3aed] border-[#ddd6fe]",
   Listella: "bg-[#fff1f2] text-[#e11d48] border-[#fecdd3]",
-  Stelive: "bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe]",
+  StelLive: "bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe]",
   OverTheWall: "bg-[#ecfeff] text-[#0e7490] border-[#a5f3fc]",
 };
 
@@ -2436,7 +2435,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </div>
           </div>
 
-      <section className="relative rounded-[28px] sm:rounded-[36px] border border-white/70 card-board-backdrop p-4 sm:p-6 lg:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+      <section className="relative z-[1] rounded-[28px] sm:rounded-[36px] border border-slate-200/80 card-board-backdrop p-4 sm:p-6 lg:p-8 shadow-sm">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <span className="font-mono text-[12px] font-bold tracking-mono text-neutral-400 uppercase">
@@ -2557,8 +2556,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       {/* Streamer profile card grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {sortedStreamers.map((streamer) => {
-          const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
-          const borderSet = BORDER_COLOR_MAP[streamer.color] || "border-neutral-200";
           const cardPalette = getCardSurfacePalette(streamer, extractedPalettes);
           const isSelected = selectedForCompare.has(streamer.channelId);
 
@@ -2569,10 +2566,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               className="w-full min-w-0 cursor-pointer hover:-translate-y-1.5 transition-transform duration-300"
             >
               <div
-                className={`relative w-full h-full rounded-[20px] sm:rounded-[24px] border p-3 sm:p-4 lg:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-xl transition-all duration-300 overflow-hidden ${
-                  cardPalette ? "glass-card-surface border-white/70" : `${borderSet} ${colorSet.bg}`
-                } ${isSelected ? "ring-2 ring-black ring-offset-2" : ""}`}
-                style={cardPalette ? getGlassCardStyle(cardPalette) : undefined}
+                className={`relative w-full h-full rounded-[20px] sm:rounded-[24px] border p-3 sm:p-4 lg:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-xl transition-all duration-300 overflow-hidden glass-card-surface border-white/70 ${
+                  isSelected ? "ring-2 ring-black ring-offset-2" : ""
+                }`}
+                style={getGlassCardStyle(cardPalette)}
               >
                 <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-br from-white/45 via-transparent to-white/10" />
                 <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-11 sm:right-12 z-10">

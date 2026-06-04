@@ -17,6 +17,30 @@ function rgbToHex(r: number, g: number, b: number) {
   return `#${[r, g, b].map((value) => clamp(Math.round(value), 0, 255).toString(16).padStart(2, "0")).join("")}`;
 }
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const normalized = hex.replace("#", "").trim();
+  if (normalized.length === 3) {
+    const r = parseInt(normalized[0] + normalized[0], 16);
+    const g = parseInt(normalized[1] + normalized[1], 16);
+    const b = parseInt(normalized[2] + normalized[2], 16);
+    return { r, g, b };
+  }
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return { r, g, b };
+}
+
+export function paletteFromHex(hex: string): CardSurfacePalette {
+  const { r, g, b } = hexToRgb(hex);
+  return {
+    cardBg: `rgba(${r}, ${g}, ${b}, 0.2)`,
+    cardBorder: "rgba(255, 255, 255, 0.62)",
+    accentHex: rgbToHex(r, g, b),
+    accentRgb: `${r}, ${g}, ${b}`,
+  };
+}
+
 /** Upgrade legacy opaque rgb() values to glass rgba for display (no image fetch). */
 export function toGlassSurfacePalette(palette: Pick<CardSurfacePalette, "cardBg" | "cardBorder">): CardSurfacePalette {
   if (palette.cardBg.startsWith("rgba(")) {
@@ -31,31 +55,41 @@ export function toGlassSurfacePalette(palette: Pick<CardSurfacePalette, "cardBg"
 
   const match = palette.cardBg.match(RGB_PATTERN);
   if (!match) {
-    return {
-      cardBg: "rgba(255, 255, 255, 0.55)",
-      cardBorder: "rgba(255, 255, 255, 0.65)",
-      accentHex: "#787878",
-      accentRgb: "140, 120, 200",
-    };
+    return paletteFromHex("#94a3b8");
   }
 
   const r = Number(match[1]);
   const g = Number(match[2]);
   const b = Number(match[3]);
   return {
-    cardBg: `rgba(${r}, ${g}, ${b}, 0.22)`,
-    cardBorder: `rgba(255, 255, 255, 0.55)`,
+    cardBg: `rgba(${r}, ${g}, ${b}, 0.2)`,
+    cardBorder: "rgba(255, 255, 255, 0.62)",
     accentHex: rgbToHex(Math.round(r * 0.82), Math.round(g * 0.82), Math.round(b * 0.82)),
     accentRgb: `${r}, ${g}, ${b}`,
   };
 }
 
+export function resolveCardPalette(options: {
+  cardBg?: string;
+  cardBorder?: string;
+  extracted?: CardSurfacePalette | null;
+  fallbackHex?: string;
+}): CardSurfacePalette {
+  if (options.cardBg && options.cardBorder) {
+    return toGlassSurfacePalette({ cardBg: options.cardBg, cardBorder: options.cardBorder });
+  }
+  if (options.extracted?.cardBg && options.extracted?.cardBorder) {
+    return toGlassSurfacePalette(options.extracted);
+  }
+  return paletteFromHex(options.fallbackHex ?? "#94a3b8");
+}
+
 /** CSS styles for frosted-glass profile cards (needs colorful backdrop behind). */
 export function getGlassCardStyle(palette: CardSurfacePalette): CSSProperties {
-  const rgb = palette.accentRgb ?? "140, 120, 200";
+  const rgb = palette.accentRgb ?? "148, 163, 184";
   return {
-    background: `linear-gradient(145deg, rgba(${rgb}, 0.34) 0%, rgba(255,255,255,0.55) 38%, rgba(255,255,255, 0.28) 100%)`,
+    background: `linear-gradient(150deg, rgba(${rgb}, 0.26) 0%, rgba(255,255,255,0.62) 42%, rgba(255,255,255,0.34) 100%)`,
     borderColor: palette.cardBorder,
-    boxShadow: `0 12px 40px rgba(${rgb}, 0.18), inset 0 1px 1px rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25)`,
+    boxShadow: `0 10px 32px rgba(${rgb}, 0.12), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -1px 0 rgba(255,255,255,0.35)`,
   };
 }

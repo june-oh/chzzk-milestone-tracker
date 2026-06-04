@@ -8,7 +8,7 @@ export type GroupTag =
   | "Honeyz"
   | "ACAXIA"
   | "Listella"
-  | "Stelive"
+  | "StelLive"
   | "OverTheWall";
 
 export const GROUP_FILTER_ORDER: GroupTag[] = [
@@ -19,7 +19,7 @@ export const GROUP_FILTER_ORDER: GroupTag[] = [
   "Honeyz",
   "ACAXIA",
   "Listella",
-  "Stelive",
+  "StelLive",
   "OverTheWall",
 ];
 
@@ -75,16 +75,16 @@ const GROUP_TAGS: Record<string, GroupTag> = {
   "e87999abca4fd0c3214e05ef414ce951": "Listella", // 야토
   "f3b204dd3fd6925835ca1848cd4b6d3c": "Listella", // 오단밍
   "9351fb8417f73405c84e0846409e3263": "Listella", // 햄쿠비
-  "4325b1d5bbc321fad3042306646e2e50": "Stelive", // 아카네 리제
-  "64d76089fba26b180d9c9e48a32600d9": "Stelive", // 텐코 시부키
-  "a6c4ddb09cdb160478996007bff35296": "Stelive", // 아라하시 타비
-  "4515b179f86b67b4981e16190817c580": "Stelive", // 네네코 마시로
-  "b044e3a3b9259246bc92e863e7d3f3b8": "Stelive", // 시라유키 히나
-  "45e71a76e949e16a34764deb962f9d9f": "Stelive", // 아야츠노 유니
-  "36ddb9bb4f17593b60f1b63cec86611d": "Stelive", // 사키하네 후야
-  "516937b5f85cbf2249ce31b0ad046b0f": "Stelive", // 아오쿠모 린
-  "4d812b586ff63f8a2946e64fa860bbf5": "Stelive", // 하나코 나나
-  "8fd39bb8de623317de90654718638b10": "Stelive", // 유즈하 리코
+  "4325b1d5bbc321fad3042306646e2e50": "StelLive", // 아카네 리제
+  "64d76089fba26b180d9c9e48a32600d9": "StelLive", // 텐코 시부키
+  "a6c4ddb09cdb160478996007bff35296": "StelLive", // 아라하시 타비
+  "4515b179f86b67b4981e16190817c580": "StelLive", // 네네코 마시로
+  "b044e3a3b9259246bc92e863e7d3f3b8": "StelLive", // 시라유키 히나
+  "45e71a76e949e16a34764deb962f9d9f": "StelLive", // 아야츠노 유니
+  "36ddb9bb4f17593b60f1b63cec86611d": "StelLive", // 사키하네 후야
+  "516937b5f85cbf2249ce31b0ad046b0f": "StelLive", // 아오쿠모 린
+  "4d812b586ff63f8a2946e64fa860bbf5": "StelLive", // 하나코 나나
+  "8fd39bb8de623317de90654718638b10": "StelLive", // 유즈하 리코
   "a54372e8197f6d241a43a318279860d6": "OverTheWall", // 쿠레나이 나츠키
   "0a2020b09b8cc7f2285b7ae5de2ce4d3": "OverTheWall", // 테리 눈나
   "a048127622edd6c3ee8e477471a1d823": "OverTheWall", // 빙하유
