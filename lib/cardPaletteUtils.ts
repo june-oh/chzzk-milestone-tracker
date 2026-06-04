@@ -88,8 +88,13 @@ export function resolveCardPalette(options: {
   cardBg?: string;
   cardBorder?: string;
   extracted?: CardSurfacePalette | null;
+  namuwiki?: CardSurfacePalette | null;
   fallbackHex?: string;
 }): CardSurfacePalette {
+  if (options.namuwiki?.cardBg && options.namuwiki?.cardBorder) {
+    return options.namuwiki;
+  }
+
   if (options.extracted?.cardBg && options.extracted?.cardBorder) {
     return toGlassSurfacePalette(options.extracted);
   }

@@ -17,6 +17,7 @@ import {
 } from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
 import { resolveCardPalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
+import { getNamuwikiThemePalette } from "@/lib/namuwikiThemeColors";
 import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
@@ -104,6 +105,7 @@ function getCardSurfacePalette(
 ): CardSurfacePalette {
   const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
   return resolveCardPalette({
+    namuwiki: getNamuwikiThemePalette(streamer.channelId),
     cardBg: streamer.cardBg,
     cardBorder: streamer.cardBorder,
     extracted: extractedPalettes[streamer.channelId] ?? null,

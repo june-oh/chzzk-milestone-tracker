@@ -1,0 +1,332 @@
+{
+  "meta": {
+    "updatedAt": "2026-06-04T12:00:00.000Z",
+    "count": 46,
+    "total": 46,
+    "source": "namu.wiki via Perplexity research + manual verification (초승달 #8ea0ff, 카린 #E55567)"
+  },
+  "colors": {
+    "65c3035bdc598c81f15a8fe0e958b3ce": {
+      "channelName": "초승달",
+      "hex": "#8EA0FF",
+      "colorName": "라벤더 블루",
+      "source": "namu.wiki/w/초승달(인터넷 방송인)",
+      "estimated": false
+    },
+    "4de764d9dad3b25602284be6db3ac647": {
+      "channelName": "아리사",
+      "hex": "#9333EA",
+      "colorName": "보라색",
+      "source": "namu.wiki/w/아리사(인터넷 방송인)",
+      "estimated": true
+    },
+    "32fb866e323242b770cdc790f991a6f6": {
+      "channelName": "카린",
+      "hex": "#E55567",
+      "colorName": "빨간색",
+      "source": "namu.wiki/w/카린(인터넷 방송인)",
+      "estimated": false
+    },
+    "475313e6c26639d5763628313b4c130e": {
+      "channelName": "엘리",
+      "hex": "#ADD8E6",
+      "colorName": "하늘색",
+      "source": "namu.wiki/w/엘리양",
+      "estimated": true
+    },
+    "17d8605fc37fb5ef49f5f67ae786fe4e": {
+      "channelName": "에리스",
+      "hex": "#DC2626",
+      "colorName": "빨간색",
+      "source": "namu.wiki/w/에리스(인터넷 방송인)",
+      "estimated": true
+    },
+    "a67b328bcc8eea4451ccfa754bc19ae1": {
+      "channelName": "달콤레나 씨",
+      "hex": "#E2FC52",
+      "colorName": "라임",
+      "source": "ENCHANT 공식 테마 (Perplexity 추정)",
+      "estimated": true
+    },
+    "a3ceb9179d99be8d1e63b3e911fcd16b": {
+      "channelName": "키유 Kiyuu",
+      "hex": "#FFD700",
+      "colorName": "노란색",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "088973112d8acc831ec20274f7ffbb99": {
+      "channelName": "미하루 Miharu",
+      "hex": "#87CEEB",
+      "colorName": "하늘색",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "c8adce2ff4a3618931e07c327e1fa070": {
+      "channelName": "포키쨩",
+      "hex": "#FF69B4",
+      "colorName": "핑크",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "6ccaebc2569f62344c6fc257f8f2b9ad": {
+      "channelName": "엘시v",
+      "hex": "#6A5ACD",
+      "colorName": "보라/블루",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "d5e2e0c14dcca4c4b10c7c9633022f52": {
+      "channelName": "치치 Planeta",
+      "hex": "#EE869A",
+      "colorName": "로지 핑크",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "5ead7124638ac4c568f2cde0224b3b6b": {
+      "channelName": "카네코 파냐 Planeta",
+      "hex": "#F9BE4B",
+      "colorName": "망고 옐로우",
+      "source": "namu.wiki/w/카네코 파냐",
+      "estimated": false
+    },
+    "941ea3807ba8b9b7dddb1670e3e7e5af": {
+      "channelName": "아마네 나기 Planeta",
+      "hex": "#7FC2FF",
+      "colorName": "스카이 블루",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "59aa824e4c4a56dd51e7a5e2e9172648": {
+      "channelName": "쿠온 레이 Planeta",
+      "hex": "#9A7BFF",
+      "colorName": "라일락 퍼플",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "c0d9723cbb75dc223c6aa8a9d4f56002": {
+      "channelName": "허니츄러스",
+      "hex": "#FFC94A",
+      "colorName": "허니 옐로우",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "65a53076fe1a39636082dd6dba8b8a4b": {
+      "channelName": "오화요 Ohwayo",
+      "hex": "#FF9BB5",
+      "colorName": "베이비 핑크",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "b82e8bc2505e37156b2d1140ba1fc05c": {
+      "channelName": "담유이",
+      "hex": "#C6A3FF",
+      "colorName": "퍼플",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "798e100206987b59805cfb75f927e965": {
+      "channelName": "디디디용",
+      "hex": "#8EE1FF",
+      "colorName": "하늘색",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "abe8aa82baf3d3ef54ad8468ee73e7fc": {
+      "channelName": "아야 AyaUke",
+      "hex": "#FF8FAF",
+      "colorName": "핑크",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "bd07973b6021d72512240c01a386d5c9": {
+      "channelName": "망내",
+      "hex": "#F06292",
+      "colorName": "체리 핑크",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "3e3781d3bd20dadc2f6f6d5d30091195": {
+      "channelName": "포포포포 POPOPOPO",
+      "hex": "#6797F4",
+      "colorName": "파스텔 블루",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "5c897b3e639045ca6e314bbaff991f73": {
+      "channelName": "비올레타 모네",
+      "hex": "#B57EDC",
+      "colorName": "비올렛",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "dae2de8eaa005a59163f2e4c045e1aa1": {
+      "channelName": "블레어 로즈",
+      "hex": "#EF0009",
+      "colorName": "레드",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "b33c957eac9335d38e4043c3dca97675": {
+      "channelName": "하시요 HaSiyo",
+      "hex": "#81C784",
+      "colorName": "민트/그린",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "f36320c432d9f06095ce2cfbbf681c26": {
+      "channelName": "류시호 RyuSiho",
+      "hex": "#90CAF9",
+      "colorName": "파스텔 블루",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "e87999abca4fd0c3214e05ef414ce951": {
+      "channelName": "야토 Yato",
+      "hex": "#F6AA65",
+      "colorName": "오렌지",
+      "source": "Perplexity (Listella 테마)",
+      "estimated": true
+    },
+    "f3b204dd3fd6925835ca1848cd4b6d3c": {
+      "channelName": "오단밍",
+      "hex": "#FFCC33",
+      "colorName": "옐로우 오렌지",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "9351fb8417f73405c84e0846409e3263": {
+      "channelName": "햄쿠비",
+      "hex": "#E8B9CD",
+      "colorName": "연분홍",
+      "source": "namu.wiki/w/헤라(인터넷 방송인)",
+      "estimated": false
+    },
+    "4325b1d5bbc321fad3042306646e2e50": {
+      "channelName": "아카네 리제",
+      "hex": "#E60012",
+      "colorName": "레드",
+      "source": "namu.wiki/w/아카네 리제",
+      "estimated": false
+    },
+    "64d76089fba26b180d9c9e48a32600d9": {
+      "channelName": "텐코 시부키",
+      "hex": "#F8C82A",
+      "colorName": "옐로우",
+      "source": "namu.wiki/w/텐코 시부키",
+      "estimated": true
+    },
+    "a6c4ddb09cdb160478996007bff35296": {
+      "channelName": "아라하시 타비",
+      "hex": "#7EC2FF",
+      "colorName": "스카이 블루",
+      "source": "namu.wiki/w/아라하시 타비",
+      "estimated": true
+    },
+    "4515b179f86b67b4981e16190817c580": {
+      "channelName": "네네코 마시로",
+      "hex": "#C7CAD3",
+      "colorName": "실버 그레이",
+      "source": "namu.wiki/w/네네코 마시로",
+      "estimated": true
+    },
+    "b044e3a3b9259246bc92e863e7d3f3b8": {
+      "channelName": "시라유키 히나",
+      "hex": "#9AD9FF",
+      "colorName": "아이스 블루",
+      "source": "namu.wiki/w/시라유키 히나",
+      "estimated": true
+    },
+    "45e71a76e949e16a34764deb962f9d9f": {
+      "channelName": "아야츠노 유니",
+      "hex": "#D8B3FF",
+      "colorName": "라일락",
+      "source": "namu.wiki/w/아야츠노 유니",
+      "estimated": true
+    },
+    "36ddb9bb4f17593b60f1b63cec86611d": {
+      "channelName": "사키하네 후야",
+      "hex": "#7ED1C4",
+      "colorName": "민트",
+      "source": "namu.wiki/w/사키하네 후야",
+      "estimated": true
+    },
+    "516937b5f85cbf2249ce31b0ad046b0f": {
+      "channelName": "아오쿠모 린",
+      "hex": "#5BB3FF",
+      "colorName": "블루",
+      "source": "namu.wiki/w/아오쿠모 린",
+      "estimated": true
+    },
+    "4d812b586ff63f8a2946e64fa860bbf5": {
+      "channelName": "하나코 나나",
+      "hex": "#FFB7D5",
+      "colorName": "핑크",
+      "source": "namu.wiki/w/하나코 나나",
+      "estimated": true
+    },
+    "8fd39bb8de623317de90654718638b10": {
+      "channelName": "유즈하 리코",
+      "hex": "#FFE08A",
+      "colorName": "옐로우",
+      "source": "namu.wiki/w/유즈하 리코",
+      "estimated": true
+    },
+    "a54372e8197f6d241a43a318279860d6": {
+      "channelName": "쿠레나이 나츠키",
+      "hex": "#D62020",
+      "colorName": "크림슨 레드",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "0a2020b09b8cc7f2285b7ae5de2ce4d3": {
+      "channelName": "테리 눈나",
+      "hex": "#FF6699",
+      "colorName": "핑크",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "a048127622edd6c3ee8e477471a1d823": {
+      "channelName": "빙하유",
+      "hex": "#66CCFF",
+      "colorName": "스카이 블루",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "f1869f490ddd660c420b2f57c649e6bb": {
+      "channelName": "양메이",
+      "hex": "#FF99CC",
+      "colorName": "라이트 핑크",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "29a1ed5c0829fa620fab900dba7e011b": {
+      "channelName": "유리리",
+      "hex": "#9966FF",
+      "colorName": "퍼플",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "0f61ae00c2aef2b789dc009e51cbcc5a": {
+      "channelName": "온 하루",
+      "hex": "#FF9966",
+      "colorName": "피치 오렌지",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    },
+    "7b9c6553913c755812ef2cd9fbe1dc5c": {
+      "channelName": "하네ㅣHane",
+      "hex": "#51B6E0",
+      "colorName": "스카이 블루",
+      "source": "namu.wiki/w/하네(인터넷 방송인)",
+      "estimated": false
+    },
+    "f42e97f59c3177b8686dccfbf90792dd": {
+      "channelName": "김아테 l Ate",
+      "hex": "#33CC99",
+      "colorName": "민트 그린",
+      "source": "Perplexity+namu.wiki",
+      "estimated": true
+    }
+  }
+}
