@@ -1,6 +1,7 @@
 import { kv } from "@vercel/kv";
 import ClientDashboard from "./components/ClientDashboard";
 import { enrichStreamer } from "@/lib/streamerMeta";
+import { fetchLiveStreamers, mergeStreamerWithLiveScrape } from "@/lib/chzzkScrape";
 
 const FALLBACK_STREAMERS = [
   { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA0MTlfOTQg/MDAxNzc2NTkyMjU5ODk5._TnXjfSnOt5htcBgSxPj4BKXOv2ncFPbIPvx2guxVlwg.M3PH7PH8oadbIc0SZdWyD1wY6lVh2aOpMlKQ8puG-E0g.PNG/image.png", firstLiveDate: "2024-02-26 17:06:40", totalLiveHours: 4302, lastMilestone: 4000, cheerCount: 0, followerCount: 66939, color: "lilac" },
@@ -62,13 +63,12 @@ export default async function Home() {
           })
         );
       } else {
-        streamers.push(
-          enrichStreamer({
-            ...fallback,
-            history,
-            lastUpdated: new Date().toISOString(),
-          })
-        );
+        const merged = await mergeStreamerWithLiveScrape({
+          ...fallback,
+          history,
+          lastUpdated: new Date().toISOString(),
+        });
+        streamers.push(enrichStreamer(merged));
       }
     }
 
@@ -109,10 +109,16 @@ export default async function Home() {
       mergedMap.set(key, m);
     });
     milestones = Array.from(mergedMap.values());
+
+    if (process.env.NODE_ENV === "development" && streamers.length > 0) {
+      streamers = await Promise.all(
+        streamers.map(async (streamer) => enrichStreamer(await mergeStreamerWithLiveScrape(streamer)))
+      );
+    }
   } catch (err) {
-    console.warn("Vercel KV not connected or failed. Serving mock/fallback data:", err);
-    // Serve fallback mockup stats in case environment variables are missing
-    streamers = FALLBACK_STREAMERS.map((f) =>
+    console.warn("Vercel KV not connected or failed. Scraping Chzzk API directly:", err);
+    const liveStreamers = await fetchLiveStreamers(FALLBACK_STREAMERS);
+    streamers = liveStreamers.map((f) =>
       enrichStreamer({
         ...f,
         lastUpdated: new Date().toISOString(),

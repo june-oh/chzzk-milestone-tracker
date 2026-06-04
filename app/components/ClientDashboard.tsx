@@ -2295,7 +2295,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       </div>
 
       {/* Streamer profile card grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {streamers.map((streamer) => {
           const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
           const borderSet = BORDER_COLOR_MAP[streamer.color] || "border-neutral-200";
@@ -2308,7 +2308,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               className="w-full min-w-0 cursor-pointer hover:-translate-y-1.5 transition-transform duration-300"
             >
               <div
-                className={`w-full rounded-[24px] border ${borderSet} ${colorSet.bg} p-4 sm:p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow overflow-hidden ${
+                className={`w-full h-full rounded-[20px] sm:rounded-[24px] border ${borderSet} ${colorSet.bg} p-3 sm:p-4 lg:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-lg transition-shadow overflow-hidden ${
                   isSelected ? "ring-2 ring-black ring-offset-2" : ""
                 }`}
               >
@@ -2318,50 +2318,81 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                     alt={streamer.channelName}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute top-3 left-3 bg-black text-white px-3 py-1 rounded-full text-[11px] font-bold font-mono tracking-mono uppercase flex items-center gap-1.5 shadow-sm">
-                    <Trophy className="w-3 h-3 text-yellow-400" />
-                    <span>{streamer.lastMilestone.toLocaleString()}H CLUB</span>
+                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-bold font-mono tracking-mono uppercase flex items-center gap-1 shadow-sm">
+                    <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-400 shrink-0" />
+                    <span>{streamer.lastMilestone.toLocaleString()}H</span>
                   </div>
                 </div>
 
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-1.5">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-sans text-[15px] sm:text-[20px] lg:text-[22px] font-bold text-black tracking-tight break-keep leading-tight">
+                        {streamer.channelName}
+                      </h3>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        {renderGroupTag(streamer.groupTag || getGroupTag(streamer.channelId))}
+                        {streamer.followerCount !== undefined && (
+                          <span className="font-mono text-[10px] font-bold text-neutral-500 flex items-center gap-1 bg-white/50 px-1.5 py-0.5 rounded-full border border-hairline-soft md:hidden">
+                            <Users className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                            {formatFollowers(streamer.followerCount)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={`${streamer.channelName} 비교 선택`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCompareSelection(streamer.channelId);
+                      }}
+                      className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${
+                        isSelected
+                          ? "bg-black border-black text-white"
+                          : "bg-white/90 border-hairline text-transparent hover:text-neutral-300 hover:border-neutral-400"
+                      }`}
+                    >
+                      <Check className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isSelected ? "opacity-100" : "opacity-0"}`} />
+                    </button>
+                  </div>
+                  <div className="hidden md:flex items-center justify-between gap-2 pt-1">
                     <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase shrink-0">
                       CHZZK STREAMER
                     </span>
-                    <div className="flex items-center gap-2 min-w-0">
-                      {streamer.followerCount !== undefined && (
-                        <span className="font-mono text-[11px] font-bold text-neutral-500 flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded-full border border-hairline-soft truncate">
-                          <Users className="w-3 h-3 text-neutral-400 shrink-0" />
-                          {formatFollowers(streamer.followerCount)}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        aria-label={`${streamer.channelName} 비교 선택`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleCompareSelection(streamer.channelId);
-                        }}
-                        className={`shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${
-                          isSelected
-                            ? "bg-black border-black text-white"
-                            : "bg-white/90 border-hairline text-transparent hover:text-neutral-300 hover:border-neutral-400"
-                        }`}
-                      >
-                        <Check className={`w-3.5 h-3.5 ${isSelected ? "opacity-100" : "opacity-0"}`} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-sans text-[20px] sm:text-[22px] font-bold text-black tracking-tight break-keep">
-                      {streamer.channelName}
-                    </h3>
-                    {renderGroupTag(streamer.groupTag || getGroupTag(streamer.channelId))}
+                    {streamer.followerCount !== undefined && (
+                      <span className="font-mono text-[11px] font-bold text-neutral-500 flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded-full border border-hairline-soft truncate">
+                        <Users className="w-3 h-3 text-neutral-400 shrink-0" />
+                        {formatFollowers(streamer.followerCount)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="border-t border-hairline pt-4 flex flex-col gap-3 min-w-0">
+                <div className="border-t border-hairline pt-3 md:hidden">
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                    <div className="min-w-0">
+                      <span className="font-mono text-[9px] tracking-mono text-neutral-400 uppercase block">
+                        HOURS
+                      </span>
+                      <p className="font-sans text-[14px] font-bold text-black tabular-nums truncate">
+                        {streamer.totalLiveHours.toLocaleString()}
+                      </p>
+                    </div>
+                    {streamer.followerCount !== undefined && (
+                      <div className="min-w-0">
+                        <span className="font-mono text-[9px] tracking-mono text-neutral-400 uppercase block">
+                          FOLLOWERS
+                        </span>
+                        <p className="font-sans text-[14px] font-bold text-black tabular-nums truncate">
+                          {formatFollowers(streamer.followerCount)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="hidden md:flex border-t border-hairline pt-4 flex-col gap-3 min-w-0 mt-auto">
                   <div className="min-w-0 overflow-x-auto">
                     <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
                       TOTAL HOURS

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { enrichStreamer } from "@/lib/streamerMeta";
+import { fetchLiveStreamers, mergeStreamerWithLiveScrape } from "@/lib/chzzkScrape";
 
 const STREAMER_IDS = [
   "65c3035bdc598c81f15a8fe0e958b3ce", // 초승달
@@ -39,7 +40,7 @@ const FALLBACK_STREAMERS = [
 
 export async function GET(req: NextRequest) {
   try {
-    const streamers = [];
+    let streamers = [];
     let milestones = [];
 
     // On-demand hourly background SWR scraper trigger
@@ -110,14 +111,12 @@ export async function GET(req: NextRequest) {
             })
           );
         } else {
-          // Return fallback if database has not been populated by the cron yet
-          streamers.push(
-            enrichStreamer({
-              ...fallback,
-              history,
-              lastUpdated: new Date().toISOString(),
-            })
-          );
+          const merged = await mergeStreamerWithLiveScrape({
+            ...fallback,
+            history,
+            lastUpdated: new Date().toISOString(),
+          });
+          streamers.push(enrichStreamer(merged));
         }
       }
 
@@ -160,9 +159,10 @@ export async function GET(req: NextRequest) {
       });
       milestones = Array.from(mergedMap.values());
     } catch (kvErr) {
-      console.warn("Vercel KV query failed, using fallback:", kvErr);
-      streamers.length = 0; // Clear any partial data
-      for (const fallback of FALLBACK_STREAMERS) {
+      console.warn("Vercel KV query failed, scraping Chzzk API directly:", kvErr);
+      streamers.length = 0;
+      const liveStreamers = await fetchLiveStreamers(FALLBACK_STREAMERS);
+      for (const fallback of liveStreamers) {
         streamers.push(
           enrichStreamer({
             ...fallback,
@@ -178,15 +178,24 @@ export async function GET(req: NextRequest) {
       milestones = [];
     }
 
+    if (process.env.NODE_ENV === "development" && streamers.length > 0) {
+      streamers = await Promise.all(
+        streamers.map(async (streamer) =>
+          enrichStreamer(await mergeStreamerWithLiveScrape(streamer as (typeof FALLBACK_STREAMERS)[number] & typeof streamer))
+        )
+      );
+    }
+
     return NextResponse.json({
       success: true,
       streamers,
       milestones,
     });
   } catch (error: any) {
+    const liveStreamers = await fetchLiveStreamers(FALLBACK_STREAMERS);
     return NextResponse.json({
       success: true,
-      streamers: FALLBACK_STREAMERS.map((f) =>
+      streamers: liveStreamers.map((f) =>
         enrichStreamer({
           ...f,
           history: [
