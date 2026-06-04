@@ -34,8 +34,8 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 export function paletteFromHex(hex: string): CardSurfacePalette {
   const { r, g, b } = hexToRgb(hex);
   return {
-    cardBg: `rgba(${r}, ${g}, ${b}, 0.2)`,
-    cardBorder: "rgba(255, 255, 255, 0.62)",
+    cardBg: `rgba(${r}, ${g}, ${b}, 0.32)`,
+    cardBorder: `rgba(${r}, ${g}, ${b}, 0.38)`,
     accentHex: rgbToHex(r, g, b),
     accentRgb: `${r}, ${g}, ${b}`,
   };
@@ -62,9 +62,9 @@ export function toGlassSurfacePalette(palette: Pick<CardSurfacePalette, "cardBg"
   const g = Number(match[2]);
   const b = Number(match[3]);
   return {
-    cardBg: `rgba(${r}, ${g}, ${b}, 0.2)`,
-    cardBorder: "rgba(255, 255, 255, 0.62)",
-    accentHex: rgbToHex(Math.round(r * 0.82), Math.round(g * 0.82), Math.round(b * 0.82)),
+    cardBg: `rgba(${r}, ${g}, ${b}, 0.32)`,
+    cardBorder: `rgba(${r}, ${g}, ${b}, 0.38)`,
+    accentHex: rgbToHex(r, g, b),
     accentRgb: `${r}, ${g}, ${b}`,
   };
 }
@@ -75,11 +75,12 @@ export function resolveCardPalette(options: {
   extracted?: CardSurfacePalette | null;
   fallbackHex?: string;
 }): CardSurfacePalette {
-  if (options.cardBg && options.cardBorder) {
-    return toGlassSurfacePalette({ cardBg: options.cardBg, cardBorder: options.cardBorder });
-  }
+  // Profile-image extraction (client or cron) wins over stale KV cache.
   if (options.extracted?.cardBg && options.extracted?.cardBorder) {
     return toGlassSurfacePalette(options.extracted);
+  }
+  if (options.cardBg && options.cardBorder) {
+    return toGlassSurfacePalette({ cardBg: options.cardBg, cardBorder: options.cardBorder });
   }
   return paletteFromHex(options.fallbackHex ?? "#94a3b8");
 }
@@ -88,8 +89,8 @@ export function resolveCardPalette(options: {
 export function getGlassCardStyle(palette: CardSurfacePalette): CSSProperties {
   const rgb = palette.accentRgb ?? "148, 163, 184";
   return {
-    background: `linear-gradient(150deg, rgba(${rgb}, 0.26) 0%, rgba(255,255,255,0.62) 42%, rgba(255,255,255,0.34) 100%)`,
+    background: `linear-gradient(150deg, rgba(${rgb}, 0.44) 0%, rgba(${rgb}, 0.18) 38%, rgba(255,255,255,0.42) 100%)`,
     borderColor: palette.cardBorder,
-    boxShadow: `0 10px 32px rgba(${rgb}, 0.12), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -1px 0 rgba(255,255,255,0.35)`,
+    boxShadow: `0 10px 32px rgba(${rgb}, 0.18), inset 0 1px 0 rgba(255,255,255,0.75), inset 0 -1px 0 rgba(${rgb}, 0.12)`,
   };
 }

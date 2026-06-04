@@ -463,12 +463,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     let cancelled = false;
 
     async function fillMissingPalettes() {
-      await new Promise((resolve) => window.setTimeout(resolve, 3000));
+      await new Promise((resolve) => window.setTimeout(resolve, 600));
       if (cancelled) return;
 
       const targets = streamers.filter(
         (streamer) =>
-          !streamer.cardBg &&
           streamer.channelImageUrl &&
           !fetchedPaletteIds.current.has(streamer.channelId)
       );
@@ -2614,7 +2613,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 }`}
                 style={getGlassCardStyle(cardPalette)}
               >
-                <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-br from-white/45 via-transparent to-white/10" />
+                <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-br from-white/18 via-transparent to-white/5" />
                 <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-11 sm:right-12 z-10">
                   {renderCardMilestoneBadges(streamer)}
                 </div>

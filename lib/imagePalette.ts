@@ -16,7 +16,7 @@ function rgbToHex(r: number, g: number, b: number) {
   return `#${[r, g, b].map((value) => clamp(Math.round(value), 0, 255).toString(16).padStart(2, "0")).join("")}`;
 }
 
-function boostSaturation(rgb: { r: number; g: number; b: number }, factor = 1.55) {
+function boostSaturation(rgb: { r: number; g: number; b: number }, factor = 1.85) {
   const avg = (rgb.r + rgb.g + rgb.b) / 3;
   return {
     r: clamp(Math.round(avg + (rgb.r - avg) * factor), 0, 255),
@@ -29,14 +29,10 @@ function boostSaturation(rgb: { r: number; g: number; b: number }, factor = 1.55
 export function buildCardPalette(rgb: { r: number; g: number; b: number }): CardPalette {
   const { r, g, b } = boostSaturation(rgb);
 
-  const accentR = clamp(Math.round(r * 0.82), 0, 255);
-  const accentG = clamp(Math.round(g * 0.82), 0, 255);
-  const accentB = clamp(Math.round(b * 0.82), 0, 255);
-
   return {
-    cardBg: `rgba(${r}, ${g}, ${b}, 0.22)`,
-    cardBorder: `rgba(255, 255, 255, 0.55)`,
-    accentHex: rgbToHex(accentR, accentG, accentB),
+    cardBg: `rgba(${r}, ${g}, ${b}, 0.32)`,
+    cardBorder: `rgba(${r}, ${g}, ${b}, 0.38)`,
+    accentHex: rgbToHex(r, g, b),
     accentRgb: `${r}, ${g}, ${b}`,
   };
 }
@@ -47,7 +43,7 @@ export function extractDominantRgb(pixels: Buffer, channels: number) {
   let rSum = 0;
   let gSum = 0;
   let bSum = 0;
-  let count = 0;
+  let weightSum = 0;
 
   for (let i = 0; i < pixels.length; i += channels) {
     const r = pixels[i];
@@ -58,23 +54,32 @@ export function extractDominantRgb(pixels: Buffer, channels: number) {
     const saturation = max === 0 ? 0 : (max - min) / max;
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
-    if (saturation < 0.1 || luminance > 0.93 || luminance < 0.07) {
+    if (saturation < 0.06 || luminance > 0.94 || luminance < 0.06) {
       continue;
     }
 
-    rSum += r;
-    gSum += g;
-    bSum += b;
-    count += 1;
+    const weight = saturation * (1 - Math.abs(luminance - 0.5) * 0.6);
+    rSum += r * weight;
+    gSum += g * weight;
+    bSum += b * weight;
+    weightSum += weight;
   }
 
+  const count = weightSum;
+
   if (count === 0) {
+    let fallbackCount = 0;
     for (let i = 0; i < pixels.length; i += channels) {
       rSum += pixels[i];
       gSum += pixels[i + 1];
       bSum += pixels[i + 2];
-      count += 1;
+      fallbackCount += 1;
     }
+    return {
+      r: Math.round(rSum / fallbackCount),
+      g: Math.round(gSum / fallbackCount),
+      b: Math.round(bSum / fallbackCount),
+    };
   }
 
   return {
