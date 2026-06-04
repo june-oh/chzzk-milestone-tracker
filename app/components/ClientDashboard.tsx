@@ -2263,7 +2263,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             스트리머 프로필 카드
           </h2>
           <p className="font-sans text-[14px] text-neutral-500 mt-1">
-            카드를 클릭하면 전용 페이지로 이동합니다. 좌상단 체크로 여러 명을 선택한 뒤 헤더만 비교할 수 있습니다.
+            카드를 클릭하면 전용 페이지로 이동합니다. 카드 우측 체크로 여러 명을 선택한 뒤 헤더만 비교할 수 있습니다.
           </p>
         </div>
         <div className="flex flex-col items-end gap-3">
@@ -2294,8 +2294,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         </div>
       </div>
 
-      {/* 3D Flip Card Grid (Clicking triggers entering dedicated page) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* Streamer profile card grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {streamers.map((streamer) => {
           const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
           const borderSet = BORDER_COLOR_MAP[streamer.color] || "border-neutral-200";
@@ -2305,86 +2305,77 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             <div
               key={streamer.channelId}
               onClick={() => handleSelectStreamer(streamer.channelId)}
-              className="w-full h-[400px] cursor-pointer hover:-translate-y-1.5 transition-transform duration-300 relative"
+              className="w-full min-w-0 cursor-pointer hover:-translate-y-1.5 transition-transform duration-300"
             >
-              <button
-                type="button"
-                aria-label={`${streamer.channelName} 비교 선택`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleCompareSelection(streamer.channelId);
-                }}
-                className={`absolute top-3 right-3 z-20 w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${
-                  isSelected
-                    ? "bg-black border-black text-white"
-                    : "bg-white/90 border-hairline text-transparent hover:text-neutral-300 hover:border-neutral-400"
-                }`}
-              >
-                <Check className={`w-4 h-4 ${isSelected ? "opacity-100" : "opacity-0"}`} />
-              </button>
               <div
-                className={`w-full h-full rounded-[24px] border ${borderSet} ${colorSet.bg} p-6 flex flex-col justify-between hover:shadow-lg transition-shadow ${
+                className={`w-full rounded-[24px] border ${borderSet} ${colorSet.bg} p-4 sm:p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow overflow-hidden ${
                   isSelected ? "ring-2 ring-black ring-offset-2" : ""
                 }`}
               >
-                {/* Top Image & Badge */}
-                <div className="space-y-4">
-                  <div className="relative w-full h-[180px] rounded-xl overflow-hidden bg-neutral-100 border border-hairline group">
-                    <img
-                      src={streamer.channelImageUrl}
-                      alt={streamer.channelName}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute top-3 left-3 bg-black text-white px-3 py-1 rounded-full text-[11px] font-bold font-mono tracking-mono uppercase flex items-center gap-1.5 shadow-sm">
-                      <Trophy className="w-3 h-3 text-yellow-400" />
-                      <span>{streamer.lastMilestone.toLocaleString()}H CLUB</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 block uppercase">
-                        CHZZK STREAMER
-                      </span>
-                      {streamer.followerCount !== undefined && (
-                        <span className="font-mono text-[11px] font-bold text-neutral-500 flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded-full border border-hairline-soft">
-                          <Users className="w-3 h-3 text-neutral-400" />
-                          {formatFollowers(streamer.followerCount)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-sans text-[24px] font-bold text-black tracking-tight">
-                        {streamer.channelName}
-                      </h3>
-                      {renderGroupTag(streamer.groupTag || getGroupTag(streamer.channelId))}
-                    </div>
+                <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-neutral-100 border border-hairline group">
+                  <img
+                    src={streamer.channelImageUrl}
+                    alt={streamer.channelName}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute top-3 left-3 bg-black text-white px-3 py-1 rounded-full text-[11px] font-bold font-mono tracking-mono uppercase flex items-center gap-1.5 shadow-sm">
+                    <Trophy className="w-3 h-3 text-yellow-400" />
+                    <span>{streamer.lastMilestone.toLocaleString()}H CLUB</span>
                   </div>
                 </div>
 
-                {/* Front Footer info: Small Flip Clocks */}
-                <div className="border-t border-hairline pt-4 flex items-end justify-between gap-3">
-                  <div className="flex gap-4 min-w-0">
-                    <div>
-                      <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
-                        TOTAL HOURS
-                      </span>
-                      <FlipClock value={streamer.totalLiveHours} size="small" />
-                    </div>
-                    {streamer.followerCount !== undefined && (
-                      <div>
-                        <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
-                          FOLLOWERS
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase shrink-0">
+                      CHZZK STREAMER
+                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {streamer.followerCount !== undefined && (
+                        <span className="font-mono text-[11px] font-bold text-neutral-500 flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded-full border border-hairline-soft truncate">
+                          <Users className="w-3 h-3 text-neutral-400 shrink-0" />
+                          {formatFollowers(streamer.followerCount)}
                         </span>
-                        <FlipClock value={streamer.followerCount} size="small" minDigits={5} />
-                      </div>
-                    )}
+                      )}
+                      <button
+                        type="button"
+                        aria-label={`${streamer.channelName} 비교 선택`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCompareSelection(streamer.channelId);
+                        }}
+                        className={`shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${
+                          isSelected
+                            ? "bg-black border-black text-white"
+                            : "bg-white/90 border-hairline text-transparent hover:text-neutral-300 hover:border-neutral-400"
+                        }`}
+                      >
+                        <Check className={`w-3.5 h-3.5 ${isSelected ? "opacity-100" : "opacity-0"}`} />
+                      </button>
+                    </div>
                   </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-sans text-[20px] sm:text-[22px] font-bold text-black tracking-tight break-keep">
+                      {streamer.channelName}
+                    </h3>
+                    {renderGroupTag(streamer.groupTag || getGroupTag(streamer.channelId))}
+                  </div>
+                </div>
 
-                  {/* Styled pill indicator */}
-                  <div className="h-[40px] w-[40px] rounded-full bg-black text-white hover:bg-neutral-900 flex items-center justify-center transition-colors self-end shadow-sm shrink-0">
-                    <ArrowRight className="w-4 h-4" />
+                <div className="border-t border-hairline pt-4 flex flex-col gap-3 min-w-0">
+                  <div className="min-w-0 overflow-x-auto">
+                    <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
+                      TOTAL HOURS
+                    </span>
+                    <FlipClock value={streamer.totalLiveHours} size="small" />
                   </div>
+                  {streamer.followerCount !== undefined && (
+                    <div className="min-w-0 overflow-x-auto">
+                      <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
+                        FOLLOWERS
+                      </span>
+                      <FlipClock value={streamer.followerCount} size="small" minDigits={5} />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
