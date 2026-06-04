@@ -546,9 +546,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
   const getFollowerMilestoneStats = (followers = 0) => {
     const nextMilestone = Math.ceil((followers + 0.1) / 10000) * 10000;
-    const progressPercent = ((followers % 10000) / 10000) * 100;
+    const prevMilestone = Math.max(nextMilestone - 10000, 0);
+    const bandSize = nextMilestone - prevMilestone;
+    const progressPercent = bandSize > 0 ? ((followers - prevMilestone) / bandSize) * 100 : 0;
     const followersRemaining = nextMilestone - followers;
-    return { nextMilestone, progressPercent, followersRemaining };
+    const remainingPercent = followers > 0 ? (followersRemaining / followers) * 100 : 100;
+    return { nextMilestone, prevMilestone, progressPercent, followersRemaining, remainingPercent };
   };
 
   const getLastFollowerMilestone = (followers = 0) => {
@@ -1990,7 +1993,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       streamer,
       stats: getFollowerMilestoneStats(streamer.followerCount || 0),
     }))
-    .sort((a, b) => a.stats.followersRemaining - b.stats.followersRemaining)
+    .sort(
+      (a, b) =>
+        a.stats.remainingPercent - b.stats.remainingPercent ||
+        a.stats.followersRemaining - b.stats.followersRemaining
+    )
     .slice(0, 5);
   const topHoursChasers = streamers
     .map((streamer) => ({
@@ -2390,8 +2397,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 <Users className="w-4 h-4" />,
                 (entry) => (
                   <>
-                    {entry.stats.nextMilestone.toLocaleString()}명까지{" "}
-                    <strong className="text-black">{entry.stats.followersRemaining.toLocaleString()}명</strong> 남음
+                    {formatFollowerMilestoneTarget(entry.stats.nextMilestone)}까지{" "}
+                    <strong className="text-black">{entry.stats.remainingPercent.toFixed(2)}%</strong> 남음
+                    <span className="text-neutral-400"> · {entry.stats.followersRemaining.toLocaleString()}명</span>
                   </>
                 )
               )}
