@@ -1,6 +1,6 @@
 import softconHistoryJson from "@/data/softcon-history.json";
 
-export type GroupTag = "Planeta" | "AESTHER";
+export type GroupTag = "Planeta" | "AESTHER" | "Honeyz";
 
 export type ManualFollowerPoint = {
   date: string;
@@ -35,6 +35,12 @@ const GROUP_TAGS: Record<string, GroupTag> = {
   "5ead7124638ac4c568f2cde0224b3b6b": "Planeta", // 카네코 파냐
   "941ea3807ba8b9b7dddb1670e3e7e5af": "Planeta", // 아마네 나기
   "59aa824e4c4a56dd51e7a5e2e9172648": "Planeta", // 쿠온 레이
+  "c0d9723cbb75dc223c6aa8a9d4f56002": "Honeyz", // 허니츄러스
+  "65a53076fe1a39636082dd6dba8b8a4b": "Honeyz", // 오화요
+  "b82e8bc2505e37156b2d1140ba1fc05c": "Honeyz", // 담유이
+  "798e100206987b59805cfb75f927e965": "Honeyz", // 디디디용
+  "abe8aa82baf3d3ef54ad8468ee73e7fc": "Honeyz", // 아야
+  "bd07973b6021d72512240c01a386d5c9": "Honeyz", // 망내
 };
 
 function getSoftconEntry(channelId: string): SoftconChannelHistory | undefined {

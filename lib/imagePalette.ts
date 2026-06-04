@@ -21,8 +21,8 @@ function rgbToHex(r: number, g: number, b: number) {
 export function buildCardPalette(rgb: { r: number; g: number; b: number }): CardPalette {
   const { r, g, b } = rgb;
 
-  const cardBg = `rgb(${mixWithWhite(r, 0.2)}, ${mixWithWhite(g, 0.2)}, ${mixWithWhite(b, 0.2)})`;
-  const cardBorder = `rgb(${mixWithWhite(r, 0.34)}, ${mixWithWhite(g, 0.34)}, ${mixWithWhite(b, 0.34)})`;
+  const cardBg = `rgb(${mixWithWhite(r, 0.42)}, ${mixWithWhite(g, 0.42)}, ${mixWithWhite(b, 0.42)})`;
+  const cardBorder = `rgb(${mixWithWhite(r, 0.58)}, ${mixWithWhite(g, 0.58)}, ${mixWithWhite(b, 0.58)})`;
 
   const accentR = clamp(Math.round(r * 0.82), 0, 255);
   const accentG = clamp(Math.round(g * 0.82), 0, 255);
@@ -85,7 +85,8 @@ export async function extractPaletteFromImageUrl(imageUrl: string): Promise<Card
 
     const buffer = Buffer.from(await response.arrayBuffer());
     const { data, info } = await sharp(buffer)
-      .resize(40, 40, { fit: "cover", position: "attention" })
+      .resize(48, 48, { fit: "cover", position: "centre" })
+      .removeAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
 
@@ -103,4 +104,15 @@ export async function attachPaletteToStreamer<T extends { channelImageUrl: strin
   const palette = await extractPaletteFromImageUrl(streamer.channelImageUrl);
   if (!palette) return streamer;
   return { ...streamer, ...palette };
+}
+
+export async function ensureStreamerPalettes<T extends { channelImageUrl: string; cardBg?: string }>(
+  streamers: T[]
+): Promise<Array<T & Partial<CardPalette>>> {
+  return Promise.all(
+    streamers.map(async (streamer) => {
+      if (streamer.cardBg) return streamer;
+      return attachPaletteToStreamer(streamer);
+    })
+  );
 }

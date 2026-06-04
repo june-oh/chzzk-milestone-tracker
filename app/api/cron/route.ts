@@ -1,23 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { extractPaletteFromImageUrl } from "@/lib/imagePalette";
-
-const STREAMERS = [
-  { id: "65c3035bdc598c81f15a8fe0e958b3ce", defaultName: "초승달", color: "lilac" },
-  { id: "4de764d9dad3b25602284be6db3ac647", defaultName: "아리사", color: "pink" },
-  { id: "32fb866e323242b770cdc790f991a6f6", defaultName: "카린", color: "mint" },
-  { id: "475313e6c26639d5763628313b4c130e", defaultName: "엘리", color: "coral" },
-  { id: "17d8605fc37fb5ef49f5f67ae786fe4e", defaultName: "에리스", color: "cream" },
-  { id: "a67b328bcc8eea4451ccfa754bc19ae1", defaultName: "달콤레나 씨", color: "lime" },
-  { id: "a3ceb9179d99be8d1e63b3e911fcd16b", defaultName: "키유", color: "mint" },
-  { id: "088973112d8acc831ec20274f7ffbb99", defaultName: "미하루", color: "lilac" },
-  { id: "c8adce2ff4a3618931e07c327e1fa070", defaultName: "포키쨩", color: "pink" },
-  { id: "6ccaebc2569f62344c6fc257f8f2b9ad", defaultName: "엘시", color: "coral" },
-  { id: "d5e2e0c14dcca4c4b10c7c9633022f52", defaultName: "치치", color: "cream" },
-  { id: "5ead7124638ac4c568f2cde0224b3b6b", defaultName: "카네코 파냐", color: "lilac" },
-  { id: "941ea3807ba8b9b7dddb1670e3e7e5af", defaultName: "아마네 나기", color: "mint" },
-  { id: "59aa824e4c4a56dd51e7a5e2e9172648", defaultName: "쿠온 레이", color: "pink" },
-];
+import { CRON_STREAMERS } from "@/lib/streamersConfig";
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,7 +18,7 @@ export async function GET(req: NextRequest) {
     const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     const results = [];
 
-    for (const streamer of STREAMERS) {
+    for (const streamer of CRON_STREAMERS) {
       const cid = streamer.id;
 
       // 1. Scrape basic info (Name, Image)

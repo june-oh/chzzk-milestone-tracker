@@ -15,7 +15,7 @@ import {
   hasSoftconHoursHistory,
 } from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
-import SevenSegmentCounter from "./SevenSegmentCounter";
+import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
   date: string;
@@ -212,7 +212,9 @@ const renderGroupTag = (tag?: GroupTag) => {
   const styles =
     tag === "Planeta"
       ? "bg-[#fffbf0] text-[#b45309] border-[#fef0c7]"
-      : "bg-[#ffebeb] text-[#d61c4e] border-[#ffd4d4]";
+      : tag === "Honeyz"
+        ? "bg-[#fff8e7] text-[#a16207] border-[#fde68a]"
+        : "bg-[#ffebeb] text-[#d61c4e] border-[#ffd4d4]";
 
   return (
     <span
@@ -462,15 +464,22 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         targets.map(async (streamer) => {
           try {
             const res = await fetch(`/api/image-palette?url=${encodeURIComponent(streamer.channelImageUrl)}`);
-            if (!res.ok) return null;
+            if (!res.ok) {
+              fetchedPaletteIds.current.delete(streamer.channelId);
+              return null;
+            }
             const data = await res.json();
-            if (!data.success || !data.cardBg || !data.cardBorder) return null;
+            if (!data.success || !data.cardBg || !data.cardBorder) {
+              fetchedPaletteIds.current.delete(streamer.channelId);
+              return null;
+            }
             return {
               channelId: streamer.channelId,
               cardBg: data.cardBg as string,
               cardBorder: data.cardBorder as string,
             };
           } catch {
+            fetchedPaletteIds.current.delete(streamer.channelId);
             return null;
           }
         })
@@ -626,14 +635,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                 TOTAL LIVE BROADCAST HOURS
               </span>
-              <SevenSegmentCounter value={streamer.totalLiveHours} size="large" stopPropagation />
+              <StatCounter value={streamer.totalLiveHours} size="lg" stopPropagation />
             </div>
             {streamer.followerCount !== undefined && (
               <div className="flex flex-col items-center lg:items-end gap-3 w-full">
                 <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                   TOTAL FOLLOWERS
                 </span>
-                <SevenSegmentCounter value={streamer.followerCount} size="large" minDigits={5} stopPropagation />
+                <StatCounter value={streamer.followerCount} size="lg" stopPropagation />
               </div>
             )}
           </div>
@@ -2501,29 +2510,21 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   </div>
                 </div>
 
-                <div className="border-t border-hairline pt-3 md:pt-4 flex flex-col gap-3 min-w-0 mt-auto">
-                  <div className="min-w-0 overflow-x-auto">
-                    <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
+                <div className="border-t border-hairline pt-3 md:pt-4 flex flex-col gap-2 min-w-0 mt-auto">
+                  <div className="min-w-0">
+                    <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-1.5">
                       TOTAL HOURS
                     </span>
-                    <div className="md:hidden">
-                      <SevenSegmentCounter value={streamer.totalLiveHours} size="xs" />
-                    </div>
-                    <div className="hidden md:block">
-                      <SevenSegmentCounter value={streamer.totalLiveHours} size="small" />
-                    </div>
+                    <StatCounter value={streamer.totalLiveHours} size="sm" className="md:hidden" />
+                    <StatCounter value={streamer.totalLiveHours} size="md" className="hidden md:block" />
                   </div>
                   {streamer.followerCount !== undefined && (
-                    <div className="min-w-0 overflow-x-auto">
-                      <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
+                    <div className="min-w-0">
+                      <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-1.5">
                         FOLLOWERS
                       </span>
-                      <div className="md:hidden">
-                        <SevenSegmentCounter value={streamer.followerCount} size="xs" minDigits={5} />
-                      </div>
-                      <div className="hidden md:block">
-                        <SevenSegmentCounter value={streamer.followerCount} size="small" minDigits={5} />
-                      </div>
+                      <StatCounter value={streamer.followerCount} size="sm" className="md:hidden" />
+                      <StatCounter value={streamer.followerCount} size="md" className="hidden md:block" />
                     </div>
                   )}
                 </div>

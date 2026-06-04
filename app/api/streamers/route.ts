@@ -2,41 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { enrichStreamer } from "@/lib/streamerMeta";
 import { fetchLiveStreamers, mergeStreamerWithLiveScrape } from "@/lib/chzzkScrape";
-
-const STREAMER_IDS = [
-  "65c3035bdc598c81f15a8fe0e958b3ce", // 초승달
-  "4de764d9dad3b25602284be6db3ac647", // 아리사
-  "32fb866e323242b770cdc790f991a6f6", // 카린
-  "475313e6c26639d5763628313b4c130e", // 엘리
-  "17d8605fc37fb5ef49f5f67ae786fe4e", // 에리스
-  "a67b328bcc8eea4451ccfa754bc19ae1", // 달콤레나 씨
-  "a3ceb9179d99be8d1e63b3e911fcd16b", // 키유
-  "088973112d8acc831ec20274f7ffbb99", // 미하루
-  "c8adce2ff4a3618931e07c327e1fa070", // 포키쨩
-  "6ccaebc2569f62344c6fc257f8f2b9ad", // 엘시
-  "d5e2e0c14dcca4c4b10c7c9633022f52", // 치치
-  "5ead7124638ac4c568f2cde0224b3b6b", // 카네코 파냐
-  "941ea3807ba8b9b7dddb1670e3e7e5af", // 아마네 나기
-  "59aa824e4c4a56dd51e7a5e2e9172648", // 쿠온 레이
-];
-
-// Fallback metadata if database has not been scraped yet
-const FALLBACK_STREAMERS = [
-  { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA0MTlfOTQg/MDAxNzc2NTkyMjU5ODk5._TnXjfSnOt5htcBgSxPj4BKXOv2ncFPbIPvx2guxVlwg.M3PH7PH8oadbIc0SZdWyD1wY6lVh2aOpMlKQ8puG-E0g.PNG/image.png", firstLiveDate: "2024-02-26 17:06:40", totalLiveHours: 4302, lastMilestone: 4000, cheerCount: 0, followerCount: 66939, color: "lilac" },
-  { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA0MDJfMTk1/MDAxNzc1MTMzNjk5OTc1.XifMFawEqJ9B4cqYDAF9pjn2VoUNaIahdyNDtqRnDMQg.IyGl56yQUJAtB5ohqq8mUM2wqjvQ4cf4--LpB4jvzFIg.PNG/image.png", firstLiveDate: "2024-01-05 20:00:32", totalLiveHours: 7778, lastMilestone: 7000, cheerCount: 0, followerCount: 91646, color: "pink" },
-  { channelId: "32fb866e323242b770cdc790f991a6f6", channelName: "카린", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNDA3MDdfMjAg/MDAxNzIwMzM0MTk0MjAz.GRLFSI66ByerGVPBJmX7nC9WudQCO45VsXUxAvsbEMkg.J6DZpTBwgQMSpyTrunP4wbmZO71ce9oRN3WrLnOUye0g.PNG/1000053454.png", firstLiveDate: "2024-02-19 18:03:58", totalLiveHours: 4148, lastMilestone: 4000, cheerCount: 0, followerCount: 52263, color: "mint" },
-  { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNTEwMTJfMjQg/MDAxNzYwMjU5MzQwODQw.72r-pbnXpBvoFivvGK9dKk9CAO8aJN5UV6wXejRiiPwg.Oo7lN5-LX4Dd9tETgUqx5UGoHXNKZ55O5Xy6MnaX7-kg.PNG/image.png", firstLiveDate: "2024-01-04 16:26:11", totalLiveHours: 5162, lastMilestone: 5000, cheerCount: 0, followerCount: 58214, color: "coral" },
-  { channelId: "17d8605fc37fb5ef49f5f67ae786fe4e", channelName: "에리스", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNDA3MTFfMjU1/MDAxNzIwNjYzNjYzMzE2.6ViLvn07CoW0FgG0DVAifAaDyRibcvuJ7Wf80lcaedog.h9LXAMib3NNk7EtCJYbHOB1fMpzdQ49Q9At7b3MnuMUg.PNG/0E954B06-FA2A-4A12-ADFE-36CFA1F6CED7-1720663663.png", firstLiveDate: "2024-02-07 22:00:56", totalLiveHours: 3542, lastMilestone: 3000, cheerCount: 0, followerCount: 48426, color: "cream" },
-  { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", channelName: "달콤레나 씨", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA0MDlfMTI3/MDAxNzc1NjY1MDY5ODU0.rkFJkjnyXc5nB7zU5bDPc_2hW2u-jAYL1JUQK5PI1xkg.BjDG3LUVSiASGTM4VaH0US6R7RpyvNmzqz9Eh88dUEcg.PNG/image.png", firstLiveDate: "2024-01-17 22:25:35", totalLiveHours: 6501, lastMilestone: 6000, cheerCount: 0, followerCount: 91596, color: "lime" },
-  { channelId: "a3ceb9179d99be8d1e63b3e911fcd16b", channelName: "키유 Kiyuu", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjAyMjJfMjQ1/MDAxNzcxNzM5Mjg0Nzg4.fLrTzHmKPaZhzvwyz08SB6b8nCL5hGQh2V_3-014DJMg.QMpmPJAtgz9dj357T3hO-gNru9xgKq8g7i-wnF581dUg.PNG/image.png", firstLiveDate: "2025-11-29 14:50:46", totalLiveHours: 1277, lastMilestone: 1000, cheerCount: 0, followerCount: 15899, color: "mint" },
-  { channelId: "088973112d8acc831ec20274f7ffbb99", channelName: "미하루 Miharu", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjAxMTFfMTAy/MDAxNzY4MTEyMzUyOTcx.D51vALyJMK9hGdWdzpe2NgKsyggBWJJNaKdPzh_IwKAg.7UeLbx2mM3XLtHRfbuDKwUEuvefqOXMvHX4yFwStH8og.PNG/image.png", firstLiveDate: "2025-11-29 15:55:01", totalLiveHours: 546, lastMilestone: 0, cheerCount: 0, followerCount: 11555, color: "lilac" },
-  { channelId: "c8adce2ff4a3618931e07c327e1fa070", channelName: "포키쨩", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjAxMDNfMTk1/MDAxNzY3MzcwNDg2MTYy.0vTyLJqAtowVc-UjM2qzofBBv002OUQPyp05BrSPkiog.MEZvrdc9v88N0fsEVynHsBsnh1xxI27zRspK0vZm0VEg.PNG/image.png", firstLiveDate: "2024-01-08 18:57:26", totalLiveHours: 8246, lastMilestone: 8000, cheerCount: 0, followerCount: 27870, color: "pink" },
-  { channelId: "6ccaebc2569f62344c6fc257f8f2b9ad", channelName: "엘시v", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjAyMDJfMiAg/MDAxNzcwMDQxMDA5OTE5.iGpluslDPntIraPLS-CPaAVfw1HFmUffcPq3bkaBXoMg.xueJx_wx_l-wFoUsW_2VCgw4JrA_Vtsz7qJUO1LmHqkg.PNG/image.png", firstLiveDate: "2025-07-18 20:02:57", totalLiveHours: 1569, lastMilestone: 1000, cheerCount: 0, followerCount: 37648, color: "coral" },
-  { channelId: "d5e2e0c14dcca4c4b10c7c9633022f52", channelName: "치치 Planeta", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA1MjNfMjA4/MDAxNzc5NTExOTg4NDgy.oOwSBYczaiXzvU9ZM6zYat5dF5g-KBAHIR7h4mqbGaQg.HPF38n-smjc3jODrNKranYrMh_4ygaHkwPrjrsko3zog.JPEG/image.jpg", firstLiveDate: "", totalLiveHours: 0, lastMilestone: 0, cheerCount: 0, followerCount: 1790, color: "cream" },
-  { channelId: "5ead7124638ac4c568f2cde0224b3b6b", channelName: "카네코 파냐 Planeta", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA1MjNfNDEg/MDAxNzc5NTExOTE0NTI1.8_meIqfRhxT27c3iDyc7GgURdOidznnVSyUenRe22B8g.4htGuISdm8VAsbEW3lv7Dhrg_HrgNkk0R5PhJaRDBD8g.JPEG/image.jpg", firstLiveDate: "", totalLiveHours: 0, lastMilestone: 0, cheerCount: 0, followerCount: 1819, color: "lilac" },
-  { channelId: "941ea3807ba8b9b7dddb1670e3e7e5af", channelName: "아마네 나기 Planeta", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA1MjNfMTk4/MDAxNzc5NTExNjcyMTg2.YtbGcBWGYhGqctudc4z3FSZqBNAKZ6aaOcXUx3TUsekg.N66CzYIWfy5llFLATDKhBXWJU9Bqr-9UGqjq5hIUyxwg.JPEG/image.jpg", firstLiveDate: "", totalLiveHours: 0, lastMilestone: 0, cheerCount: 0, followerCount: 1798, color: "mint" },
-  { channelId: "59aa824e4c4a56dd51e7a5e2e9172648", channelName: "쿠온 레이 Planeta", channelImageUrl: "https://nng-phinf.pstatic.net/MjAyNjA1MjNfMTEg/MDAxNzc5NTEyMTA1MzQ1.H8It320Po3JeMD9Hi7uEwuumGC_4sZLAgpfeQQIb1Q4g.85KVeKsuWhcaoPZ6cVmZp56n_6cM3AmNgs64dyrL95Ig.JPEG/image.jpg", firstLiveDate: "", totalLiveHours: 0, lastMilestone: 0, cheerCount: 0, followerCount: 1788, color: "pink" },
-];
+import { ensureStreamerPalettes } from "@/lib/imagePalette";
+import { FALLBACK_STREAMERS, STREAMER_IDS } from "@/lib/streamersConfig";
 
 export async function GET(req: NextRequest) {
   try {
@@ -184,10 +151,12 @@ export async function GET(req: NextRequest) {
     if (process.env.NODE_ENV === "development" && streamers.length > 0) {
       streamers = await Promise.all(
         streamers.map(async (streamer) =>
-          enrichStreamer(await mergeStreamerWithLiveScrape(streamer as (typeof FALLBACK_STREAMERS)[number] & typeof streamer))
+          enrichStreamer(await mergeStreamerWithLiveScrape(streamer))
         )
       );
     }
+
+    streamers = await ensureStreamerPalettes(streamers);
 
     return NextResponse.json({
       success: true,
@@ -196,9 +165,8 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     const liveStreamers = await fetchLiveStreamers(FALLBACK_STREAMERS);
-    return NextResponse.json({
-      success: true,
-      streamers: liveStreamers.map((f) =>
+    const streamers = await ensureStreamerPalettes(
+      liveStreamers.map((f) =>
         enrichStreamer({
           ...f,
           history: [
@@ -208,7 +176,11 @@ export async function GET(req: NextRequest) {
           ],
           lastUpdated: new Date().toISOString(),
         })
-      ),
+      )
+    );
+    return NextResponse.json({
+      success: true,
+      streamers,
       milestones: [
         { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
         { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
