@@ -106,5 +106,16 @@ body {
   animation-play-state: paused;
 }
 
+.glass-card-surface {
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+}
 
+.card-board-backdrop {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(167, 139, 250, 0.35), transparent 55%),
+    radial-gradient(ellipse 70% 55% at 85% 15%, rgba(244, 114, 182, 0.28), transparent 50%),
+    radial-gradient(ellipse 75% 60% at 50% 90%, rgba(56, 189, 248, 0.25), transparent 55%),
+    linear-gradient(180deg, #eef1f8 0%, #f8f9fc 45%, #eef2f9 100%);
+}
 

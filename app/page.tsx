@@ -1,110 +1,20 @@
-import { kv } from "@vercel/kv";
+import type { ComponentProps } from "react";
 import ClientDashboard from "./components/ClientDashboard";
+import { fetchLiveStreamers } from "@/lib/chzzkScrape";
 import { enrichStreamer } from "@/lib/streamerMeta";
-import { fetchLiveStreamers, mergeStreamerWithLiveScrape } from "@/lib/chzzkScrape";
+import { loadMilestonesFromKv, loadStreamersFromKv } from "@/lib/loadStreamersFromKv";
 import { FALLBACK_STREAMERS } from "@/lib/streamersConfig";
 
-export const revalidate = 0; // Disable server caching to ensure users always see freshly scraped hours
+export const revalidate = 60;
 
 export default async function Home() {
-  let streamers = [];
-  let milestones = [];
+  let streamers: Awaited<ReturnType<typeof loadStreamersFromKv>> = [];
+  let milestones: Awaited<ReturnType<typeof loadMilestonesFromKv>> = [];
 
   try {
-    // Attempt to fetch from Vercel KV
-    for (const fallback of FALLBACK_STREAMERS) {
-      const cid = fallback.channelId;
-      const data: any = await kv.hgetall(`streamer:${cid}`);
-      const history: any = (await kv.get(`streamer:${cid}:history`)) || [
-        { date: "2026-05-18", hours: Math.max(0, fallback.totalLiveHours - 4), followers: Math.max(0, (fallback.followerCount || 10000) - 15) },
-        { date: "2026-05-19", hours: Math.max(0, fallback.totalLiveHours - 2), followers: Math.max(0, (fallback.followerCount || 10000) - 5) },
-        { date: "2026-05-20", hours: Math.max(0, fallback.totalLiveHours), followers: fallback.followerCount || 10000 }
-      ];
-
-      if (data) {
-        let imageUrl = data.channelImageUrl || fallback.channelImageUrl;
-        // Self-healing: If Elsy accidentally has Kiyuu's image URL cached in database, heal it
-        if (cid === "6ccaebc2569f62344c6fc257f8f2b9ad" && imageUrl.includes("MjAyNjAyMjJfMjQ1")) {
-          imageUrl = fallback.channelImageUrl;
-          kv.hset(`streamer:${cid}`, { ...data, channelImageUrl: fallback.channelImageUrl }).catch((e) => {
-            console.warn("Failed to self-heal Elsy's image in KV (home):", e);
-          });
-        }
-
-        streamers.push(
-          enrichStreamer({
-            channelId: cid,
-            channelName: data.channelName || fallback.channelName,
-            channelImageUrl: imageUrl,
-            firstLiveDate: data.firstLiveDate || fallback.firstLiveDate,
-            totalLiveHours: Number(data.totalLiveHours) || fallback.totalLiveHours,
-            lastMilestone: Number(data.lastMilestone) || fallback.lastMilestone,
-            cheerCount: Number(data.cheerCount) || 0,
-            followerCount: Number(data.followerCount) || fallback.followerCount || 0,
-            color: data.color || fallback.color,
-            cardBg: data.cardBg || undefined,
-            cardBorder: data.cardBorder || undefined,
-            accentHex: data.accentHex || undefined,
-            lastUpdated: data.lastUpdated || new Date().toISOString(),
-            history,
-          })
-        );
-      } else {
-        const merged = await mergeStreamerWithLiveScrape({
-          ...fallback,
-          history,
-          lastUpdated: new Date().toISOString(),
-        });
-        streamers.push(enrichStreamer(merged));
-      }
-    }
-
-    const milestoneRecords: any[] = await kv.lrange("milestones", 0, 49);
-    const dbMilestones = milestoneRecords.map((m) => {
-      try {
-        const parsed = typeof m === "string" ? JSON.parse(m) : m;
-        if (!parsed.type) parsed.type = "hours"; // Backwards compatibility
-        return parsed;
-      } catch {
-        return m;
-      }
-    });
-
-    const fallbackMilestones = [
-      { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
-      { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 60000, type: "followers", date: "2025-06-02T12:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 50000, type: "followers", date: "2025-01-12T12:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 30000, type: "followers", date: "2024-04-21T12:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 10000, type: "followers", date: "2024-02-28T12:00:00.000Z" },
-      { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", channelName: "달콤레나 씨", milestone: 6000, type: "hours", date: "2026-05-02T10:00:00.000Z" },
-      { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
-      { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 10000, type: "followers", date: "2024-02-21T12:00:00.000Z" },
-      { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" }
-    ];
-
-    const mergedMap = new Map<string, any>();
-    dbMilestones.forEach((m) => {
-      if (m && m.channelId && m.milestone) {
-        const key = `${m.channelId}-${m.milestone}-${m.type || "hours"}`;
-        mergedMap.set(key, m);
-      }
-    });
-    fallbackMilestones.forEach((m) => {
-      const key = `${m.channelId}-${m.milestone}-${m.type || "hours"}`;
-      mergedMap.set(key, m);
-    });
-    milestones = Array.from(mergedMap.values());
-
-    if (process.env.NODE_ENV === "development" && streamers.length > 0) {
-      streamers = await Promise.all(
-        streamers.map(async (streamer) => enrichStreamer(await mergeStreamerWithLiveScrape(streamer)))
-      );
-    }
-
+    [streamers, milestones] = await Promise.all([loadStreamersFromKv(), loadMilestonesFromKv()]);
   } catch (err) {
-    console.warn("Vercel KV not connected or failed. Scraping Chzzk API directly:", err);
+    console.warn("Vercel KV not connected or failed. Using fallback data:", err);
     const liveStreamers = await fetchLiveStreamers(FALLBACK_STREAMERS);
     streamers = liveStreamers.map((f) =>
       enrichStreamer({
@@ -117,24 +27,13 @@ export default async function Home() {
         ],
       })
     );
-    milestones = [
-      { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
-      { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사", milestone: 90000, type: "followers", date: "2026-05-09T18:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 60000, type: "followers", date: "2025-06-02T12:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 50000, type: "followers", date: "2025-01-12T12:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 30000, type: "followers", date: "2024-04-21T12:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 10000, type: "followers", date: "2024-02-28T12:00:00.000Z" },
-      { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", channelName: "달콤레나 씨", milestone: 6000, type: "hours", date: "2026-05-02T10:00:00.000Z" },
-      { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
-      { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" }
-    ];
+    milestones = await loadMilestonesFromKv().catch(() => []);
   }
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Figma Top Nav Chrome */}
-      <header className="sticky top-0 z-50 bg-white border-b border-hairline h-[56px] flex items-center justify-between px-6">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-hairline h-[56px] flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <a href="/" className="font-mono text-[12px] font-bold tracking-mono uppercase hover:text-neutral-500 transition-colors">
             CHZZK MILESTONE
@@ -158,12 +57,13 @@ export default async function Home() {
         </div>
       </header>
 
-      {/* Main Interactive App Dashboard - Background handled elegantly inside ClientDashboard */}
-      <main id="dashboard" className="flex-1 bg-white">
-        <ClientDashboard initialStreamers={streamers} initialMilestones={milestones} />
+      <main id="dashboard" className="flex-1 bg-[#f4f6fb]">
+        <ClientDashboard
+          initialStreamers={streamers as ComponentProps<typeof ClientDashboard>["initialStreamers"]}
+          initialMilestones={milestones as ComponentProps<typeof ClientDashboard>["initialMilestones"]}
+        />
       </main>
 
-      {/* Editorial Figma Footer */}
       <footer className="bg-black text-white py-[96px] px-6 border-t border-neutral-900 mt-auto">
         <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           <div className="md:col-span-2">

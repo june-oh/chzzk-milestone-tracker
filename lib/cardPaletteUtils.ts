@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export type CardSurfacePalette = {
   cardBg: string;
   cardBorder: string;
@@ -31,9 +33,9 @@ export function toGlassSurfacePalette(palette: Pick<CardSurfacePalette, "cardBg"
   if (!match) {
     return {
       cardBg: "rgba(255, 255, 255, 0.55)",
-      cardBorder: "rgba(0, 0, 0, 0.08)",
+      cardBorder: "rgba(255, 255, 255, 0.65)",
       accentHex: "#787878",
-      accentRgb: "120, 120, 120",
+      accentRgb: "140, 120, 200",
     };
   }
 
@@ -41,9 +43,19 @@ export function toGlassSurfacePalette(palette: Pick<CardSurfacePalette, "cardBg"
   const g = Number(match[2]);
   const b = Number(match[3]);
   return {
-    cardBg: `rgba(${r}, ${g}, ${b}, 0.16)`,
-    cardBorder: `rgba(${r}, ${g}, ${b}, 0.38)`,
+    cardBg: `rgba(${r}, ${g}, ${b}, 0.22)`,
+    cardBorder: `rgba(255, 255, 255, 0.55)`,
     accentHex: rgbToHex(Math.round(r * 0.82), Math.round(g * 0.82), Math.round(b * 0.82)),
     accentRgb: `${r}, ${g}, ${b}`,
+  };
+}
+
+/** CSS styles for frosted-glass profile cards (needs colorful backdrop behind). */
+export function getGlassCardStyle(palette: CardSurfacePalette): CSSProperties {
+  const rgb = palette.accentRgb ?? "140, 120, 200";
+  return {
+    background: `linear-gradient(145deg, rgba(${rgb}, 0.34) 0%, rgba(255,255,255,0.55) 38%, rgba(255,255,255, 0.28) 100%)`,
+    borderColor: palette.cardBorder,
+    boxShadow: `0 12px 40px rgba(${rgb}, 0.18), inset 0 1px 1px rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25)`,
   };
 }

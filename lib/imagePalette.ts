@@ -34,8 +34,8 @@ export function buildCardPalette(rgb: { r: number; g: number; b: number }): Card
   const accentB = clamp(Math.round(b * 0.82), 0, 255);
 
   return {
-    cardBg: `rgba(${r}, ${g}, ${b}, 0.16)`,
-    cardBorder: `rgba(${r}, ${g}, ${b}, 0.38)`,
+    cardBg: `rgba(${r}, ${g}, ${b}, 0.22)`,
+    cardBorder: `rgba(255, 255, 255, 0.55)`,
     accentHex: rgbToHex(accentR, accentG, accentB),
     accentRgb: `${r}, ${g}, ${b}`,
   };

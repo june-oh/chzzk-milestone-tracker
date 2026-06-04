@@ -7,6 +7,7 @@ import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, Extern
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   getGroupTag,
+  GROUP_FILTER_ORDER,
   getManualCumulativeHoursHistory,
   getManualFollowerHistory,
   getSoftconFollowerMilestoneDate,
@@ -15,7 +16,7 @@ import {
   hasSoftconHoursHistory,
 } from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
-import { toGlassSurfacePalette, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
+import { toGlassSurfacePalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
 import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
@@ -211,6 +212,8 @@ const getHoursChartScale = (totalHours: number, dataPeak = 0) => {
 };
 
 const GROUP_TAG_STYLES: Record<GroupTag, string> = {
+  CLUEZ: "bg-[#fff7ed] text-[#c2410c] border-[#fed7aa]",
+  ENCHANT: "bg-[#f5f3ff] text-[#7c3aed] border-[#ddd6fe]",
   Planeta: "bg-[#fffbf0] text-[#b45309] border-[#fef0c7]",
   Honeyz: "bg-[#fff8e7] text-[#a16207] border-[#fde68a]",
   AESTHER: "bg-[#ffebeb] text-[#d61c4e] border-[#ffd4d4]",
@@ -270,6 +273,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [compareHeaderView, setCompareHeaderView] = useState(false);
   const [cardSortField, setCardSortField] = useState<CardSortField>(null);
   const [cardSortDir, setCardSortDir] = useState<CardSortDir>("desc");
+  const [groupFilter, setGroupFilter] = useState<GroupTag | "all">("all");
   const [extractedPalettes, setExtractedPalettes] = useState<Record<string, CardSurfacePalette>>({});
   const fetchedPaletteIds = useRef(new Set<string>());
   const [hoveredHoursPointState, setHoveredHoursPoint] = useState<HoursChartPoint | null>(null);
@@ -434,10 +438,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     }
   }, [activeStreamerId]);
 
-  // Client-side hydration to pull absolute real-time metrics & trigger background SWR updates
+  // Deferred background refresh — SSR data renders first, API sync after paint
   useEffect(() => {
     let active = true;
-    async function fetchLatest() {
+    const timer = window.setTimeout(async () => {
       try {
         const res = await fetch("/api/streamers");
         const data = await res.json();
@@ -448,10 +452,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       } catch (err) {
         console.error("Failed to load latest streamer data:", err);
       }
-    }
-    fetchLatest();
+    }, 5000);
+
     return () => {
       active = false;
+      window.clearTimeout(timer);
     };
   }, []);
 
@@ -459,6 +464,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     let cancelled = false;
 
     async function fillMissingPalettes() {
+      await new Promise((resolve) => window.setTimeout(resolve, 3000));
+      if (cancelled) return;
+
       const targets = streamers.filter(
         (streamer) =>
           !streamer.cardBg &&
@@ -1098,17 +1106,31 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     }
   };
 
-  const sortedStreamers = useMemo(() => {
-    if (!cardSortField) return streamers;
+  const groupCounts = useMemo(() => {
+    const counts: Partial<Record<GroupTag, number>> = {};
+    streamers.forEach((streamer) => {
+      const tag = streamer.groupTag || getGroupTag(streamer.channelId);
+      if (tag) counts[tag] = (counts[tag] ?? 0) + 1;
+    });
+    return counts;
+  }, [streamers]);
 
-    const list = [...streamers];
+  const sortedStreamers = useMemo(() => {
+    let list =
+      groupFilter === "all"
+        ? streamers
+        : streamers.filter((s) => (s.groupTag || getGroupTag(s.channelId)) === groupFilter);
+
+    if (!cardSortField) return list;
+
+    list = [...list];
     list.sort((a, b) => {
       const left = cardSortField === "hours" ? a.totalLiveHours : a.followerCount ?? 0;
       const right = cardSortField === "hours" ? b.totalLiveHours : b.followerCount ?? 0;
       return cardSortDir === "desc" ? right - left : left - right;
     });
     return list;
-  }, [streamers, cardSortField, cardSortDir]);
+  }, [streamers, groupFilter, cardSortField, cardSortDir]);
 
   const formatDateShort = (dateStr: string | Date) => {
     try {
@@ -2414,6 +2436,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </div>
           </div>
 
+      <section className="relative rounded-[28px] sm:rounded-[36px] border border-white/70 card-board-backdrop p-4 sm:p-6 lg:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <span className="font-mono text-[12px] font-bold tracking-mono text-neutral-400 uppercase">
@@ -2452,6 +2475,39 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </div>
           )}
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-500 uppercase mr-1 shrink-0">
+          소속
+        </span>
+        <button
+          type="button"
+          onClick={() => setGroupFilter("all")}
+          className={`inline-flex items-center h-9 px-3.5 rounded-full border text-[13px] font-bold transition-colors ${
+            groupFilter === "all"
+              ? "bg-black text-white border-black"
+              : "bg-white/70 text-neutral-700 border-white/80 hover:bg-white/90 glass-card-surface"
+          }`}
+        >
+          전체
+          <span className="ml-1.5 text-[11px] opacity-70">{streamers.length}</span>
+        </button>
+        {GROUP_FILTER_ORDER.filter((tag) => (groupCounts[tag] ?? 0) > 0).map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            onClick={() => setGroupFilter(tag)}
+            className={`inline-flex items-center h-9 px-3.5 rounded-full border text-[13px] font-bold transition-colors ${
+              groupFilter === tag
+                ? "bg-black text-white border-black"
+                : `bg-white/70 hover:bg-white/90 glass-card-surface ${GROUP_TAG_STYLES[tag]}`
+            }`}
+          >
+            {tag}
+            <span className="ml-1.5 text-[11px] opacity-70">{groupCounts[tag]}</span>
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -2513,23 +2569,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               className="w-full min-w-0 cursor-pointer hover:-translate-y-1.5 transition-transform duration-300"
             >
               <div
-                className={`relative w-full h-full rounded-[20px] sm:rounded-[24px] border p-3 sm:p-4 lg:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-lg transition-shadow overflow-hidden ${
-                  cardPalette
-                    ? "backdrop-blur-md backdrop-saturate-150 bg-white/30"
-                    : `${borderSet} ${colorSet.bg}`
+                className={`relative w-full h-full rounded-[20px] sm:rounded-[24px] border p-3 sm:p-4 lg:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-xl transition-all duration-300 overflow-hidden ${
+                  cardPalette ? "glass-card-surface border-white/70" : `${borderSet} ${colorSet.bg}`
                 } ${isSelected ? "ring-2 ring-black ring-offset-2" : ""}`}
-                style={
-                  cardPalette
-                    ? {
-                        backgroundColor: cardPalette.cardBg,
-                        borderColor: cardPalette.cardBorder,
-                        boxShadow: cardPalette.accentRgb
-                          ? `0 8px 28px rgba(${cardPalette.accentRgb}, 0.12)`
-                          : "0 8px 28px rgba(0, 0, 0, 0.06)",
-                      }
-                    : undefined
-                }
+                style={cardPalette ? getGlassCardStyle(cardPalette) : undefined}
               >
+                <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-br from-white/45 via-transparent to-white/10" />
                 <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-11 sm:right-12 z-10">
                   {renderCardMilestoneBadges(streamer)}
                 </div>
@@ -2549,7 +2594,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   <Check className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isSelected ? "opacity-100" : "opacity-0"}`} />
                 </button>
 
-                <div className="relative flex justify-center pt-7 sm:pt-8">
+                <div className="relative z-10 flex justify-center pt-7 sm:pt-8">
                   <div className="relative w-[120px] h-[120px] sm:w-[132px] sm:h-[132px] rounded-full overflow-hidden bg-neutral-200/70 border border-hairline group shrink-0">
                     <StreamerChannelImage
                       src={streamer.channelImageUrl}
@@ -2560,7 +2605,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   </div>
                 </div>
 
-                <div className="space-y-1 min-w-0 flex-1">
+                <div className="relative z-10 space-y-1 min-w-0 flex-1">
                   <div className="min-w-0">
                     <h3 className="font-sans text-[15px] sm:text-[20px] lg:text-[22px] font-bold text-black tracking-tight break-keep leading-tight">
                       {streamer.channelName}
@@ -2588,7 +2633,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   </div>
                 </div>
 
-                <div className="border-t border-hairline pt-3 md:pt-4 flex flex-col gap-2 min-w-0 mt-auto">
+                <div className="relative z-10 border-t border-white/40 pt-3 md:pt-4 flex flex-col gap-2 min-w-0 mt-auto">
                   <div className="min-w-0">
                     <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-1.5">
                       TOTAL HOURS
@@ -2611,6 +2656,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           );
         })}
       </div>
+      {sortedStreamers.length === 0 && (
+        <div className="text-center py-16 text-neutral-500 font-sans text-[15px]">
+          선택한 소속에 해당하는 스트리머가 없습니다.
+        </div>
+      )}
+      </section>
 
       {/* Grid of Achievement logs - Separating Broadcast Hours and Followers */}
       <div id="milestones" className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-20">

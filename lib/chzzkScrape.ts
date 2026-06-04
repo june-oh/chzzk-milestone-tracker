@@ -1,5 +1,3 @@
-import { attachPaletteToStreamer } from "./imagePalette";
-
 const CHZZK_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -60,7 +58,7 @@ export async function mergeStreamerWithLiveScrape<T extends StreamerSeed>(fallba
   const totalLiveHours = live.totalLiveHours || fallback.totalLiveHours;
   const channelImageUrl = live.channelImageUrl || fallback.channelImageUrl;
 
-  const merged = {
+  return {
     ...fallback,
     channelName: live.channelName || fallback.channelName,
     channelImageUrl,
@@ -73,9 +71,6 @@ export async function mergeStreamerWithLiveScrape<T extends StreamerSeed>(fallba
     followerCount: live.followerCount || fallback.followerCount || 0,
     lastUpdated: new Date().toISOString(),
   };
-
-  if (!channelImageUrl) return merged;
-  return attachPaletteToStreamer(merged);
 }
 
 export async function fetchLiveStreamers<T extends StreamerSeed>(fallbacks: T[]): Promise<T[]> {

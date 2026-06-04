@@ -1,6 +1,27 @@
 import softconHistoryJson from "@/data/softcon-history.json";
 
-export type GroupTag = "Planeta" | "AESTHER" | "Honeyz" | "ACAXIA" | "Listella" | "Stelive" | "OverTheWall";
+export type GroupTag =
+  | "CLUEZ"
+  | "ENCHANT"
+  | "Planeta"
+  | "AESTHER"
+  | "Honeyz"
+  | "ACAXIA"
+  | "Listella"
+  | "Stelive"
+  | "OverTheWall";
+
+export const GROUP_FILTER_ORDER: GroupTag[] = [
+  "CLUEZ",
+  "ENCHANT",
+  "AESTHER",
+  "Planeta",
+  "Honeyz",
+  "ACAXIA",
+  "Listella",
+  "Stelive",
+  "OverTheWall",
+];
 
 export type ManualFollowerPoint = {
   date: string;
@@ -27,6 +48,11 @@ type SoftconChannelHistory = {
 const SOFTCON_HISTORY = softconHistoryJson as Record<string, SoftconChannelHistory>;
 
 const GROUP_TAGS: Record<string, GroupTag> = {
+  "a3ceb9179d99be8d1e63b3e911fcd16b": "CLUEZ", // 키유 Kiyuu
+  "088973112d8acc831ec20274f7ffbb99": "CLUEZ", // 미하루 Miharu
+  "a67b328bcc8eea4451ccfa754bc19ae1": "ENCHANT", // 달콤레나 씨
+  "6ccaebc2569f62344c6fc257f8f2b9ad": "ENCHANT", // 엘시v
+  "65c3035bdc598c81f15a8fe0e958b3ce": "ENCHANT", // 초승달
   "4de764d9dad3b25602284be6db3ac647": "AESTHER", // 아리사
   "32fb866e323242b770cdc790f991a6f6": "AESTHER", // 카린
   "475313e6c26639d5763628313b4c130e": "AESTHER", // 엘리
