@@ -87,16 +87,6 @@ const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawH
   lime: { bg: "bg-[#e2fc52]/10", accent: "bg-[#e2fc52]", text: "text-[#4d5d03]", rawHex: "#b5db00" }, // Special style for signature figma lime
 };
 
-const FLIP_THEME_MAP: Record<string, { shell: string; digit: string; text: string; border: string; comma: string }> = {
-  lilac: { shell: "#5b21b6", digit: "#7c3aed", text: "#ffffff", border: "rgba(255,255,255,0.22)", comma: "#ddd6fe" },
-  pink: { shell: "#be123c", digit: "#e11d48", text: "#ffffff", border: "rgba(255,255,255,0.22)", comma: "#fecdd3" },
-  mint: { shell: "#047857", digit: "#059669", text: "#ffffff", border: "rgba(255,255,255,0.22)", comma: "#a7f3d0" },
-  coral: { shell: "#c2410c", digit: "#ea580c", text: "#ffffff", border: "rgba(255,255,255,0.22)", comma: "#fed7aa" },
-  cream: { shell: "#b45309", digit: "#d97706", text: "#fffbeb", border: "rgba(255,255,255,0.2)", comma: "#fde68a" },
-  lime: { shell: "#3f6212", digit: "#65a30d", text: "#fefce8", border: "rgba(255,255,255,0.2)", comma: "#d9f99d" },
-  default: { shell: "#18181b", digit: "#27272a", text: "#ffffff", border: "rgba(255,255,255,0.12)", comma: "#a3a3a3" },
-};
-
 type CardSortField = "hours" | "followers" | null;
 type CardSortDir = "asc" | "desc";
 
@@ -246,12 +236,10 @@ function FlipClock({
   value,
   size = "normal",
   minDigits = 5,
-  theme = "default",
 }: {
   value: number;
   size?: "normal" | "small" | "large";
   minDigits?: number;
-  theme?: keyof typeof FLIP_THEME_MAP | string;
 }) {
   const numStr = String(value).padStart(minDigits, "0");
   const chars: string[] = [];
@@ -262,19 +250,9 @@ function FlipClock({
     chars.push(numStr[i]);
   }
 
-  const flipTheme = FLIP_THEME_MAP[theme] || FLIP_THEME_MAP.default;
-  const themeStyle = {
-    "--flip-shell": flipTheme.shell,
-    "--flip-digit": flipTheme.digit,
-    "--flip-text": flipTheme.text,
-    "--flip-border": flipTheme.border,
-    "--flip-comma": flipTheme.comma,
-  } as React.CSSProperties;
-
   return (
     <div
-      className="flip-clock-container flip-clock-themed"
-      style={themeStyle}
+      className="flip-clock-container"
       onClick={(e) => {
         if (size === "large") {
           e.stopPropagation();
@@ -631,14 +609,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                 TOTAL LIVE BROADCAST HOURS
               </span>
-              <FlipClock value={streamer.totalLiveHours} size="large" theme={streamer.color} />
+              <FlipClock value={streamer.totalLiveHours} size="large" />
             </div>
             {streamer.followerCount !== undefined && (
               <div className="flex flex-col items-center lg:items-end gap-3 w-full">
                 <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                   TOTAL FOLLOWERS
                 </span>
-                <FlipClock value={streamer.followerCount} size="large" minDigits={5} theme={streamer.color} />
+                <FlipClock value={streamer.followerCount} size="large" minDigits={5} />
               </div>
             )}
           </div>
@@ -2525,14 +2503,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                     <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
                       TOTAL HOURS
                     </span>
-                    <FlipClock value={streamer.totalLiveHours} size="small" theme={streamer.color} />
+                    <FlipClock value={streamer.totalLiveHours} size="small" />
                   </div>
                   {streamer.followerCount !== undefined && (
                     <div className="min-w-0 overflow-x-auto">
                       <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
                         FOLLOWERS
                       </span>
-                      <FlipClock value={streamer.followerCount} size="small" minDigits={5} theme={streamer.color} />
+                      <FlipClock value={streamer.followerCount} size="small" minDigits={5} />
                     </div>
                   )}
                 </div>
