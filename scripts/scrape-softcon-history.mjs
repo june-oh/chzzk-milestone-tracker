@@ -1,42 +1,23 @@
 /**
- * Scrape Softcon Viewership history for all tracked streamers.
+ * Scrape Softcon Viewership history for tracked streamers.
  *
  * - Followers: summary page line chart (?activityDate=all)
  * - Hours: statistics weekly bars (?period=week&range=all) → cumulative sum
  *
- * Usage: node scripts/scrape-softcon-history.mjs
+ * Usage:
+ *   node scripts/scrape-softcon-history.mjs              # all 46 from streamersConfig
+ *   node scripts/scrape-softcon-history.mjs --missing-only  # only channels without data
+ *   node scripts/scrape-softcon-history.mjs --id=<channelId>
  */
 
-import { mkdirSync, writeFileSync } from "fs";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { chromium } from "playwright";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const TRACKED_STREAMERS = [
-  { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", channelName: "초승달" },
-  { channelId: "4de764d9dad3b25602284be6db3ac647", channelName: "아리사" },
-  { channelId: "32fb866e323242b770cdc790f991a6f6", channelName: "카린" },
-  { channelId: "475313e6c26639d5763628313b4c130e", channelName: "엘리" },
-  { channelId: "17d8605fc37fb5ef49f5f67ae786fe4e", channelName: "에리스" },
-  { channelId: "a67b328bcc8eea4451ccfa754bc19ae1", channelName: "달콤레나 씨" },
-  { channelId: "a3ceb9179d99be8d1e63b3e911fcd16b", channelName: "키유" },
-  { channelId: "088973112d8acc831ec20274f7ffbb99", channelName: "미하루" },
-  { channelId: "c8adce2ff4a3618931e07c327e1fa070", channelName: "포키쨩" },
-  { channelId: "6ccaebc2569f62344c6fc257f8f2b9ad", channelName: "엘시" },
-  { channelId: "d5e2e0c14dcca4c4b10c7c9633022f52", channelName: "치치" },
-  { channelId: "5ead7124638ac4c568f2cde0224b3b6b", channelName: "카네코 파냐" },
-  { channelId: "941ea3807ba8b9b7dddb1670e3e7e5af", channelName: "아마네 나기" },
-  { channelId: "59aa824e4c4a56dd51e7a5e2e9172648", channelName: "쿠온 레이" },
-];
-
 const SOFTCON_BASE = "https://viewership.softc.one/channel/naverchzzk";
-
-function parseYyMmDd(label) {
-  const [yy, mm, dd] = label.split(".").map(Number);
-  return new Date(2000 + yy, mm - 1, dd);
-}
 
 function parseRangeText(text) {
   const match = text.match(/(\d{2})\.(\d{2})\.(\d{2})\s*~\s*(\d{2})\.(\d{2})\.(\d{2})/);
@@ -46,6 +27,11 @@ function parseRangeText(text) {
     start: new Date(2000 + sy, sm - 1, sd),
     end: new Date(2000 + ey, em - 1, ed),
   };
+}
+
+function hasHistory(entry) {
+  if (!entry || entry.meta?.error) return false;
+  return (entry.cumulativeHours?.length ?? 0) > 0 || (entry.followers?.length ?? 0) > 0;
 }
 
 function buildCumulativeHours(weeklyPoints, targetTotalHours) {
@@ -152,14 +138,6 @@ async function extractWeeklyHoursHistory(page) {
       .filter((n) => n >= 0 && n <= 500);
     const yMax = Math.max(...yLabels, 80);
 
-    const xLabels = [
-      ...new Set(
-        Array.from(document.querySelectorAll("text"))
-          .map((t) => t.textContent?.trim() || "")
-          .filter((t) => /^\d{2}\.\d{2}\.\d{2}$/.test(t))
-      ),
-    ];
-
     const bars = Array.from(document.querySelectorAll("rect"))
       .map((r) => ({
         h: Number(r.getAttribute("height") || 0),
@@ -188,87 +166,135 @@ async function extractWeeklyHoursHistory(page) {
       };
     });
 
-    return { weeklyHours, rangeStart, rangeEnd, xLabels, yMax, barCount: bars.length };
+    return { weeklyHours, rangeStart, rangeEnd, barCount: bars.length };
   });
 }
 
+async function scrapeStreamer(page, streamer) {
+  await page.goto(`${SOFTCON_BASE}/${streamer.channelId}?activityDate=all`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+  await page.waitForTimeout(2500);
+
+  const followerHeading = page.getByText("팔로워 추이", { exact: true });
+  await followerHeading.scrollIntoViewIfNeeded({ timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(1500);
+
+  let followerResult = { currentFollowers: 0, followers: [] };
+  try {
+    await page.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll("path")).some(
+          (p) => (p.getAttribute("stroke") || "") === "#2656db"
+        ),
+      { timeout: 15000 }
+    );
+    followerResult = await extractFollowerHistory(page);
+  } catch {
+    // flat follower line fallback
+  }
+
+  let hoursMeta = { weeklyHours: [], rangeStart: null, rangeEnd: null, barCount: 0 };
+  try {
+    await page.goto(`${SOFTCON_BASE}/${streamer.channelId}/statistics?period=week&range=all`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    await page.waitForTimeout(2500);
+
+    const hoursTab = page.getByRole("button", { name: /방송\s*시간/ });
+    if (await hoursTab.count()) {
+      await hoursTab.first().click({ timeout: 10000 });
+    } else {
+      await page.getByText(/방송\s*시간/).first().click({ timeout: 10000 });
+    }
+    await page.waitForTimeout(2000);
+    hoursMeta = await extractWeeklyHoursHistory(page);
+  } catch (hoursErr) {
+    hoursMeta = { weeklyHours: [], rangeStart: null, rangeEnd: null, barCount: 0, error: hoursErr.message };
+  }
+  const range = parseRangeText(
+    hoursMeta.rangeStart && hoursMeta.rangeEnd
+      ? `${hoursMeta.rangeStart} ~ ${hoursMeta.rangeEnd}`
+      : ""
+  );
+
+  let cumulativeHours = buildCumulativeHours(hoursMeta.weeklyHours, 0);
+
+  const chzzkTotal = await page.evaluate(() => {
+    const m = document.body.innerText.match(/방송 시간\s*([\d,.]+)\s*시간/);
+    return m ? parseFloat(m[1].replace(/,/g, "")) : 0;
+  });
+
+  const targetHours = chzzkTotal > 0 ? chzzkTotal : streamer.totalLiveHours || 0;
+  if (targetHours > 0) {
+    cumulativeHours = buildCumulativeHours(hoursMeta.weeklyHours, targetHours);
+  }
+
+  return {
+    followers: followerResult.followers,
+    currentFollowers: followerResult.currentFollowers,
+    weeklyHours: hoursMeta.weeklyHours,
+    cumulativeHours,
+    meta: {
+      range: range
+        ? `${range.start.toISOString().slice(0, 10)} ~ ${range.end.toISOString().slice(0, 10)}`
+        : null,
+      barCount: hoursMeta.barCount || 0,
+      hoursError: hoursMeta.error || undefined,
+      scrapedAt: new Date().toISOString(),
+    },
+  };
+}
+
 async function main() {
+  const args = process.argv.slice(2);
+  const missingOnly = args.includes("--missing-only");
+  const onlyId = args.find((a) => a.startsWith("--id="))?.split("=")[1];
+
+  const { FALLBACK_STREAMERS } = await import("../lib/streamersConfig.ts");
+  const dataDir = join(__dirname, "../data");
+  mkdirSync(dataDir, { recursive: true });
+  const outPath = join(dataDir, "softcon-history.json");
+
+  let output = {};
+  try {
+    output = JSON.parse(readFileSync(outPath, "utf8"));
+  } catch {
+    output = {};
+  }
+
+  let targets = FALLBACK_STREAMERS.map((s) => ({
+    channelId: s.channelId,
+    channelName: s.channelName,
+    totalLiveHours: s.totalLiveHours,
+  }));
+
+  if (onlyId) {
+    targets = targets.filter((s) => s.channelId === onlyId);
+  } else if (missingOnly) {
+    targets = targets.filter((s) => !hasHistory(output[s.channelId]));
+  }
+
+  if (targets.length === 0) {
+    console.log("Nothing to scrape.");
+    return;
+  }
+
+  console.log(`Scraping ${targets.length} streamer(s) → ${outPath}`);
+
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-  const output = {};
 
-  for (const streamer of TRACKED_STREAMERS) {
+  for (const streamer of targets) {
     process.stdout.write(`${streamer.channelName}... `);
-
     try {
-      // 1) Followers (full period summary page)
-      await page.goto(`${SOFTCON_BASE}/${streamer.channelId}?activityDate=all`, {
-        waitUntil: "domcontentloaded",
-        timeout: 60000,
-      });
-      await page.waitForTimeout(2500);
-
-      const followerHeading = page.getByText("팔로워 추이", { exact: true });
-      await followerHeading.scrollIntoViewIfNeeded({ timeout: 20000 }).catch(() => {});
-      await page.waitForTimeout(1500);
-
-      let followerResult = { currentFollowers: 0, followers: [] };
-      try {
-        await page.waitForFunction(
-          () =>
-            Array.from(document.querySelectorAll("path")).some(
-              (p) => (p.getAttribute("stroke") || "") === "#2656db"
-            ),
-          { timeout: 15000 }
-        );
-        followerResult = await extractFollowerHistory(page);
-      } catch {
-        // flat follower line fallback below
-      }
-
-      // 2) Weekly broadcast hours → cumulative
-      await page.goto(
-        `${SOFTCON_BASE}/${streamer.channelId}/statistics?period=week&range=all`,
-        { waitUntil: "domcontentloaded", timeout: 60000 }
-      );
-      await page.waitForTimeout(2500);
-      await page.getByRole("button", { name: "방송시간", exact: true }).click();
-      await page.waitForTimeout(2000);
-
-      const hoursMeta = await extractWeeklyHoursHistory(page);
-      const range = parseRangeText(
-        hoursMeta.rangeStart && hoursMeta.rangeEnd
-          ? `${hoursMeta.rangeStart} ~ ${hoursMeta.rangeEnd}`
-          : ""
-      );
-
-      let cumulativeHours = buildCumulativeHours(hoursMeta.weeklyHours, 0);
-
-      // Read Chzzk total from summary block if present
-      const chzzkTotal = await page.evaluate(() => {
-        const m = document.body.innerText.match(/방송 시간\s*([\d,.]+)\s*시간/);
-        return m ? parseFloat(m[1].replace(/,/g, "")) : 0;
-      });
-
-      if (chzzkTotal > 0) {
-        cumulativeHours = buildCumulativeHours(hoursMeta.weeklyHours, chzzkTotal);
-      }
-
-      output[streamer.channelId] = {
-        followers: followerResult.followers,
-        currentFollowers: followerResult.currentFollowers,
-        weeklyHours: hoursMeta.weeklyHours,
-        cumulativeHours,
-        meta: {
-          range: range
-            ? `${range.start.toISOString().slice(0, 10)} ~ ${range.end.toISOString().slice(0, 10)}`
-            : null,
-          barCount: hoursMeta.barCount || 0,
-        },
-      };
-
+      const payload = await scrapeStreamer(page, streamer);
+      output[streamer.channelId] = payload;
+      writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
       console.log(
-        `followers ${followerResult.followers.length}, weeks ${hoursMeta.weeklyHours.length}, cumulative ${cumulativeHours.length}`
+        `followers ${payload.followers.length}, weeks ${payload.weeklyHours.length}, cumulative ${payload.cumulativeHours.length}`
       );
     } catch (err) {
       console.log(`FAILED (${err.message})`);
@@ -276,18 +302,14 @@ async function main() {
         followers: [],
         weeklyHours: [],
         cumulativeHours: [],
-        meta: { error: err.message },
+        meta: { error: err.message, scrapedAt: new Date().toISOString() },
       };
+      writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
     }
   }
 
   await browser.close();
-
-  const dataDir = join(__dirname, "../data");
-  mkdirSync(dataDir, { recursive: true });
-  const outPath = join(dataDir, "softcon-history.json");
-  writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
-  console.log(`\nWrote ${outPath}`);
+  console.log(`\nDone. ${Object.keys(output).length} channels in ${outPath}`);
 }
 
 main().catch((err) => {
