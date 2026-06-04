@@ -95,6 +95,12 @@ body {
   padding: 6px 10px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.flip-clock-container.flip-clock-themed {
+  background-color: var(--flip-shell, #18181b);
+  border-color: var(--flip-border, rgba(255, 255, 255, 0.12));
 }
 
 .flip-clock-digit {
@@ -112,6 +118,21 @@ body {
   border-radius: 4px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.flip-clock-themed .flip-clock-digit {
+  color: var(--flip-text, #ffffff);
+  background-color: var(--flip-digit, #27272a);
+  border-color: var(--flip-border, rgba(255, 255, 255, 0.12));
+}
+
+.flip-clock-comma {
+  color: #a3a3a3;
+}
+
+.flip-clock-themed .flip-clock-comma {
+  color: var(--flip-comma, #d4d4d4);
 }
 
 .flip-clock-digit-text {
@@ -143,8 +164,12 @@ body {
   left: 0;
   width: 100%;
   height: 1px;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.14);
   z-index: 5;
+}
+
+.flip-clock-themed .flip-clock-digit-crease {
+  background-color: rgba(255, 255, 255, 0.18);
 }
 
 /* Infinite Marquee Slider for Partner/Streamer circular profiles */

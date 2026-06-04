@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import confetti from "canvas-confetti";
-import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users, Check } from "lucide-react";
+import Image from "next/image";
+import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users, Check, ArrowDown, ArrowUp } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   getGroupTag,
@@ -85,6 +86,50 @@ const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawH
   cream: { bg: "bg-[#fffbf0]", accent: "bg-[#fbbf24]", text: "text-[#b45309]", rawHex: "#fbbf24" },
   lime: { bg: "bg-[#e2fc52]/10", accent: "bg-[#e2fc52]", text: "text-[#4d5d03]", rawHex: "#b5db00" }, // Special style for signature figma lime
 };
+
+const FLIP_THEME_MAP: Record<string, { shell: string; digit: string; text: string; border: string; comma: string }> = {
+  lilac: { shell: "#5b21b6", digit: "#7c3aed", text: "#ffffff", border: "rgba(255,255,255,0.22)", comma: "#ddd6fe" },
+  pink: { shell: "#be123c", digit: "#e11d48", text: "#ffffff", border: "rgba(255,255,255,0.22)", comma: "#fecdd3" },
+  mint: { shell: "#047857", digit: "#059669", text: "#ffffff", border: "rgba(255,255,255,0.22)", comma: "#a7f3d0" },
+  coral: { shell: "#c2410c", digit: "#ea580c", text: "#ffffff", border: "rgba(255,255,255,0.22)", comma: "#fed7aa" },
+  cream: { shell: "#b45309", digit: "#d97706", text: "#fffbeb", border: "rgba(255,255,255,0.2)", comma: "#fde68a" },
+  lime: { shell: "#3f6212", digit: "#65a30d", text: "#fefce8", border: "rgba(255,255,255,0.2)", comma: "#d9f99d" },
+  default: { shell: "#18181b", digit: "#27272a", text: "#ffffff", border: "rgba(255,255,255,0.12)", comma: "#a3a3a3" },
+};
+
+type CardSortField = "hours" | "followers" | null;
+type CardSortDir = "asc" | "desc";
+
+function StreamerChannelImage({
+  src,
+  alt,
+  variant = "card",
+  className = "",
+}: {
+  src: string;
+  alt: string;
+  variant?: "card" | "avatar" | "thumb";
+  className?: string;
+}) {
+  const objectClass =
+    variant === "avatar"
+      ? "object-cover object-[center_22%]"
+      : variant === "thumb"
+        ? "object-cover object-[center_20%]"
+        : "object-cover object-[center_22%]";
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes={variant === "card" ? "(max-width: 768px) 45vw, 22vw" : variant === "avatar" ? "56px" : "84px"}
+      quality={90}
+      className={`${objectClass} ${className}`}
+      unoptimized={!src.includes("pstatic.net")}
+    />
+  );
+}
 
 const BORDER_COLOR_MAP: Record<string, string> = {
   lilac: "border-[#e6d6ff]",
@@ -201,10 +246,12 @@ function FlipClock({
   value,
   size = "normal",
   minDigits = 5,
+  theme = "default",
 }: {
   value: number;
   size?: "normal" | "small" | "large";
   minDigits?: number;
+  theme?: keyof typeof FLIP_THEME_MAP | string;
 }) {
   const numStr = String(value).padStart(minDigits, "0");
   const chars: string[] = [];
@@ -215,19 +262,32 @@ function FlipClock({
     chars.push(numStr[i]);
   }
 
+  const flipTheme = FLIP_THEME_MAP[theme] || FLIP_THEME_MAP.default;
+  const themeStyle = {
+    "--flip-shell": flipTheme.shell,
+    "--flip-digit": flipTheme.digit,
+    "--flip-text": flipTheme.text,
+    "--flip-border": flipTheme.border,
+    "--flip-comma": flipTheme.comma,
+  } as React.CSSProperties;
+
   return (
-    <div className="flip-clock-container" onClick={(e) => {
-      if (size === "large") {
-        e.stopPropagation(); // Only block propagation on large active clock, not on small preview clocks so card clicks work!
-      }
-    }}>
+    <div
+      className="flip-clock-container flip-clock-themed"
+      style={themeStyle}
+      onClick={(e) => {
+        if (size === "large") {
+          e.stopPropagation();
+        }
+      }}
+    >
       {chars.map((char, index) => {
         const isComma = char === ",";
         if (isComma) {
           return (
             <span
               key={index}
-              className={`text-neutral-400 font-bold font-mono select-none self-end pb-1 ${
+              className={`flip-clock-comma font-bold font-mono select-none self-end pb-1 ${
                 size === "small" ? "text-[14px] px-0.5" : size === "large" ? "text-[32px] px-2 pb-3" : "text-[18px] px-1"
               }`}
             >
@@ -257,6 +317,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [activeStreamerId, setActiveStreamerId] = useState<string | null>(null);
   const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set());
   const [compareHeaderView, setCompareHeaderView] = useState(false);
+  const [cardSortField, setCardSortField] = useState<CardSortField>(null);
+  const [cardSortDir, setCardSortDir] = useState<CardSortDir>("desc");
   const [hoveredHoursPointState, setHoveredHoursPoint] = useState<HoursChartPoint | null>(null);
   const [hoveredFollowersPointState, setHoveredFollowersPoint] = useState<FollowersChartPoint | null>(null);
   const [chartMarkerTooltip, setChartMarkerTooltip] = useState<ChartMarkerTooltip>(null);
@@ -490,12 +552,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       <div className={`rounded-[32px] border ${borderSet} ${colorSet.bg} p-8 md:p-12 shadow-sm relative overflow-hidden`}>
         <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left flex-1 min-w-0">
-            <div className="w-[110px] h-[110px] rounded-[24px] overflow-hidden border-4 border-white shadow-lg shrink-0">
-              <img
-                src={streamer.channelImageUrl}
-                alt={streamer.channelName}
-                className="w-full h-full object-cover"
-              />
+            <div className="w-[110px] h-[110px] rounded-[24px] overflow-hidden border-4 border-white shadow-lg shrink-0 relative bg-neutral-100">
+              <StreamerChannelImage src={streamer.channelImageUrl} alt={streamer.channelName} variant="avatar" />
             </div>
             <div className="space-y-3 min-w-0">
               <div className="flex items-center justify-center md:justify-start gap-2">
@@ -573,14 +631,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                 TOTAL LIVE BROADCAST HOURS
               </span>
-              <FlipClock value={streamer.totalLiveHours} size="large" />
+              <FlipClock value={streamer.totalLiveHours} size="large" theme={streamer.color} />
             </div>
             {streamer.followerCount !== undefined && (
               <div className="flex flex-col items-center lg:items-end gap-3 w-full">
                 <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                   TOTAL FOLLOWERS
                 </span>
-                <FlipClock value={streamer.followerCount} size="large" minDigits={5} />
+                <FlipClock value={streamer.followerCount} size="large" minDigits={5} theme={streamer.color} />
               </div>
             )}
           </div>
@@ -982,6 +1040,27 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     }
     return `${count.toLocaleString()}명`;
   };
+
+  const toggleCardSort = (field: Exclude<CardSortField, null>) => {
+    if (cardSortField === field) {
+      setCardSortDir((prev) => (prev === "desc" ? "asc" : "desc"));
+    } else {
+      setCardSortField(field);
+      setCardSortDir("desc");
+    }
+  };
+
+  const sortedStreamers = useMemo(() => {
+    if (!cardSortField) return streamers;
+
+    const list = [...streamers];
+    list.sort((a, b) => {
+      const left = cardSortField === "hours" ? a.totalLiveHours : a.followerCount ?? 0;
+      const right = cardSortField === "hours" ? b.totalLiveHours : b.followerCount ?? 0;
+      return cardSortDir === "desc" ? right - left : left - right;
+    });
+    return list;
+  }, [streamers, cardSortField, cardSortDir]);
 
   const formatDateShort = (dateStr: string | Date) => {
     try {
@@ -2175,11 +2254,13 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   className="group rounded-[24px] border border-hairline-soft bg-neutral-50 px-5 py-4 text-left hover:bg-white hover:-translate-y-0.5 transition-all"
                 >
                   <div className="flex items-center gap-4">
-                    <img
-                      src={topFollowerChaser.streamer.channelImageUrl}
-                      alt={topFollowerChaser.streamer.channelName}
-                      className="w-14 h-14 rounded-full object-cover border-2 border-white"
-                    />
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white shrink-0 bg-neutral-100">
+                      <StreamerChannelImage
+                        src={topFollowerChaser.streamer.channelImageUrl}
+                        alt={topFollowerChaser.streamer.channelName}
+                        variant="avatar"
+                      />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">
                         TOP-1 FOLLOWER CLOSEST
@@ -2204,11 +2285,13 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   className="group rounded-[24px] border border-hairline-soft bg-neutral-50 px-5 py-4 text-left hover:bg-white hover:-translate-y-0.5 transition-all"
                 >
                   <div className="flex items-center gap-4">
-                    <img
-                      src={topHoursChaser.streamer.channelImageUrl}
-                      alt={topHoursChaser.streamer.channelName}
-                      className="w-14 h-14 rounded-full object-cover border-2 border-white"
-                    />
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white shrink-0 bg-neutral-100">
+                      <StreamerChannelImage
+                        src={topHoursChaser.streamer.channelImageUrl}
+                        alt={topHoursChaser.streamer.channelName}
+                        variant="avatar"
+                      />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">
                         TOP-1 HOURS CLOSEST
@@ -2237,11 +2320,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 onClick={() => handleSelectStreamer(streamer.channelId)}
               >
                     {/* Infinite marquee profiles display: Clean, sleek circles with custom hover effects */}
-                    <div className={`w-[84px] h-[84px] rounded-full overflow-hidden border-4 border-white shadow-md transition-all duration-300 group-hover:scale-110 group-active:scale-95 group-hover:border-${streamer.color}`}>
-                      <img
+                    <div className={`w-[84px] h-[84px] rounded-full overflow-hidden border-4 border-white shadow-md transition-all duration-300 group-hover:scale-110 group-active:scale-95 relative bg-neutral-100`}>
+                      <StreamerChannelImage
                         src={streamer.channelImageUrl}
                         alt={streamer.channelName}
-                        className="w-full h-full object-cover"
+                        variant="thumb"
                       />
                     </div>
                     {/* Micro tooltip label showing name on hover */}
@@ -2294,9 +2377,53 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase mr-1">
+          정렬
+        </span>
+        <button
+          type="button"
+          onClick={() => toggleCardSort("hours")}
+          className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-bold transition-colors ${
+            cardSortField === "hours"
+              ? "bg-black text-white border-black"
+              : "bg-white text-neutral-700 border-hairline hover:bg-neutral-50"
+          }`}
+        >
+          <Trophy className="w-3.5 h-3.5" />
+          방송시간
+          {cardSortField === "hours" && (cardSortDir === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />)}
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleCardSort("followers")}
+          className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-bold transition-colors ${
+            cardSortField === "followers"
+              ? "bg-black text-white border-black"
+              : "bg-white text-neutral-700 border-hairline hover:bg-neutral-50"
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          팔로워
+          {cardSortField === "followers" && (cardSortDir === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />)}
+        </button>
+        {cardSortField && (
+          <button
+            type="button"
+            onClick={() => {
+              setCardSortField(null);
+              setCardSortDir("desc");
+            }}
+            className="inline-flex items-center h-9 px-3.5 rounded-full border border-hairline bg-white text-neutral-500 text-[13px] font-bold hover:bg-neutral-50 transition-colors"
+          >
+            기본
+          </button>
+        )}
+      </div>
+
       {/* Streamer profile card grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-        {streamers.map((streamer) => {
+        {sortedStreamers.map((streamer) => {
           const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
           const borderSet = BORDER_COLOR_MAP[streamer.color] || "border-neutral-200";
           const isSelected = selectedForCompare.has(streamer.channelId);
@@ -2312,11 +2439,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   isSelected ? "ring-2 ring-black ring-offset-2" : ""
                 }`}
               >
-                <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-neutral-100 border border-hairline group">
-                  <img
+                <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-neutral-200/70 border border-hairline group">
+                  <StreamerChannelImage
                     src={streamer.channelImageUrl}
                     alt={streamer.channelName}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    variant="card"
+                    className="transition-transform duration-500 md:group-hover:scale-[1.03]"
                   />
                   <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-bold font-mono tracking-mono uppercase flex items-center gap-1 shadow-sm">
                     <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-400 shrink-0" />
@@ -2397,14 +2525,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                     <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
                       TOTAL HOURS
                     </span>
-                    <FlipClock value={streamer.totalLiveHours} size="small" />
+                    <FlipClock value={streamer.totalLiveHours} size="small" theme={streamer.color} />
                   </div>
                   {streamer.followerCount !== undefined && (
                     <div className="min-w-0 overflow-x-auto">
                       <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
                         FOLLOWERS
                       </span>
-                      <FlipClock value={streamer.followerCount} size="small" minDigits={5} />
+                      <FlipClock value={streamer.followerCount} size="small" minDigits={5} theme={streamer.color} />
                     </div>
                   )}
                 </div>
