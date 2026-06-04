@@ -18,11 +18,20 @@ function rgbToHex(r: number, g: number, b: number) {
   return `#${[r, g, b].map((value) => clamp(Math.round(value), 0, 255).toString(16).padStart(2, "0")).join("")}`;
 }
 
-export function buildCardPalette(rgb: { r: number; g: number; b: number }): CardPalette {
-  const { r, g, b } = rgb;
+function boostSaturation(rgb: { r: number; g: number; b: number }, factor = 1.45) {
+  const avg = (rgb.r + rgb.g + rgb.b) / 3;
+  return {
+    r: clamp(Math.round(avg + (rgb.r - avg) * factor), 0, 255),
+    g: clamp(Math.round(avg + (rgb.g - avg) * factor), 0, 255),
+    b: clamp(Math.round(avg + (rgb.b - avg) * factor), 0, 255),
+  };
+}
 
-  const cardBg = `rgb(${mixWithWhite(r, 0.42)}, ${mixWithWhite(g, 0.42)}, ${mixWithWhite(b, 0.42)})`;
-  const cardBorder = `rgb(${mixWithWhite(r, 0.58)}, ${mixWithWhite(g, 0.58)}, ${mixWithWhite(b, 0.58)})`;
+export function buildCardPalette(rgb: { r: number; g: number; b: number }): CardPalette {
+  const { r, g, b } = boostSaturation(rgb);
+
+  const cardBg = `rgb(${mixWithWhite(r, 0.62)}, ${mixWithWhite(g, 0.62)}, ${mixWithWhite(b, 0.62)})`;
+  const cardBorder = `rgb(${mixWithWhite(r, 0.78)}, ${mixWithWhite(g, 0.78)}, ${mixWithWhite(b, 0.78)})`;
 
   const accentR = clamp(Math.round(r * 0.82), 0, 255);
   const accentG = clamp(Math.round(g * 0.82), 0, 255);
@@ -109,10 +118,5 @@ export async function attachPaletteToStreamer<T extends { channelImageUrl: strin
 export async function ensureStreamerPalettes<T extends { channelImageUrl: string; cardBg?: string }>(
   streamers: T[]
 ): Promise<Array<T & Partial<CardPalette>>> {
-  return Promise.all(
-    streamers.map(async (streamer) => {
-      if (streamer.cardBg) return streamer;
-      return attachPaletteToStreamer(streamer);
-    })
-  );
+  return Promise.all(streamers.map((streamer) => attachPaletteToStreamer(streamer)));
 }
