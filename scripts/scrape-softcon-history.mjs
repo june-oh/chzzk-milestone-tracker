@@ -143,7 +143,7 @@ async function extractWeeklyHoursHistory(page) {
         h: Number(r.getAttribute("height") || 0),
         w: Number(r.getAttribute("width") || 0),
       }))
-      .filter((r) => r.h > 10 && r.h < 260 && r.w > 20 && r.w < 50);
+      .filter((r) => r.h > 10 && r.h < 260 && r.w > 3 && r.w < 20);
 
     if (bars.length === 0 || !rangeStart || !rangeEnd) {
       return { weeklyHours: [], rangeStart, rangeEnd };

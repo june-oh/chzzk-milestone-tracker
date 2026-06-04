@@ -4497,5 +4497,53 @@
     "weeklyHours": [],
     "cumulativeHours": [],
     "meta": {}
+  },
+  "c0d9723cbb75dc223c6aa8a9d4f56002": {
+    "followers": [],
+    "currentFollowers": 0,
+    "weeklyHours": [],
+    "cumulativeHours": [],
+    "meta": {
+      "range": null,
+      "barCount": 0,
+      "hoursError": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByText(/방송\\s*시간/).first()\n",
+      "scrapedAt": "2026-06-04T05:55:32.671Z"
+    }
+  },
+  "65a53076fe1a39636082dd6dba8b8a4b": {
+    "followers": [],
+    "currentFollowers": 0,
+    "weeklyHours": [],
+    "cumulativeHours": [],
+    "meta": {
+      "range": null,
+      "barCount": 0,
+      "hoursError": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByText(/방송\\s*시간/).first()\n",
+      "scrapedAt": "2026-06-04T05:56:39.271Z"
+    }
+  },
+  "b82e8bc2505e37156b2d1140ba1fc05c": {
+    "followers": [],
+    "currentFollowers": 0,
+    "weeklyHours": [],
+    "cumulativeHours": [],
+    "meta": {
+      "range": null,
+      "barCount": 0,
+      "hoursError": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByText(/방송\\s*시간/).first()\n",
+      "scrapedAt": "2026-06-04T05:57:45.878Z"
+    }
+  },
+  "798e100206987b59805cfb75f927e965": {
+    "followers": [],
+    "currentFollowers": 0,
+    "weeklyHours": [],
+    "cumulativeHours": [],
+    "meta": {
+      "range": null,
+      "barCount": 0,
+      "hoursError": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByText(/방송\\s*시간/).first()\n",
+      "scrapedAt": "2026-06-04T05:58:52.451Z"
+    }
   }
 }
