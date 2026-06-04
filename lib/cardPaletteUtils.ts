@@ -88,11 +88,16 @@ export function resolveCardPalette(options: {
   cardBg?: string;
   cardBorder?: string;
   extracted?: CardSurfacePalette | null;
-  namuwiki?: CardSurfacePalette | null;
+  verifiedNamuwiki?: CardSurfacePalette | null;
+  bundledImage?: CardSurfacePalette | null;
   fallbackHex?: string;
 }): CardSurfacePalette {
-  if (options.namuwiki?.cardBg && options.namuwiki?.cardBorder) {
-    return options.namuwiki;
+  if (options.verifiedNamuwiki?.cardBg && options.verifiedNamuwiki?.cardBorder) {
+    return options.verifiedNamuwiki;
+  }
+
+  if (options.bundledImage?.cardBg && options.bundledImage?.cardBorder) {
+    return options.bundledImage;
   }
 
   if (options.extracted?.cardBg && options.extracted?.cardBorder) {

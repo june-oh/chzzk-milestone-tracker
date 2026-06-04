@@ -1,0 +1,378 @@
+{
+  "meta": {
+    "updatedAt": "2026-06-04T11:56:04.633Z",
+    "count": 46,
+    "total": 46,
+    "algorithm": "sharp dominant-color + saturation boost"
+  },
+  "colors": {
+    "65c3035bdc598c81f15a8fe0e958b3ce": {
+      "channelName": "초승달",
+      "cardBg": "rgba(190, 81, 97, 0.32)",
+      "cardBorder": "rgba(190, 81, 97, 0.38)",
+      "accentHex": "#be5161",
+      "accentRgb": "190, 81, 97",
+      "usedWhenNamuwikiMissing": false
+    },
+    "4de764d9dad3b25602284be6db3ac647": {
+      "channelName": "아리사",
+      "cardBg": "rgba(143, 109, 178, 0.32)",
+      "cardBorder": "rgba(143, 109, 178, 0.38)",
+      "accentHex": "#8f6db2",
+      "accentRgb": "143, 109, 178",
+      "usedWhenNamuwikiMissing": true
+    },
+    "32fb866e323242b770cdc790f991a6f6": {
+      "channelName": "카린",
+      "cardBg": "rgba(233, 67, 98, 0.32)",
+      "cardBorder": "rgba(233, 67, 98, 0.38)",
+      "accentHex": "#e94362",
+      "accentRgb": "233, 67, 98",
+      "usedWhenNamuwikiMissing": false
+    },
+    "475313e6c26639d5763628313b4c130e": {
+      "channelName": "엘리",
+      "cardBg": "rgba(217, 79, 138, 0.32)",
+      "cardBorder": "rgba(217, 79, 138, 0.38)",
+      "accentHex": "#d94f8a",
+      "accentRgb": "217, 79, 138",
+      "usedWhenNamuwikiMissing": true
+    },
+    "17d8605fc37fb5ef49f5f67ae786fe4e": {
+      "channelName": "에리스",
+      "cardBg": "rgba(150, 124, 143, 0.32)",
+      "cardBorder": "rgba(150, 124, 143, 0.38)",
+      "accentHex": "#967c8f",
+      "accentRgb": "150, 124, 143",
+      "usedWhenNamuwikiMissing": true
+    },
+    "a67b328bcc8eea4451ccfa754bc19ae1": {
+      "channelName": "달콤레나 씨",
+      "cardBg": "rgba(95, 61, 98, 0.32)",
+      "cardBorder": "rgba(95, 61, 98, 0.38)",
+      "accentHex": "#5f3d62",
+      "accentRgb": "95, 61, 98",
+      "usedWhenNamuwikiMissing": true
+    },
+    "a3ceb9179d99be8d1e63b3e911fcd16b": {
+      "channelName": "키유 Kiyuu",
+      "cardBg": "rgba(153, 177, 166, 0.32)",
+      "cardBorder": "rgba(153, 177, 166, 0.38)",
+      "accentHex": "#99b1a6",
+      "accentRgb": "153, 177, 166",
+      "usedWhenNamuwikiMissing": true
+    },
+    "088973112d8acc831ec20274f7ffbb99": {
+      "channelName": "미하루 Miharu",
+      "cardBg": "rgba(188, 72, 88, 0.32)",
+      "cardBorder": "rgba(188, 72, 88, 0.38)",
+      "accentHex": "#bc4858",
+      "accentRgb": "188, 72, 88",
+      "usedWhenNamuwikiMissing": true
+    },
+    "c8adce2ff4a3618931e07c327e1fa070": {
+      "channelName": "포키쨩",
+      "cardBg": "rgba(128, 69, 122, 0.32)",
+      "cardBorder": "rgba(128, 69, 122, 0.38)",
+      "accentHex": "#80457a",
+      "accentRgb": "128, 69, 122",
+      "usedWhenNamuwikiMissing": true
+    },
+    "6ccaebc2569f62344c6fc257f8f2b9ad": {
+      "channelName": "엘시v",
+      "cardBg": "rgba(119, 194, 255, 0.32)",
+      "cardBorder": "rgba(119, 194, 255, 0.38)",
+      "accentHex": "#77c2ff",
+      "accentRgb": "119, 194, 255",
+      "usedWhenNamuwikiMissing": true
+    },
+    "d5e2e0c14dcca4c4b10c7c9633022f52": {
+      "channelName": "치치 Planeta",
+      "cardBg": "rgba(17, 12, 119, 0.32)",
+      "cardBorder": "rgba(17, 12, 119, 0.38)",
+      "accentHex": "#110c77",
+      "accentRgb": "17, 12, 119",
+      "usedWhenNamuwikiMissing": true
+    },
+    "5ead7124638ac4c568f2cde0224b3b6b": {
+      "channelName": "카네코 파냐 Planeta",
+      "cardBg": "rgba(14, 10, 108, 0.32)",
+      "cardBorder": "rgba(14, 10, 108, 0.38)",
+      "accentHex": "#0e0a6c",
+      "accentRgb": "14, 10, 108",
+      "usedWhenNamuwikiMissing": false
+    },
+    "941ea3807ba8b9b7dddb1670e3e7e5af": {
+      "channelName": "아마네 나기 Planeta",
+      "cardBg": "rgba(17, 11, 121, 0.32)",
+      "cardBorder": "rgba(17, 11, 121, 0.38)",
+      "accentHex": "#110b79",
+      "accentRgb": "17, 11, 121",
+      "usedWhenNamuwikiMissing": true
+    },
+    "59aa824e4c4a56dd51e7a5e2e9172648": {
+      "channelName": "쿠온 레이 Planeta",
+      "cardBg": "rgba(14, 10, 117, 0.32)",
+      "cardBorder": "rgba(14, 10, 117, 0.38)",
+      "accentHex": "#0e0a75",
+      "accentRgb": "14, 10, 117",
+      "usedWhenNamuwikiMissing": true
+    },
+    "c0d9723cbb75dc223c6aa8a9d4f56002": {
+      "channelName": "허니츄러스",
+      "cardBg": "rgba(201, 88, 90, 0.32)",
+      "cardBorder": "rgba(201, 88, 90, 0.38)",
+      "accentHex": "#c9585a",
+      "accentRgb": "201, 88, 90",
+      "usedWhenNamuwikiMissing": true
+    },
+    "65a53076fe1a39636082dd6dba8b8a4b": {
+      "channelName": "오화요 Ohwayo",
+      "cardBg": "rgba(162, 114, 121, 0.32)",
+      "cardBorder": "rgba(162, 114, 121, 0.38)",
+      "accentHex": "#a27279",
+      "accentRgb": "162, 114, 121",
+      "usedWhenNamuwikiMissing": true
+    },
+    "b82e8bc2505e37156b2d1140ba1fc05c": {
+      "channelName": "담유이",
+      "cardBg": "rgba(112, 167, 228, 0.32)",
+      "cardBorder": "rgba(112, 167, 228, 0.38)",
+      "accentHex": "#70a7e4",
+      "accentRgb": "112, 167, 228",
+      "usedWhenNamuwikiMissing": true
+    },
+    "798e100206987b59805cfb75f927e965": {
+      "channelName": "디디디용",
+      "cardBg": "rgba(243, 136, 94, 0.32)",
+      "cardBorder": "rgba(243, 136, 94, 0.38)",
+      "accentHex": "#f3885e",
+      "accentRgb": "243, 136, 94",
+      "usedWhenNamuwikiMissing": true
+    },
+    "abe8aa82baf3d3ef54ad8468ee73e7fc": {
+      "channelName": "아야 AyaUke",
+      "cardBg": "rgba(159, 111, 188, 0.32)",
+      "cardBorder": "rgba(159, 111, 188, 0.38)",
+      "accentHex": "#9f6fbc",
+      "accentRgb": "159, 111, 188",
+      "usedWhenNamuwikiMissing": true
+    },
+    "bd07973b6021d72512240c01a386d5c9": {
+      "channelName": "망내",
+      "cardBg": "rgba(88, 73, 88, 0.32)",
+      "cardBorder": "rgba(88, 73, 88, 0.38)",
+      "accentHex": "#584958",
+      "accentRgb": "88, 73, 88",
+      "usedWhenNamuwikiMissing": true
+    },
+    "3e3781d3bd20dadc2f6f6d5d30091195": {
+      "channelName": "포포포포 POPOPOPO",
+      "cardBg": "rgba(103, 151, 244, 0.32)",
+      "cardBorder": "rgba(103, 151, 244, 0.38)",
+      "accentHex": "#6797f4",
+      "accentRgb": "103, 151, 244",
+      "usedWhenNamuwikiMissing": true
+    },
+    "5c897b3e639045ca6e314bbaff991f73": {
+      "channelName": "비올레타 모네",
+      "cardBg": "rgba(199, 114, 188, 0.32)",
+      "cardBorder": "rgba(199, 114, 188, 0.38)",
+      "accentHex": "#c772bc",
+      "accentRgb": "199, 114, 188",
+      "usedWhenNamuwikiMissing": true
+    },
+    "dae2de8eaa005a59163f2e4c045e1aa1": {
+      "channelName": "블레어 로즈",
+      "cardBg": "rgba(239, 0, 9, 0.32)",
+      "cardBorder": "rgba(239, 0, 9, 0.38)",
+      "accentHex": "#ef0009",
+      "accentRgb": "239, 0, 9",
+      "usedWhenNamuwikiMissing": true
+    },
+    "b33c957eac9335d38e4043c3dca97675": {
+      "channelName": "하시요 HaSiyo",
+      "cardBg": "rgba(202, 137, 117, 0.32)",
+      "cardBorder": "rgba(202, 137, 117, 0.38)",
+      "accentHex": "#ca8975",
+      "accentRgb": "202, 137, 117",
+      "usedWhenNamuwikiMissing": true
+    },
+    "f36320c432d9f06095ce2cfbbf681c26": {
+      "channelName": "류시호 RyuSiho",
+      "cardBg": "rgba(212, 194, 163, 0.32)",
+      "cardBorder": "rgba(212, 194, 163, 0.38)",
+      "accentHex": "#d4c2a3",
+      "accentRgb": "212, 194, 163",
+      "usedWhenNamuwikiMissing": true
+    },
+    "e87999abca4fd0c3214e05ef414ce951": {
+      "channelName": "야토 Yato",
+      "cardBg": "rgba(255, 164, 63, 0.32)",
+      "cardBorder": "rgba(255, 164, 63, 0.38)",
+      "accentHex": "#ffa43f",
+      "accentRgb": "255, 164, 63",
+      "usedWhenNamuwikiMissing": true
+    },
+    "f3b204dd3fd6925835ca1848cd4b6d3c": {
+      "channelName": "오단밍",
+      "cardBg": "rgba(201, 107, 103, 0.32)",
+      "cardBorder": "rgba(201, 107, 103, 0.38)",
+      "accentHex": "#c96b67",
+      "accentRgb": "201, 107, 103",
+      "usedWhenNamuwikiMissing": true
+    },
+    "9351fb8417f73405c84e0846409e3263": {
+      "channelName": "햄쿠비",
+      "cardBg": "rgba(159, 121, 117, 0.32)",
+      "cardBorder": "rgba(159, 121, 117, 0.38)",
+      "accentHex": "#9f7975",
+      "accentRgb": "159, 121, 117",
+      "usedWhenNamuwikiMissing": false
+    },
+    "4325b1d5bbc321fad3042306646e2e50": {
+      "channelName": "아카네 리제",
+      "cardBg": "rgba(230, 18, 49, 0.32)",
+      "cardBorder": "rgba(230, 18, 49, 0.38)",
+      "accentHex": "#e61231",
+      "accentRgb": "230, 18, 49",
+      "usedWhenNamuwikiMissing": false
+    },
+    "64d76089fba26b180d9c9e48a32600d9": {
+      "channelName": "텐코 시부키",
+      "cardBg": "rgba(183, 150, 224, 0.32)",
+      "cardBorder": "rgba(183, 150, 224, 0.38)",
+      "accentHex": "#b796e0",
+      "accentRgb": "183, 150, 224",
+      "usedWhenNamuwikiMissing": true
+    },
+    "a6c4ddb09cdb160478996007bff35296": {
+      "channelName": "아라하시 타비",
+      "cardBg": "rgba(138, 185, 201, 0.32)",
+      "cardBorder": "rgba(138, 185, 201, 0.38)",
+      "accentHex": "#8ab9c9",
+      "accentRgb": "138, 185, 201",
+      "usedWhenNamuwikiMissing": true
+    },
+    "4515b179f86b67b4981e16190817c580": {
+      "channelName": "네네코 마시로",
+      "cardBg": "rgba(166, 97, 131, 0.32)",
+      "cardBorder": "rgba(166, 97, 131, 0.38)",
+      "accentHex": "#a66183",
+      "accentRgb": "166, 97, 131",
+      "usedWhenNamuwikiMissing": true
+    },
+    "b044e3a3b9259246bc92e863e7d3f3b8": {
+      "channelName": "시라유키 히나",
+      "cardBg": "rgba(85, 98, 174, 0.32)",
+      "cardBorder": "rgba(85, 98, 174, 0.38)",
+      "accentHex": "#5562ae",
+      "accentRgb": "85, 98, 174",
+      "usedWhenNamuwikiMissing": true
+    },
+    "45e71a76e949e16a34764deb962f9d9f": {
+      "channelName": "아야츠노 유니",
+      "cardBg": "rgba(178, 152, 223, 0.32)",
+      "cardBorder": "rgba(178, 152, 223, 0.38)",
+      "accentHex": "#b298df",
+      "accentRgb": "178, 152, 223",
+      "usedWhenNamuwikiMissing": true
+    },
+    "36ddb9bb4f17593b60f1b63cec86611d": {
+      "channelName": "사키하네 후야",
+      "cardBg": "rgba(118, 68, 136, 0.32)",
+      "cardBorder": "rgba(118, 68, 136, 0.38)",
+      "accentHex": "#764488",
+      "accentRgb": "118, 68, 136",
+      "usedWhenNamuwikiMissing": true
+    },
+    "516937b5f85cbf2249ce31b0ad046b0f": {
+      "channelName": "아오쿠모 린",
+      "cardBg": "rgba(44, 72, 166, 0.32)",
+      "cardBorder": "rgba(44, 72, 166, 0.38)",
+      "accentHex": "#2c48a6",
+      "accentRgb": "44, 72, 166",
+      "usedWhenNamuwikiMissing": true
+    },
+    "4d812b586ff63f8a2946e64fa860bbf5": {
+      "channelName": "하나코 나나",
+      "cardBg": "rgba(182, 53, 133, 0.32)",
+      "cardBorder": "rgba(182, 53, 133, 0.38)",
+      "accentHex": "#b63585",
+      "accentRgb": "182, 53, 133",
+      "usedWhenNamuwikiMissing": true
+    },
+    "8fd39bb8de623317de90654718638b10": {
+      "channelName": "유즈하 리코",
+      "cardBg": "rgba(132, 212, 149, 0.32)",
+      "cardBorder": "rgba(132, 212, 149, 0.38)",
+      "accentHex": "#84d495",
+      "accentRgb": "132, 212, 149",
+      "usedWhenNamuwikiMissing": true
+    },
+    "a54372e8197f6d241a43a318279860d6": {
+      "channelName": "쿠레나이 나츠키",
+      "cardBg": "rgba(248, 61, 63, 0.32)",
+      "cardBorder": "rgba(248, 61, 63, 0.38)",
+      "accentHex": "#f83d3f",
+      "accentRgb": "248, 61, 63",
+      "usedWhenNamuwikiMissing": true
+    },
+    "0a2020b09b8cc7f2285b7ae5de2ce4d3": {
+      "channelName": "테리 눈나",
+      "cardBg": "rgba(182, 125, 127, 0.32)",
+      "cardBorder": "rgba(182, 125, 127, 0.38)",
+      "accentHex": "#b67d7f",
+      "accentRgb": "182, 125, 127",
+      "usedWhenNamuwikiMissing": true
+    },
+    "a048127622edd6c3ee8e477471a1d823": {
+      "channelName": "빙하유",
+      "cardBg": "rgba(133, 126, 238, 0.32)",
+      "cardBorder": "rgba(133, 126, 238, 0.38)",
+      "accentHex": "#857eee",
+      "accentRgb": "133, 126, 238",
+      "usedWhenNamuwikiMissing": true
+    },
+    "f1869f490ddd660c420b2f57c649e6bb": {
+      "channelName": "양메이",
+      "cardBg": "rgba(198, 185, 124, 0.32)",
+      "cardBorder": "rgba(198, 185, 124, 0.38)",
+      "accentHex": "#c6b97c",
+      "accentRgb": "198, 185, 124",
+      "usedWhenNamuwikiMissing": true
+    },
+    "29a1ed5c0829fa620fab900dba7e011b": {
+      "channelName": "유리리",
+      "cardBg": "rgba(146, 170, 201, 0.32)",
+      "cardBorder": "rgba(146, 170, 201, 0.38)",
+      "accentHex": "#92aac9",
+      "accentRgb": "146, 170, 201",
+      "usedWhenNamuwikiMissing": true
+    },
+    "0f61ae00c2aef2b789dc009e51cbcc5a": {
+      "channelName": "온 하루",
+      "cardBg": "rgba(193, 121, 154, 0.32)",
+      "cardBorder": "rgba(193, 121, 154, 0.38)",
+      "accentHex": "#c1799a",
+      "accentRgb": "193, 121, 154",
+      "usedWhenNamuwikiMissing": true
+    },
+    "7b9c6553913c755812ef2cd9fbe1dc5c": {
+      "channelName": "하네ㅣHane",
+      "cardBg": "rgba(89, 143, 184, 0.32)",
+      "cardBorder": "rgba(89, 143, 184, 0.38)",
+      "accentHex": "#598fb8",
+      "accentRgb": "89, 143, 184",
+      "usedWhenNamuwikiMissing": false
+    },
+    "f42e97f59c3177b8686dccfbf90792dd": {
+      "channelName": "김아테 l Ate",
+      "cardBg": "rgba(255, 207, 101, 0.32)",
+      "cardBorder": "rgba(255, 207, 101, 0.38)",
+      "accentHex": "#ffcf65",
+      "accentRgb": "255, 207, 101",
+      "usedWhenNamuwikiMissing": true
+    }
+  }
+}
