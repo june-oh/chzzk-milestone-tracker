@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users, Check, ArrowDown, ArrowUp } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
+  getDebutReferenceDate,
   getGroupTag,
   GROUP_FILTER_ORDER,
   getManualCumulativeHoursHistory,
@@ -2602,7 +2603,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {sortedStreamers.map((streamer) => {
           const cardPalette = getCardSurfacePalette(streamer, extractedPalettes);
-          const debutElapsed = formatDebutElapsed(streamer.firstLiveDate);
+          const debutElapsed = formatDebutElapsed(getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate));
           const isSelected = selectedForCompare.has(streamer.channelId);
 
           return (

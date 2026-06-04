@@ -95,6 +95,44 @@ const GROUP_TAGS: Record<string, GroupTag> = {
   "f42e97f59c3177b8686dccfbf90792dd": "OverTheWall", // 김아테
 };
 
+/** Official Chzzk group debut (not per-member first test stream from API). */
+export const GROUP_DEBUT_DATES: Partial<Record<GroupTag, string>> = {
+  AESTHER: "2024-02-07",
+  Honeyz: "2024-02-07",
+  StelLive: "2024-02-07",
+  CLUEZ: "2025-11-29",
+  ACAXIA: "2025-09-13",
+  Listella: "2024-09-15",
+};
+
+/** Members who joined after the group's initial debut. */
+const LATER_MEMBER_DEBUT_DATES: Record<string, string> = {
+  "36ddb9bb4f17593b60f1b63cec86611d": "2025-09-20", // 사키하네 후야 (StelLive)
+};
+
+/** Listella sub-unit debut; 야토 등 솔로 활동 후 합류 멤버는 개인 firstLiveDate 유지. */
+const LISTELLA_GROUP_DEBUT_IDS = new Set([
+  "f3b204dd3fd6925835ca1848cd4b6d3c", // 오단밍
+  "9351fb8417f73405c84e0846409e3263", // 햄쿠비
+]);
+
+export function getDebutReferenceDate(channelId: string, firstLiveDate?: string): string | undefined {
+  const trimmed = firstLiveDate?.trim();
+  if (LATER_MEMBER_DEBUT_DATES[channelId]) {
+    return LATER_MEMBER_DEBUT_DATES[channelId];
+  }
+
+  const group = getGroupTag(channelId);
+  if (group && GROUP_DEBUT_DATES[group]) {
+    if (group === "Listella" && !LISTELLA_GROUP_DEBUT_IDS.has(channelId)) {
+      return trimmed || undefined;
+    }
+    return GROUP_DEBUT_DATES[group];
+  }
+
+  return trimmed || undefined;
+}
+
 function getSoftconEntry(channelId: string): SoftconChannelHistory | undefined {
   const entry = SOFTCON_HISTORY[channelId];
   if (!entry) return undefined;
