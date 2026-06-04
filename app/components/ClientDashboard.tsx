@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import confetti from "canvas-confetti";
 import Image from "next/image";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users, Check, ArrowDown, ArrowUp } from "lucide-react";
@@ -1946,18 +1946,94 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   };
 
   const selectedStreamer = streamers.find((s) => s.channelId === activeStreamerId);
-  const topFollowerChaser = streamers
+  const topFollowerChasers = streamers
     .map((streamer) => ({
       streamer,
       stats: getFollowerMilestoneStats(streamer.followerCount || 0),
     }))
-    .sort((a, b) => a.stats.followersRemaining - b.stats.followersRemaining)[0];
-  const topHoursChaser = streamers
+    .sort((a, b) => a.stats.followersRemaining - b.stats.followersRemaining)
+    .slice(0, 5);
+  const topHoursChasers = streamers
     .map((streamer) => ({
       streamer,
       stats: getMilestoneStats(streamer.totalLiveHours),
     }))
-    .sort((a, b) => a.stats.hoursRemaining - b.stats.hoursRemaining)[0];
+    .sort((a, b) => a.stats.hoursRemaining - b.stats.hoursRemaining)
+    .slice(0, 5);
+
+  const renderChaserColumn = <T extends { streamer: Streamer }>(
+    entries: T[],
+    title: string,
+    icon: ReactNode,
+    getLeaderDetail: (entry: T) => ReactNode,
+    getRestDetail: (entry: T) => ReactNode
+  ) => {
+    if (entries.length === 0) return null;
+
+    const [leader, ...rest] = entries;
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">{title}</span>
+          <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400">TOP 5</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => handleSelectStreamer(leader.streamer.channelId)}
+          className="group w-full rounded-[24px] border-2 border-black bg-white px-5 py-5 text-left shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all"
+        >
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <div className="w-16 h-16 rounded-full overflow-hidden border-[3px] border-black bg-neutral-100 ring-4 ring-black/5">
+                <StreamerChannelImage
+                  src={leader.streamer.channelImageUrl}
+                  alt={leader.streamer.channelName}
+                  variant="avatar"
+                />
+              </div>
+              <span className="absolute -top-1.5 -left-1.5 bg-black text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-full">
+                #1
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">Closest</div>
+              <div className="font-sans text-[18px] font-extrabold text-black truncate leading-tight">
+                {leader.streamer.channelName}
+              </div>
+              <div className="mt-1.5 text-[13px] text-neutral-600 font-medium leading-snug">{getLeaderDetail(leader)}</div>
+            </div>
+            <div className="shrink-0 text-neutral-400 group-hover:text-black transition-colors">{icon}</div>
+          </div>
+        </button>
+
+        {rest.map((entry, index) => (
+          <button
+            key={entry.streamer.channelId}
+            type="button"
+            onClick={() => handleSelectStreamer(entry.streamer.channelId)}
+            className="group w-full rounded-[16px] border border-hairline-soft bg-neutral-50 px-3 py-2.5 text-left hover:bg-white hover:border-hairline transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-[11px] font-bold text-neutral-400 w-6 shrink-0">#{index + 2}</span>
+              <div className="w-9 h-9 rounded-full overflow-hidden border border-white shrink-0 bg-neutral-100">
+                <StreamerChannelImage
+                  src={entry.streamer.channelImageUrl}
+                  alt={entry.streamer.channelName}
+                  variant="avatar"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-sans text-[14px] font-bold text-black truncate">{entry.streamer.channelName}</div>
+                <div className="text-[11px] text-neutral-500 font-medium">{getRestDetail(entry)}</div>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   // If a streamer is selected, render their DEDICATED FULL-SCREEN PROFILE PAGE
   if (selectedStreamer) {
@@ -2276,67 +2352,30 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[860px] mx-auto mb-8 px-4">
-              {topFollowerChaser && (
-                <button
-                  type="button"
-                  onClick={() => handleSelectStreamer(topFollowerChaser.streamer.channelId)}
-                  className="group rounded-[24px] border border-hairline-soft bg-neutral-50 px-5 py-4 text-left hover:bg-white hover:-translate-y-0.5 transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white shrink-0 bg-neutral-100">
-                      <StreamerChannelImage
-                        src={topFollowerChaser.streamer.channelImageUrl}
-                        alt={topFollowerChaser.streamer.channelName}
-                        variant="avatar"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">
-                        TOP-1 FOLLOWER CLOSEST
-                      </div>
-                      <div className="font-sans text-[16px] font-extrabold text-black truncate">
-                        {topFollowerChaser.streamer.channelName}
-                      </div>
-                      <div className="mt-1 text-[12px] text-neutral-600 font-medium">
-                        팔로워 {formatFollowers(topFollowerChaser.stats.nextMilestone)}까지{" "}
-                        <strong className="text-black">{topFollowerChaser.stats.followersRemaining.toLocaleString()}명</strong> 남음
-                      </div>
-                    </div>
-                    <Users className="w-5 h-5 text-neutral-400 group-hover:text-black transition-colors" />
-                  </div>
-                </button>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-[960px] mx-auto mb-8 px-4">
+              {renderChaserColumn(
+                topFollowerChasers,
+                "Follower Closest",
+                <Users className="w-6 h-6" />,
+                (entry) => (
+                  <>
+                    팔로워 {formatFollowers(entry.stats.nextMilestone)}까지{" "}
+                    <strong className="text-black">{entry.stats.followersRemaining.toLocaleString()}명</strong> 남음
+                  </>
+                ),
+                (entry) => <>{entry.stats.followersRemaining.toLocaleString()}명 남음</>
               )}
-
-              {topHoursChaser && (
-                <button
-                  type="button"
-                  onClick={() => handleSelectStreamer(topHoursChaser.streamer.channelId)}
-                  className="group rounded-[24px] border border-hairline-soft bg-neutral-50 px-5 py-4 text-left hover:bg-white hover:-translate-y-0.5 transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white shrink-0 bg-neutral-100">
-                      <StreamerChannelImage
-                        src={topHoursChaser.streamer.channelImageUrl}
-                        alt={topHoursChaser.streamer.channelName}
-                        variant="avatar"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">
-                        TOP-1 HOURS CLOSEST
-                      </div>
-                      <div className="font-sans text-[16px] font-extrabold text-black truncate">
-                        {topHoursChaser.streamer.channelName}
-                      </div>
-                      <div className="mt-1 text-[12px] text-neutral-600 font-medium">
-                        {topHoursChaser.stats.nextMilestone.toLocaleString()}시간까지{" "}
-                        <strong className="text-black">{topHoursChaser.stats.hoursRemaining.toLocaleString()}시간</strong> 남음
-                      </div>
-                    </div>
-                    <Trophy className="w-5 h-5 text-neutral-400 group-hover:text-black transition-colors" />
-                  </div>
-                </button>
+              {renderChaserColumn(
+                topHoursChasers,
+                "Hours Closest",
+                <Trophy className="w-6 h-6" />,
+                (entry) => (
+                  <>
+                    {entry.stats.nextMilestone.toLocaleString()}시간까지{" "}
+                    <strong className="text-black">{entry.stats.hoursRemaining.toLocaleString()}시간</strong> 남음
+                  </>
+                ),
+                (entry) => <>{entry.stats.hoursRemaining.toLocaleString()}시간 남음</>
               )}
             </div>
 
