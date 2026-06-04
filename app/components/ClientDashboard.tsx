@@ -15,6 +15,7 @@ import {
   hasSoftconHoursHistory,
 } from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
+import SevenSegmentCounter from "./SevenSegmentCounter";
 
 interface StreamerHistory {
   date: string;
@@ -249,63 +250,6 @@ const projectMilestoneTimestamp = (
 
   return null;
 };
-
-function FlipClock({
-  value,
-  size = "normal",
-  minDigits = 5,
-}: {
-  value: number;
-  size?: "normal" | "small" | "large";
-  minDigits?: number;
-}) {
-  const numStr = String(value).padStart(minDigits, "0");
-  const chars: string[] = [];
-  for (let i = 0; i < numStr.length; i++) {
-    if (i > 0 && (numStr.length - i) % 3 === 0) {
-      chars.push(",");
-    }
-    chars.push(numStr[i]);
-  }
-
-  return (
-    <div
-      className="flip-clock-container"
-      onClick={(e) => {
-        if (size === "large") {
-          e.stopPropagation();
-        }
-      }}
-    >
-      {chars.map((char, index) => {
-        const isComma = char === ",";
-        if (isComma) {
-          return (
-            <span
-              key={index}
-              className={`flip-clock-comma font-bold font-mono select-none self-end pb-1 ${
-                size === "small" ? "text-[14px] px-0.5" : size === "large" ? "text-[32px] px-2 pb-3" : "text-[18px] px-1"
-              }`}
-            >
-              ,
-            </span>
-          );
-        }
-        return (
-          <div
-            key={index}
-            className={`flip-clock-digit ${
-              size === "small" ? "flip-clock-digit-small" : size === "large" ? "flip-clock-digit-large" : ""
-            }`}
-          >
-            <span className="flip-clock-digit-text">{char}</span>
-            <div className="flip-clock-digit-crease" />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function ClientDashboard({ initialStreamers, initialMilestones }: ClientDashboardProps) {
   const [streamers, setStreamers] = useState<Streamer[]>(initialStreamers);
@@ -682,14 +626,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                 TOTAL LIVE BROADCAST HOURS
               </span>
-              <FlipClock value={streamer.totalLiveHours} size="large" />
+              <SevenSegmentCounter value={streamer.totalLiveHours} size="large" stopPropagation />
             </div>
             {streamer.followerCount !== undefined && (
               <div className="flex flex-col items-center lg:items-end gap-3 w-full">
                 <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                   TOTAL FOLLOWERS
                 </span>
-                <FlipClock value={streamer.followerCount} size="large" minDigits={5} />
+                <SevenSegmentCounter value={streamer.followerCount} size="large" minDigits={5} stopPropagation />
               </div>
             )}
           </div>
@@ -2039,7 +1983,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           </a>
         </div>
 
-        {/* 1. TOP SECTION: Streamer Header & Flip Clocks */}
+        {/* 1. TOP SECTION: Streamer Header & stat counters */}
         <div className="mb-10">{renderStreamerProfileHeader(selectedStreamer)}</div>
 
         {/* 2. MIDDLE SECTION: Two Big Growth Curve Graphs */}
@@ -2557,42 +2501,29 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   </div>
                 </div>
 
-                <div className="border-t border-hairline pt-3 md:hidden">
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                    <div className="min-w-0">
-                      <span className="font-mono text-[9px] tracking-mono text-neutral-400 uppercase block">
-                        HOURS
-                      </span>
-                      <p className="font-sans text-[14px] font-bold text-black tabular-nums truncate">
-                        {streamer.totalLiveHours.toLocaleString()}
-                      </p>
-                    </div>
-                    {streamer.followerCount !== undefined && (
-                      <div className="min-w-0">
-                        <span className="font-mono text-[9px] tracking-mono text-neutral-400 uppercase block">
-                          FOLLOWERS
-                        </span>
-                        <p className="font-sans text-[14px] font-bold text-black tabular-nums truncate">
-                          {formatFollowers(streamer.followerCount)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="hidden md:flex border-t border-hairline pt-4 flex-col gap-3 min-w-0 mt-auto">
+                <div className="border-t border-hairline pt-3 md:pt-4 flex flex-col gap-3 min-w-0 mt-auto">
                   <div className="min-w-0 overflow-x-auto">
                     <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
                       TOTAL HOURS
                     </span>
-                    <FlipClock value={streamer.totalLiveHours} size="small" />
+                    <div className="md:hidden">
+                      <SevenSegmentCounter value={streamer.totalLiveHours} size="xs" />
+                    </div>
+                    <div className="hidden md:block">
+                      <SevenSegmentCounter value={streamer.totalLiveHours} size="small" />
+                    </div>
                   </div>
                   {streamer.followerCount !== undefined && (
                     <div className="min-w-0 overflow-x-auto">
                       <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-2">
                         FOLLOWERS
                       </span>
-                      <FlipClock value={streamer.followerCount} size="small" minDigits={5} />
+                      <div className="md:hidden">
+                        <SevenSegmentCounter value={streamer.followerCount} size="xs" minDigits={5} />
+                      </div>
+                      <div className="hidden md:block">
+                        <SevenSegmentCounter value={streamer.followerCount} size="small" minDigits={5} />
+                      </div>
                     </div>
                   )}
                 </div>
