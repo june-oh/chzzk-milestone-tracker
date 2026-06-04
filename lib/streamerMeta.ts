@@ -1,6 +1,6 @@
 import softconHistoryJson from "@/data/softcon-history.json";
 
-export type GroupTag = "Planeta" | "AESTHER" | "Honeyz";
+export type GroupTag = "Planeta" | "AESTHER" | "Honeyz" | "ACAXIA" | "Listella" | "Stelive" | "OverTheWall";
 
 export type ManualFollowerPoint = {
   date: string;
@@ -41,6 +41,32 @@ const GROUP_TAGS: Record<string, GroupTag> = {
   "798e100206987b59805cfb75f927e965": "Honeyz", // 디디디용
   "abe8aa82baf3d3ef54ad8468ee73e7fc": "Honeyz", // 아야
   "bd07973b6021d72512240c01a386d5c9": "Honeyz", // 망내
+  "3e3781d3bd20dadc2f6f6d5d30091195": "ACAXIA", // 포포포포
+  "5c897b3e639045ca6e314bbaff991f73": "ACAXIA", // 비올레타 모네
+  "dae2de8eaa005a59163f2e4c045e1aa1": "ACAXIA", // 블레어 로즈
+  "b33c957eac9335d38e4043c3dca97675": "ACAXIA", // 하시요
+  "f36320c432d9f06095ce2cfbbf681c26": "ACAXIA", // 류시호
+  "e87999abca4fd0c3214e05ef414ce951": "Listella", // 야토
+  "f3b204dd3fd6925835ca1848cd4b6d3c": "Listella", // 오단밍
+  "9351fb8417f73405c84e0846409e3263": "Listella", // 햄쿠비
+  "4325b1d5bbc321fad3042306646e2e50": "Stelive", // 아카네 리제
+  "64d76089fba26b180d9c9e48a32600d9": "Stelive", // 텐코 시부키
+  "a6c4ddb09cdb160478996007bff35296": "Stelive", // 아라하시 타비
+  "4515b179f86b67b4981e16190817c580": "Stelive", // 네네코 마시로
+  "b044e3a3b9259246bc92e863e7d3f3b8": "Stelive", // 시라유키 히나
+  "45e71a76e949e16a34764deb962f9d9f": "Stelive", // 아야츠노 유니
+  "36ddb9bb4f17593b60f1b63cec86611d": "Stelive", // 사키하네 후야
+  "516937b5f85cbf2249ce31b0ad046b0f": "Stelive", // 아오쿠모 린
+  "4d812b586ff63f8a2946e64fa860bbf5": "Stelive", // 하나코 나나
+  "8fd39bb8de623317de90654718638b10": "Stelive", // 유즈하 리코
+  "a54372e8197f6d241a43a318279860d6": "OverTheWall", // 쿠레나이 나츠키
+  "0a2020b09b8cc7f2285b7ae5de2ce4d3": "OverTheWall", // 테리 눈나
+  "a048127622edd6c3ee8e477471a1d823": "OverTheWall", // 빙하유
+  "f1869f490ddd660c420b2f57c649e6bb": "OverTheWall", // 양메이
+  "29a1ed5c0829fa620fab900dba7e011b": "OverTheWall", // 유리리
+  "0f61ae00c2aef2b789dc009e51cbcc5a": "OverTheWall", // 온 하루
+  "7b9c6553913c755812ef2cd9fbe1dc5c": "OverTheWall", // 하네
+  "f42e97f59c3177b8686dccfbf90792dd": "OverTheWall", // 김아테
 };
 
 function getSoftconEntry(channelId: string): SoftconChannelHistory | undefined {

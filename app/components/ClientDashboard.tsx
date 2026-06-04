@@ -206,15 +206,20 @@ const getHoursChartScale = (totalHours: number, dataPeak = 0) => {
   return { max, ticks };
 };
 
+const GROUP_TAG_STYLES: Record<GroupTag, string> = {
+  Planeta: "bg-[#fffbf0] text-[#b45309] border-[#fef0c7]",
+  Honeyz: "bg-[#fff8e7] text-[#a16207] border-[#fde68a]",
+  AESTHER: "bg-[#ffebeb] text-[#d61c4e] border-[#ffd4d4]",
+  ACAXIA: "bg-[#f5f0ff] text-[#7c3aed] border-[#ddd6fe]",
+  Listella: "bg-[#fff1f2] text-[#e11d48] border-[#fecdd3]",
+  Stelive: "bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe]",
+  OverTheWall: "bg-[#ecfeff] text-[#0e7490] border-[#a5f3fc]",
+};
+
 const renderGroupTag = (tag?: GroupTag) => {
   if (!tag) return null;
 
-  const styles =
-    tag === "Planeta"
-      ? "bg-[#fffbf0] text-[#b45309] border-[#fef0c7]"
-      : tag === "Honeyz"
-        ? "bg-[#fff8e7] text-[#a16207] border-[#fde68a]"
-        : "bg-[#ffebeb] text-[#d61c4e] border-[#ffd4d4]";
+  const styles = GROUP_TAG_STYLES[tag];
 
   return (
     <span
@@ -556,7 +561,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       <div className={`rounded-[32px] border ${borderSet} ${colorSet.bg} p-8 md:p-12 shadow-sm relative overflow-hidden`}>
         <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left flex-1 min-w-0">
-            <div className="w-[110px] h-[110px] rounded-[24px] overflow-hidden border-4 border-white shadow-lg shrink-0 relative bg-neutral-100">
+            <div className="w-[110px] h-[110px] rounded-full overflow-hidden border-4 border-white shadow-lg shrink-0 relative bg-neutral-100">
               <StreamerChannelImage src={streamer.channelImageUrl} alt={streamer.channelName} variant="avatar" />
             </div>
             <div className="space-y-3 min-w-0">
@@ -2452,16 +2457,18 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                     : undefined
                 }
               >
-                <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-neutral-200/70 border border-hairline group">
+                <div className="relative flex justify-center pt-1">
+                  <div className="relative w-[120px] h-[120px] sm:w-[132px] sm:h-[132px] rounded-full overflow-hidden bg-neutral-200/70 border border-hairline group shrink-0">
                   <StreamerChannelImage
                     src={streamer.channelImageUrl}
                     alt={streamer.channelName}
                     variant="card"
                     className="transition-transform duration-500 md:group-hover:scale-[1.03]"
                   />
-                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-bold font-mono tracking-mono uppercase flex items-center gap-1 shadow-sm">
+                  <div className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-black text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-bold font-mono tracking-mono uppercase flex items-center gap-1 shadow-sm">
                     <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-400 shrink-0" />
                     <span>{streamer.lastMilestone.toLocaleString()}H</span>
+                  </div>
                   </div>
                 </div>
 
@@ -2589,7 +2596,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         className="group hover:bg-neutral-50/50 transition-colors cursor-pointer"
                       >
                         <td className="py-4 font-sans text-[15px] font-medium flex items-center gap-3">
-                          <div className="w-7 h-7 rounded-md overflow-hidden bg-neutral-100 border border-hairline flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full overflow-hidden bg-neutral-100 border border-hairline flex-shrink-0">
                             {displayImageUrl ? (
                               <img
                                 src={displayImageUrl}
@@ -2681,7 +2688,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         className="group hover:bg-neutral-50/50 transition-colors cursor-pointer"
                       >
                         <td className="py-4 font-sans text-[15px] font-medium flex items-center gap-3">
-                          <div className="w-7 h-7 rounded-md overflow-hidden bg-neutral-100 border border-hairline flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full overflow-hidden bg-neutral-100 border border-hairline flex-shrink-0">
                             {displayImageUrl ? (
                               <img
                                 src={displayImageUrl}
