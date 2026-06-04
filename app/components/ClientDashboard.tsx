@@ -2369,13 +2369,13 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       {/* Hero Poster Section - Shown only on the main dashboard */}
       <section className="bg-white flex flex-col items-center text-center px-6 pt-[96px] pb-[48px] max-w-[1280px] mx-auto w-full">
         <span className="font-mono text-[12px] font-bold tracking-mono uppercase text-neutral-500 mb-6">
-          LIVE STREAM TIME CELEBRATION
+          HOURS &amp; FOLLOWERS MILESTONE
         </span>
         <h1 className="font-sans text-[48px] md:text-[86px] leading-[1.05] font-bold tracking-display-xl max-w-[1000px] mb-8 break-keep">
-          열정의 기록,<br className="sm:hidden" /> 1000시간의 감동을 전합니다
+          열정의 기록,<br className="sm:hidden" /> 천 시간과 만 팔로워의 감동
         </h1>
         <p className="font-sans text-[18px] md:text-[20px] font-light leading-[1.45] text-neutral-800 max-w-[680px] mb-10 break-keep">
-          치지직 크리에이터들의 누적 방송 시간을 하루 단위로 수집하여, 1,000시간을 돌파할 때마다 함께 기억하고 실시간으로 축하하는 대시보드 공간입니다.
+          치지직 크리에이터의 누적 방송 시간과 팔로워를 매일 추적합니다. 1,000시간·1만 팔로워 단위로 돌파할 때마다 함께 기록하고 축하하는 대시보드입니다.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 mb-4">
           <a

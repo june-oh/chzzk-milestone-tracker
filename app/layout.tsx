@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://chzzk-milestone-tracker.vercel.app"),
   title: "치지직 방송 시간 마일스톤 트래커",
   description:
-    "치지직 최고 스트리머들의 총 방송 시간 1,000시간 마일스톤 돌파를 기념하고 실시간으로 응원하는 공간입니다.",
+    "치지직 스트리머의 누적 방송 시간·팔로워를 추적하고, 1,000시간·1만 팔로워 마일스톤 돌파를 함께 축하하는 대시보드입니다.",
   verification: {
     google: "3NG6ANGF43yASYHh7gQbtAjMSbga1Vcd_S21vS-VbcU",
   },
