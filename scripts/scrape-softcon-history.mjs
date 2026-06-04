@@ -12,6 +12,7 @@
  *   node scripts/scrape-softcon-history.mjs --cleanup-empty # strip failed/empty entries (keeps manual)
  *   node scripts/scrape-softcon-history.mjs --tag-manual    # lock dense hand-collected entries
  *   node scripts/scrape-softcon-history.mjs --force           # overwrite even protected (avoid)
+ *   node scripts/scrape-softcon-history.mjs --delay-min=8000 --delay-max=18000  # random pause between streamers (ms)
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
@@ -29,6 +30,62 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const SOFTCON_BASE = "https://viewership.softc.one/channel/naverchzzk";
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function randomBetween(min, max) {
+  return Math.floor(min + Math.random() * (max - min + 1));
+}
+
+function parseDelayArg(args, name, fallback) {
+  const raw = args.find((a) => a.startsWith(`--${name}=`));
+  const n = raw ? Number(raw.split("=")[1]) : fallback;
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+async function randomDelay(minMs, maxMs, reason) {
+  if (maxMs <= 0) return;
+  const ms = randomBetween(Math.min(minMs, maxMs), Math.max(minMs, maxMs));
+  console.log(`  … ${reason} ${(ms / 1000).toFixed(1)}s`);
+  await sleep(ms);
+}
+
+async function isRateLimited(page) {
+  return page
+    .evaluate(() => /too many request/i.test(document.body.innerText))
+    .catch(() => false);
+}
+
+function statisticsHoursUrl(channelId) {
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  const start = new Date("2024-01-01T15:00:00.000Z");
+  const params = new URLSearchParams({
+    period: "week",
+    range: "all",
+    startDateTime: start.toISOString(),
+    endDateTime: end.toISOString(),
+  });
+  return `${SOFTCON_BASE}/${channelId}/statistics?${params}`;
+}
+
+async function waitForHoursBars(page, timeoutMs = 12000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const ready = await page.evaluate(() =>
+      Array.from(document.querySelectorAll("rect")).some((r) => {
+        const fill = r.getAttribute("fill") || "";
+        const h = Number(r.getAttribute("height") || 0);
+        return fill.includes("indigo") && h > 10 && h < 260;
+      })
+    );
+    if (ready) return true;
+    await page.waitForTimeout(400);
+  }
+  return false;
+}
 
 function parseRangeText(text) {
   const match = text.match(/(\d{2})\.(\d{2})\.(\d{2})\s*~\s*(\d{2})\.(\d{2})\.(\d{2})/);
@@ -270,12 +327,15 @@ async function scrapeStreamer(page, streamer) {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
-  await page.waitForTimeout(3500);
+  if (await isRateLimited(page)) {
+    throw new Error("TOO MANY REQUEST (followers page)");
+  }
+  await page.waitForTimeout(randomBetween(800, 1800));
   await dismissPopups(page);
 
   const followerHeading = page.getByText(/팔로워(\s*\/\s*구독자)?\s*추이|팔로워 추이/, { exact: false });
-  await followerHeading.first().scrollIntoViewIfNeeded({ timeout: 30000 }).catch(() => {});
-  await page.waitForTimeout(2500);
+  await followerHeading.first().scrollIntoViewIfNeeded({ timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(800);
 
   let followerResult = { currentFollowers: 0, followers: [] };
   try {
@@ -293,47 +353,25 @@ async function scrapeStreamer(page, streamer) {
 
   let hoursMeta = { weeklyHours: [], rangeStart: null, rangeEnd: null, barCount: 0 };
   try {
-    await page.goto(`${SOFTCON_BASE}/${streamer.channelId}/statistics?period=week&range=all`, {
+    // Full-range stats URL — skips waiting for "전체" dropdown + URL rewrite (was ~20–50s)
+    await page.goto(statisticsHoursUrl(streamer.channelId), {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
-    await page.waitForTimeout(3500);
+    if (await isRateLimited(page)) {
+      throw new Error("TOO MANY REQUEST (hours page)");
+    }
+    await page.waitForTimeout(randomBetween(800, 1800));
     await dismissPopups(page);
 
     const hoursTab = page.getByRole("button", { name: /방송\s*시간/ });
     if (await hoursTab.count()) {
-      await hoursTab.first().click({ timeout: 15000 });
+      await hoursTab.first().click({ timeout: 10000 });
     } else {
-      await page.getByText(/방송\s*시간/).first().click({ timeout: 15000 });
+      await page.getByText(/방송\s*시간/).first().click({ timeout: 10000 });
     }
-    await page.waitForTimeout(2000);
 
-    await page.waitForURL(/startDateTime=/, { timeout: 20000 }).catch(() => {});
-
-    await page.evaluate(() => {
-      const sel = Array.from(document.querySelectorAll("select")).find((s) =>
-        Array.from(s.options).some((o) => o.value === "all")
-      );
-      if (sel) {
-        sel.value = "all";
-        sel.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    });
-    await page.waitForTimeout(2500);
-
-    await page
-      .waitForFunction(
-        () =>
-          Array.from(document.querySelectorAll("rect")).some((r) => {
-            const fill = r.getAttribute("fill") || "";
-            const h = Number(r.getAttribute("height") || 0);
-            return fill.includes("indigo") && h > 10 && h < 260;
-          }),
-        { timeout: 30000 }
-      )
-      .catch(() => {});
-
-    await page.waitForTimeout(1500);
+    await waitForHoursBars(page, 12000);
     hoursMeta = await extractWeeklyHoursHistory(page);
   } catch (hoursErr) {
     hoursMeta = { weeklyHours: [], rangeStart: null, rangeEnd: null, barCount: 0, error: hoursErr.message };
@@ -379,6 +417,8 @@ async function main() {
   const tagManual = args.includes("--tag-manual");
   const force = args.includes("--force");
   const headed = args.includes("--headed") || process.env.SOFTCON_HEADED === "1";
+  const delayMin = parseDelayArg(args, "delay-min", 8000);
+  const delayMax = parseDelayArg(args, "delay-max", 18000);
   const onlyId = args.find((a) => a.startsWith("--id="))?.split("=")[1];
 
   const { FALLBACK_STREAMERS } = await import("../lib/streamersConfig.ts");
@@ -425,12 +465,13 @@ async function main() {
   }
 
   console.log(
-    `Scraping ${targets.length} streamer(s) → ${outPath}${headed ? " [headed Chrome]" : " [headless — likely blocked]"}`
+    `Scraping ${targets.length} streamer(s) → ${outPath}${headed ? " [headed Chrome]" : " [headless — likely blocked]"} (delay ${delayMin / 1000}–${delayMax / 1000}s)`
   );
 
   const { browser, page } = await launchBrowser(dataDir, headed);
 
-  for (const streamer of targets) {
+  for (let i = 0; i < targets.length; i++) {
+    const streamer = targets[i];
     process.stdout.write(`${streamer.channelName}... `);
     const existing = output[streamer.channelId];
     if (shouldSkipScrape(existing, { force })) {
@@ -438,22 +479,31 @@ async function main() {
       continue;
     }
     try {
+      const t0 = Date.now();
       const payload = await scrapeStreamer(page, streamer);
+      const sec = ((Date.now() - t0) / 1000).toFixed(1);
       if (!hasCompleteHistory(payload)) {
-        console.log("SKIP (no chart data — try --headed)");
-        continue;
+        console.log(`SKIP (no chart data, ${sec}s)`);
+      } else {
+        const { entry, action } = mergeSoftconChannel(existing, payload, {
+          source: "playwright",
+          force,
+        });
+        output[streamer.channelId] = entry;
+        writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
+        console.log(
+          `${action} (${sec}s): followers ${entry.followers?.length ?? 0}, weeks ${entry.weeklyHours?.length ?? 0}, cumulative ${entry.cumulativeHours?.length ?? 0}`
+        );
       }
-      const { entry, action } = mergeSoftconChannel(existing, payload, {
-        source: "playwright",
-        force,
-      });
-      output[streamer.channelId] = entry;
-      writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
-      console.log(
-        `${action}: followers ${entry.followers?.length ?? 0}, weeks ${entry.weeklyHours?.length ?? 0}, cumulative ${entry.cumulativeHours?.length ?? 0}`
-      );
     } catch (err) {
       console.log(`FAILED (${err.message})`);
+      if (/too many request/i.test(err.message) || (await isRateLimited(page))) {
+        await randomDelay(90000, 150000, "rate-limited, cooling down");
+      }
+    }
+
+    if (i < targets.length - 1) {
+      await randomDelay(delayMin, delayMax, "next streamer in");
     }
   }
 
