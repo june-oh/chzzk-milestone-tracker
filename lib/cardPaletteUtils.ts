@@ -31,6 +31,21 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   return { r, g, b };
 }
 
+export function paletteAccentSpread(accentRgb: string) {
+  const parts = accentRgb.split(",").map((value) => Number(value.trim()));
+  if (parts.length !== 3 || parts.some((value) => !Number.isFinite(value))) return 0;
+  return Math.max(...parts) - Math.min(...parts);
+}
+
+/** Skin-tone / gray KV caches from early cron runs read as "no theme found". */
+export function isMutedPalette(palette: Pick<CardSurfacePalette, "cardBg" | "accentRgb">) {
+  const accentRgb =
+    palette.accentRgb ??
+    palette.cardBg.match(RGB_PATTERN)?.slice(1, 4).map((value) => value.trim()).join(", ");
+  if (!accentRgb) return true;
+  return paletteAccentSpread(accentRgb) < 45;
+}
+
 export function paletteFromHex(hex: string): CardSurfacePalette {
   const { r, g, b } = hexToRgb(hex);
   return {
@@ -75,13 +90,17 @@ export function resolveCardPalette(options: {
   extracted?: CardSurfacePalette | null;
   fallbackHex?: string;
 }): CardSurfacePalette {
-  // Profile-image extraction (client or cron) wins over stale KV cache.
   if (options.extracted?.cardBg && options.extracted?.cardBorder) {
     return toGlassSurfacePalette(options.extracted);
   }
+
   if (options.cardBg && options.cardBorder) {
-    return toGlassSurfacePalette({ cardBg: options.cardBg, cardBorder: options.cardBorder });
+    const kvPalette = toGlassSurfacePalette({ cardBg: options.cardBg, cardBorder: options.cardBorder });
+    if (!isMutedPalette(kvPalette)) {
+      return kvPalette;
+    }
   }
+
   return paletteFromHex(options.fallbackHex ?? "#94a3b8");
 }
 

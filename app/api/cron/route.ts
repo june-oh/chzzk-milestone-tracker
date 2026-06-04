@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { toGlassSurfacePalette } from "@/lib/cardPaletteUtils";
+import { toGlassSurfacePalette, isMutedPalette } from "@/lib/cardPaletteUtils";
 import { extractPaletteFromImageUrl } from "@/lib/imagePalette";
 import { CRON_STREAMERS } from "@/lib/streamersConfig";
 
@@ -166,7 +166,12 @@ export async function GET(req: NextRequest) {
       let cardBorder = prevData?.cardBorder as string | undefined;
       let accentHex = prevData?.accentHex as string | undefined;
 
-      if (imageUrl && (!cardBg || prevData?.channelImageUrl !== imageUrl)) {
+      const staleKvPalette =
+        cardBg && cardBorder
+          ? isMutedPalette(toGlassSurfacePalette({ cardBg, cardBorder }))
+          : false;
+
+      if (imageUrl && (!cardBg || prevData?.channelImageUrl !== imageUrl || staleKvPalette)) {
         const palette = await extractPaletteFromImageUrl(imageUrl);
         if (palette) {
           cardBg = palette.cardBg;

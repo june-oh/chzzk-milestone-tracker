@@ -459,40 +459,38 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     };
   }, []);
 
+  const paletteFetchKey = useMemo(
+    () => initialStreamers.map((streamer) => `${streamer.channelId}:${streamer.channelImageUrl}`).join("|"),
+    [initialStreamers]
+  );
+
   useEffect(() => {
     let cancelled = false;
 
-    async function fillMissingPalettes() {
-      await new Promise((resolve) => window.setTimeout(resolve, 600));
+    async function fillProfilePalettes() {
+      await new Promise((resolve) => window.setTimeout(resolve, 300));
       if (cancelled) return;
 
-      const targets = streamers.filter(
+      const targets = initialStreamers.filter(
         (streamer) =>
           streamer.channelImageUrl &&
           !fetchedPaletteIds.current.has(streamer.channelId)
       );
       if (targets.length === 0) return;
 
-      targets.forEach((streamer) => fetchedPaletteIds.current.add(streamer.channelId));
-
       const batchSize = 4;
-      const results: Array<(CardSurfacePalette & { channelId: string }) | null> = [];
 
       for (let i = 0; i < targets.length; i += batchSize) {
+        if (cancelled) break;
+
         const batch = targets.slice(i, i + batchSize);
         const batchResults = await Promise.all(
           batch.map(async (streamer) => {
             try {
               const res = await fetch(`/api/image-palette?url=${encodeURIComponent(streamer.channelImageUrl)}`);
-              if (!res.ok) {
-                fetchedPaletteIds.current.delete(streamer.channelId);
-                return null;
-              }
+              if (!res.ok) return null;
               const data = await res.json();
-              if (!data.success || !data.cardBg || !data.cardBorder) {
-                fetchedPaletteIds.current.delete(streamer.channelId);
-                return null;
-              }
+              if (!data.success || !data.cardBg || !data.cardBorder) return null;
               return {
                 channelId: streamer.channelId,
                 cardBg: data.cardBg as string,
@@ -501,39 +499,37 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 accentRgb: data.accentRgb as string | undefined,
               };
             } catch {
-              fetchedPaletteIds.current.delete(streamer.channelId);
               return null;
             }
           })
         );
-        results.push(...batchResults);
-      }
 
-      if (cancelled) return;
+        const nextEntries = batchResults.filter(Boolean) as Array<CardSurfacePalette & { channelId: string }>;
+        if (nextEntries.length === 0) continue;
 
-      const nextEntries = results.filter(Boolean) as Array<CardSurfacePalette & { channelId: string }>;
-      if (nextEntries.length === 0) return;
+        nextEntries.forEach((entry) => fetchedPaletteIds.current.add(entry.channelId));
 
-      setExtractedPalettes((prev) => {
-        const next = { ...prev };
-        nextEntries.forEach((entry) => {
-          next[entry.channelId] = {
-            cardBg: entry.cardBg,
-            cardBorder: entry.cardBorder,
-            accentHex: entry.accentHex,
-            accentRgb: entry.accentRgb,
-          };
+        setExtractedPalettes((prev) => {
+          const next = { ...prev };
+          nextEntries.forEach((entry) => {
+            next[entry.channelId] = {
+              cardBg: entry.cardBg,
+              cardBorder: entry.cardBorder,
+              accentHex: entry.accentHex,
+              accentRgb: entry.accentRgb,
+            };
+          });
+          return next;
         });
-        return next;
-      });
+      }
     }
 
-    fillMissingPalettes();
+    fillProfilePalettes();
 
     return () => {
       cancelled = true;
     };
-  }, [streamers]);
+  }, [paletteFetchKey, initialStreamers]);
 
   // Compute milestone variables
   const getMilestoneStats = (hours: number) => {
