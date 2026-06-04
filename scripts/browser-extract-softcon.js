@@ -60,8 +60,12 @@ export function extractHoursScript(targetTotalHours) {
       .filter((n) => n >= 0 && n <= 2000);
     const yMax = Math.max(...yLabels, 80);
     const bars = Array.from(document.querySelectorAll("rect"))
-      .map((r) => ({ h: Number(r.getAttribute("height") || 0), w: Number(r.getAttribute("width") || 0) }))
-      .filter((r) => r.h > 10 && r.h < 260 && r.w > 3 && r.w < 20);
+      .map((r) => ({
+        h: Number(r.getAttribute("height") || 0),
+        w: Number(r.getAttribute("width") || 0),
+        fill: r.getAttribute("fill") || "",
+      }))
+      .filter((r) => r.fill.includes("indigo") && r.h > 10 && r.h < 260 && r.w > 3);
     if (!rangeMatch || bars.length === 0) {
       return JSON.stringify({ weeklyHours: [], cumulativeHours: [], barCount: 0 });
     }

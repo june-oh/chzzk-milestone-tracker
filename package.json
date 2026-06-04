@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "scrape:softcon": "node scripts/scrape-softcon-history.mjs",
-    "scrape:softcon:missing": "node scripts/scrape-softcon-history.mjs --missing-only"
+    "scrape:softcon": "node scripts/scrape-softcon-history.mjs --headed",
+    "scrape:softcon:missing": "node scripts/scrape-softcon-history.mjs --tag-manual --missing-only --headed",
+    "scrape:softcon:cleanup": "node scripts/scrape-softcon-history.mjs --cleanup-empty"
   },
   "dependencies": {
     "@vercel/kv": "^3.0.0",

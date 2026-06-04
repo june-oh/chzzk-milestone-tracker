@@ -8,12 +8,23 @@
  *   node scripts/scrape-softcon-history.mjs              # all 46 from streamersConfig
  *   node scripts/scrape-softcon-history.mjs --missing-only  # only channels without data
  *   node scripts/scrape-softcon-history.mjs --id=<channelId>
+ *   node scripts/scrape-softcon-history.mjs --headed        # real Chrome window (required for Softcon charts)
+ *   node scripts/scrape-softcon-history.mjs --cleanup-empty # strip failed/empty entries (keeps manual)
+ *   node scripts/scrape-softcon-history.mjs --tag-manual    # lock dense hand-collected entries
+ *   node scripts/scrape-softcon-history.mjs --force           # overwrite even protected (avoid)
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { chromium } from "playwright";
+import {
+  cleanupEmptyEntries,
+  hasCompleteHistory,
+  mergeSoftconChannel,
+  shouldSkipScrape,
+  tagManualEntries,
+} from "./softcon-merge-utils.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -29,9 +40,86 @@ function parseRangeText(text) {
   };
 }
 
-function hasHistory(entry) {
-  if (!entry || entry.meta?.error) return false;
-  return (entry.cumulativeHours?.length ?? 0) > 0 || (entry.followers?.length ?? 0) > 0;
+async function launchBrowser(dataDir, headed) {
+  const profileDir = join(dataDir, ".softcon-chrome-profile");
+  mkdirSync(profileDir, { recursive: true });
+
+  const launchOpts = {
+    headless: !headed,
+    channel: headed ? "chrome" : undefined,
+    viewport: { width: 1440, height: 900 },
+    locale: "ko-KR",
+    args: ["--disable-blink-features=AutomationControlled"],
+    ignoreDefaultArgs: headed ? ["--enable-automation"] : undefined,
+  };
+
+  if (headed) {
+    console.log("Launching headed Chrome (Softcon blocks headless automation)");
+    try {
+      const context = await chromium.launchPersistentContext(profileDir, launchOpts);
+      await context.addInitScript(() => {
+        Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+      });
+      const page = context.pages()[0] || (await context.newPage());
+      return { browser: context, page, isPersistent: true };
+    } catch (err) {
+      if (!/already in use|EBUSY|profile/i.test(String(err.message))) throw err;
+      console.warn("Chrome profile busy — launching one-off headed window instead");
+      const browser = await chromium.launch({
+        headless: false,
+        channel: "chrome",
+        args: ["--disable-blink-features=AutomationControlled"],
+        ignoreDefaultArgs: ["--enable-automation"],
+      });
+      const context = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+        locale: "ko-KR",
+      });
+      await context.addInitScript(() => {
+        Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+      });
+      const page = await context.newPage();
+      return { browser, page, isPersistent: false };
+    }
+  }
+
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  return { browser, page, isPersistent: false };
+}
+
+/** Dismiss Softcon promos / modals that can block chart clicks on first visit. */
+async function dismissPopups(page) {
+  await page.keyboard.press("Escape").catch(() => {});
+
+  const labels = [
+    /^닫기$/i,
+    /^확인$/i,
+    /^나중에$/i,
+    /^동의$/i,
+    /^거부$/i,
+    /복원하지/i,
+    /Don't restore/i,
+    /^Skip$/i,
+    /^Close$/i,
+  ];
+
+  for (const re of labels) {
+    const btn = page.getByRole("button", { name: re }).first();
+    if (await btn.isVisible({ timeout: 400 }).catch(() => false)) {
+      await btn.click({ timeout: 2000 }).catch(() => {});
+      await page.waitForTimeout(400);
+    }
+  }
+
+  const dialog = page.locator('[role="dialog"]');
+  if (await dialog.count()) {
+    await dialog
+      .locator("button")
+      .first()
+      .click({ timeout: 2000 })
+      .catch(() => {});
+  }
 }
 
 function buildCumulativeHours(weeklyPoints, targetTotalHours) {
@@ -142,8 +230,15 @@ async function extractWeeklyHoursHistory(page) {
       .map((r) => ({
         h: Number(r.getAttribute("height") || 0),
         w: Number(r.getAttribute("width") || 0),
+        fill: r.getAttribute("fill") || "",
       }))
-      .filter((r) => r.h > 10 && r.h < 260 && r.w > 3 && r.w < 20);
+      .filter(
+        (r) =>
+          r.fill.includes("indigo") &&
+          r.h > 10 &&
+          r.h < 260 &&
+          r.w > 3
+      );
 
     if (bars.length === 0 || !rangeStart || !rangeEnd) {
       return { weeklyHours: [], rangeStart, rangeEnd };
@@ -175,11 +270,12 @@ async function scrapeStreamer(page, streamer) {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(3500);
+  await dismissPopups(page);
 
-  const followerHeading = page.getByText("팔로워 추이", { exact: true });
-  await followerHeading.scrollIntoViewIfNeeded({ timeout: 20000 }).catch(() => {});
-  await page.waitForTimeout(1500);
+  const followerHeading = page.getByText(/팔로워(\s*\/\s*구독자)?\s*추이|팔로워 추이/, { exact: false });
+  await followerHeading.first().scrollIntoViewIfNeeded({ timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(2500);
 
   let followerResult = { currentFollowers: 0, followers: [] };
   try {
@@ -201,15 +297,43 @@ async function scrapeStreamer(page, streamer) {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(3500);
+    await dismissPopups(page);
 
     const hoursTab = page.getByRole("button", { name: /방송\s*시간/ });
     if (await hoursTab.count()) {
-      await hoursTab.first().click({ timeout: 10000 });
+      await hoursTab.first().click({ timeout: 15000 });
     } else {
-      await page.getByText(/방송\s*시간/).first().click({ timeout: 10000 });
+      await page.getByText(/방송\s*시간/).first().click({ timeout: 15000 });
     }
     await page.waitForTimeout(2000);
+
+    await page.waitForURL(/startDateTime=/, { timeout: 20000 }).catch(() => {});
+
+    await page.evaluate(() => {
+      const sel = Array.from(document.querySelectorAll("select")).find((s) =>
+        Array.from(s.options).some((o) => o.value === "all")
+      );
+      if (sel) {
+        sel.value = "all";
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+    await page.waitForTimeout(2500);
+
+    await page
+      .waitForFunction(
+        () =>
+          Array.from(document.querySelectorAll("rect")).some((r) => {
+            const fill = r.getAttribute("fill") || "";
+            const h = Number(r.getAttribute("height") || 0);
+            return fill.includes("indigo") && h > 10 && h < 260;
+          }),
+        { timeout: 30000 }
+      )
+      .catch(() => {});
+
+    await page.waitForTimeout(1500);
     hoursMeta = await extractWeeklyHoursHistory(page);
   } catch (hoursErr) {
     hoursMeta = { weeklyHours: [], rangeStart: null, rangeEnd: null, barCount: 0, error: hoursErr.message };
@@ -251,6 +375,10 @@ async function scrapeStreamer(page, streamer) {
 async function main() {
   const args = process.argv.slice(2);
   const missingOnly = args.includes("--missing-only");
+  const cleanupEmpty = args.includes("--cleanup-empty");
+  const tagManual = args.includes("--tag-manual");
+  const force = args.includes("--force");
+  const headed = args.includes("--headed") || process.env.SOFTCON_HEADED === "1";
   const onlyId = args.find((a) => a.startsWith("--id="))?.split("=")[1];
 
   const { FALLBACK_STREAMERS } = await import("../lib/streamersConfig.ts");
@@ -265,6 +393,20 @@ async function main() {
     output = {};
   }
 
+  if (tagManual) {
+    const tagged = tagManualEntries(output);
+    writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
+    console.log(`Tagged ${tagged} channel(s) as manual/locked in ${outPath}`);
+    if (!missingOnly && !onlyId && !cleanupEmpty && !headed) return;
+  }
+
+  if (cleanupEmpty) {
+    const removed = cleanupEmptyEntries(output);
+    writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
+    console.log(`Removed ${removed} incomplete channel(s) from ${outPath} (manual entries kept)`);
+    if (!missingOnly && !onlyId && !headed) return;
+  }
+
   let targets = FALLBACK_STREAMERS.map((s) => ({
     channelId: s.channelId,
     channelName: s.channelName,
@@ -274,7 +416,7 @@ async function main() {
   if (onlyId) {
     targets = targets.filter((s) => s.channelId === onlyId);
   } else if (missingOnly) {
-    targets = targets.filter((s) => !hasHistory(output[s.channelId]));
+    targets = targets.filter((s) => !shouldSkipScrape(output[s.channelId], { force }));
   }
 
   if (targets.length === 0) {
@@ -282,29 +424,36 @@ async function main() {
     return;
   }
 
-  console.log(`Scraping ${targets.length} streamer(s) → ${outPath}`);
+  console.log(
+    `Scraping ${targets.length} streamer(s) → ${outPath}${headed ? " [headed Chrome]" : " [headless — likely blocked]"}`
+  );
 
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const { browser, page } = await launchBrowser(dataDir, headed);
 
   for (const streamer of targets) {
     process.stdout.write(`${streamer.channelName}... `);
+    const existing = output[streamer.channelId];
+    if (shouldSkipScrape(existing, { force })) {
+      console.log("SKIP (manual/complete — use --force to overwrite)");
+      continue;
+    }
     try {
       const payload = await scrapeStreamer(page, streamer);
-      output[streamer.channelId] = payload;
+      if (!hasCompleteHistory(payload)) {
+        console.log("SKIP (no chart data — try --headed)");
+        continue;
+      }
+      const { entry, action } = mergeSoftconChannel(existing, payload, {
+        source: "playwright",
+        force,
+      });
+      output[streamer.channelId] = entry;
       writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
       console.log(
-        `followers ${payload.followers.length}, weeks ${payload.weeklyHours.length}, cumulative ${payload.cumulativeHours.length}`
+        `${action}: followers ${entry.followers?.length ?? 0}, weeks ${entry.weeklyHours?.length ?? 0}, cumulative ${entry.cumulativeHours?.length ?? 0}`
       );
     } catch (err) {
       console.log(`FAILED (${err.message})`);
-      output[streamer.channelId] = {
-        followers: [],
-        weeklyHours: [],
-        cumulativeHours: [],
-        meta: { error: err.message, scrapedAt: new Date().toISOString() },
-      };
-      writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
     }
   }
 

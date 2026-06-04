@@ -401,7 +401,9 @@
     ],
     "meta": {
       "range": "24.01.02 ~ 26.06.02",
-      "barCount": 20
+      "barCount": 20,
+      "source": "manual",
+      "locked": true
     }
   },
   "4de764d9dad3b25602284be6db3ac647": {
@@ -859,7 +861,9 @@
     "meta": {
       "range": "24.01.02 ~ 26.06.02",
       "barCount": 25,
-      "yMax": 100
+      "yMax": 100,
+      "source": "manual",
+      "locked": true
     }
   },
   "32fb866e323242b770cdc790f991a6f6": {
@@ -1280,7 +1284,9 @@
     ],
     "meta": {
       "range": "24.01.02 ~ 26.06.02",
-      "barCount": 21
+      "barCount": 21,
+      "source": "manual",
+      "locked": true
     }
   },
   "475313e6c26639d5763628313b4c130e": {
@@ -1737,7 +1743,9 @@
     ],
     "meta": {
       "range": "24.01.02 ~ 26.06.02",
-      "barCount": 25
+      "barCount": 25,
+      "source": "manual",
+      "locked": true
     }
   },
   "17d8605fc37fb5ef49f5f67ae786fe4e": {
@@ -2198,7 +2206,9 @@
     ],
     "meta": {
       "barCount": 26,
-      "range": "24.01.02 ~ 26.06.02"
+      "range": "24.01.02 ~ 26.06.02",
+      "source": "manual",
+      "locked": true
     }
   },
   "a67b328bcc8eea4451ccfa754bc19ae1": {
@@ -2667,7 +2677,9 @@
     ],
     "meta": {
       "range": "24.01.02 ~ 26.06.02",
-      "barCount": 26
+      "barCount": 26,
+      "source": "manual",
+      "locked": true
     }
   },
   "a3ceb9179d99be8d1e63b3e911fcd16b": {
@@ -2948,7 +2960,9 @@
     ],
     "meta": {
       "barCount": 26,
-      "range": "24.01.02 ~ 26.06.02"
+      "range": "24.01.02 ~ 26.06.02",
+      "source": "manual",
+      "locked": true
     }
   },
   "088973112d8acc831ec20274f7ffbb99": {
@@ -3221,7 +3235,9 @@
     ],
     "meta": {
       "range": "24.01.02 ~ 26.06.02",
-      "barCount": 25
+      "barCount": 25,
+      "source": "manual",
+      "locked": true
     }
   },
   "c8adce2ff4a3618931e07c327e1fa070": {
@@ -3914,7 +3930,9 @@
     ],
     "meta": {
       "barCount": 54,
-      "range": "24.01.02 ~ 26.06.02"
+      "range": "24.01.02 ~ 26.06.02",
+      "source": "manual",
+      "locked": true
     }
   },
   "6ccaebc2569f62344c6fc257f8f2b9ad": {
@@ -4431,11 +4449,492 @@
     ],
     "meta": {
       "barCount": 51,
-      "range": "24.01.02 ~ 26.06.02"
+      "range": "24.01.02 ~ 26.06.02",
+      "source": "manual",
+      "locked": true
+    }
+  },
+  "bd07973b6021d72512240c01a386d5c9": {
+    "followers": [
+      {
+        "date": "2024-06-02",
+        "followers": 0
+      },
+      {
+        "date": "2024-06-14",
+        "followers": 2194
+      },
+      {
+        "date": "2024-06-26",
+        "followers": 3761
+      },
+      {
+        "date": "2024-07-08",
+        "followers": 5015
+      },
+      {
+        "date": "2024-07-19",
+        "followers": 5955
+      },
+      {
+        "date": "2024-07-31",
+        "followers": 6895
+      },
+      {
+        "date": "2024-08-12",
+        "followers": 7522
+      },
+      {
+        "date": "2024-08-24",
+        "followers": 8462
+      },
+      {
+        "date": "2024-09-05",
+        "followers": 9403
+      },
+      {
+        "date": "2024-09-16",
+        "followers": 9716
+      },
+      {
+        "date": "2024-09-28",
+        "followers": 10343
+      },
+      {
+        "date": "2024-10-10",
+        "followers": 10656
+      },
+      {
+        "date": "2024-10-22",
+        "followers": 11283
+      },
+      {
+        "date": "2024-11-03",
+        "followers": 11283
+      },
+      {
+        "date": "2024-11-14",
+        "followers": 11910
+      },
+      {
+        "date": "2024-11-26",
+        "followers": 12223
+      },
+      {
+        "date": "2024-12-08",
+        "followers": 13164
+      },
+      {
+        "date": "2024-12-20",
+        "followers": 14104
+      },
+      {
+        "date": "2025-01-01",
+        "followers": 14731
+      },
+      {
+        "date": "2025-01-12",
+        "followers": 15671
+      },
+      {
+        "date": "2025-01-24",
+        "followers": 16925
+      },
+      {
+        "date": "2025-02-05",
+        "followers": 19745
+      },
+      {
+        "date": "2025-02-17",
+        "followers": 25073
+      },
+      {
+        "date": "2025-03-01",
+        "followers": 29775
+      },
+      {
+        "date": "2025-03-12",
+        "followers": 32595
+      },
+      {
+        "date": "2025-03-24",
+        "followers": 35416
+      },
+      {
+        "date": "2025-04-05",
+        "followers": 38237
+      },
+      {
+        "date": "2025-04-17",
+        "followers": 40431
+      },
+      {
+        "date": "2025-04-29",
+        "followers": 41684
+      },
+      {
+        "date": "2025-05-10",
+        "followers": 42625
+      },
+      {
+        "date": "2025-05-22",
+        "followers": 44192
+      },
+      {
+        "date": "2025-06-03",
+        "followers": 46072
+      },
+      {
+        "date": "2025-06-15",
+        "followers": 47639
+      },
+      {
+        "date": "2025-06-27",
+        "followers": 49206
+      },
+      {
+        "date": "2025-07-08",
+        "followers": 49833
+      },
+      {
+        "date": "2025-07-20",
+        "followers": 51087
+      },
+      {
+        "date": "2025-08-01",
+        "followers": 51714
+      },
+      {
+        "date": "2025-08-13",
+        "followers": 52341
+      },
+      {
+        "date": "2025-08-25",
+        "followers": 52967
+      },
+      {
+        "date": "2025-09-05",
+        "followers": 53908
+      },
+      {
+        "date": "2025-09-17",
+        "followers": 54848
+      },
+      {
+        "date": "2025-09-29",
+        "followers": 55788
+      },
+      {
+        "date": "2025-10-11",
+        "followers": 57042
+      },
+      {
+        "date": "2025-10-23",
+        "followers": 57669
+      },
+      {
+        "date": "2025-11-03",
+        "followers": 57982
+      },
+      {
+        "date": "2025-11-15",
+        "followers": 58609
+      },
+      {
+        "date": "2025-11-27",
+        "followers": 58922
+      },
+      {
+        "date": "2025-12-09",
+        "followers": 59236
+      },
+      {
+        "date": "2025-12-21",
+        "followers": 61116
+      },
+      {
+        "date": "2026-01-01",
+        "followers": 62370
+      },
+      {
+        "date": "2026-01-13",
+        "followers": 63624
+      },
+      {
+        "date": "2026-01-25",
+        "followers": 64564
+      },
+      {
+        "date": "2026-02-06",
+        "followers": 65818
+      },
+      {
+        "date": "2026-02-18",
+        "followers": 66758
+      },
+      {
+        "date": "2026-03-01",
+        "followers": 68011
+      },
+      {
+        "date": "2026-03-13",
+        "followers": 68952
+      },
+      {
+        "date": "2026-03-25",
+        "followers": 70205
+      },
+      {
+        "date": "2026-04-06",
+        "followers": 71146
+      },
+      {
+        "date": "2026-04-18",
+        "followers": 71772
+      },
+      {
+        "date": "2026-04-29",
+        "followers": 72086
+      },
+      {
+        "date": "2026-05-11",
+        "followers": 73026
+      },
+      {
+        "date": "2026-05-17",
+        "followers": 73653
+      }
+    ],
+    "currentFollowers": 73653,
+    "weeklyHours": [
+      {
+        "date": "2024-01-01",
+        "weeklyHours": 23.9
+      },
+      {
+        "date": "2024-02-04",
+        "weeklyHours": 49.3
+      },
+      {
+        "date": "2024-03-09",
+        "weeklyHours": 42.2
+      },
+      {
+        "date": "2024-04-12",
+        "weeklyHours": 72.9
+      },
+      {
+        "date": "2024-05-16",
+        "weeklyHours": 39.1
+      },
+      {
+        "date": "2024-06-19",
+        "weeklyHours": 51.5
+      },
+      {
+        "date": "2024-07-23",
+        "weeklyHours": 58.6
+      },
+      {
+        "date": "2024-08-26",
+        "weeklyHours": 58
+      },
+      {
+        "date": "2024-09-29",
+        "weeklyHours": 60.8
+      },
+      {
+        "date": "2024-11-02",
+        "weeklyHours": 80
+      },
+      {
+        "date": "2024-12-06",
+        "weeklyHours": 51.5
+      },
+      {
+        "date": "2025-01-09",
+        "weeklyHours": 48.7
+      },
+      {
+        "date": "2025-02-12",
+        "weeklyHours": 38.8
+      },
+      {
+        "date": "2025-03-18",
+        "weeklyHours": 47.1
+      },
+      {
+        "date": "2025-04-21",
+        "weeklyHours": 49
+      },
+      {
+        "date": "2025-05-25",
+        "weeklyHours": 38.4
+      },
+      {
+        "date": "2025-06-28",
+        "weeklyHours": 40.6
+      },
+      {
+        "date": "2025-08-01",
+        "weeklyHours": 34.4
+      },
+      {
+        "date": "2025-09-04",
+        "weeklyHours": 49.3
+      },
+      {
+        "date": "2025-10-08",
+        "weeklyHours": 51.2
+      },
+      {
+        "date": "2025-11-11",
+        "weeklyHours": 40.6
+      },
+      {
+        "date": "2025-12-15",
+        "weeklyHours": 41.2
+      },
+      {
+        "date": "2026-01-18",
+        "weeklyHours": 37.2
+      },
+      {
+        "date": "2026-02-21",
+        "weeklyHours": 42.5
+      },
+      {
+        "date": "2026-03-27",
+        "weeklyHours": 46.2
+      },
+      {
+        "date": "2026-04-30",
+        "weeklyHours": 45.6
+      },
+      {
+        "date": "2026-06-03",
+        "weeklyHours": 25.1
+      }
+    ],
+    "cumulativeHours": [
+      {
+        "date": "2024-01-01",
+        "hours": 16
+      },
+      {
+        "date": "2024-02-04",
+        "hours": 48
+      },
+      {
+        "date": "2024-03-09",
+        "hours": 76
+      },
+      {
+        "date": "2024-04-12",
+        "hours": 125
+      },
+      {
+        "date": "2024-05-16",
+        "hours": 150
+      },
+      {
+        "date": "2024-06-19",
+        "hours": 184
+      },
+      {
+        "date": "2024-07-23",
+        "hours": 223
+      },
+      {
+        "date": "2024-08-26",
+        "hours": 262
+      },
+      {
+        "date": "2024-09-29",
+        "hours": 302
+      },
+      {
+        "date": "2024-11-02",
+        "hours": 355
+      },
+      {
+        "date": "2024-12-06",
+        "hours": 389
+      },
+      {
+        "date": "2025-01-09",
+        "hours": 421
+      },
+      {
+        "date": "2025-02-12",
+        "hours": 447
+      },
+      {
+        "date": "2025-03-18",
+        "hours": 478
+      },
+      {
+        "date": "2025-04-21",
+        "hours": 510
+      },
+      {
+        "date": "2025-05-25",
+        "hours": 536
+      },
+      {
+        "date": "2025-06-28",
+        "hours": 562
+      },
+      {
+        "date": "2025-08-01",
+        "hours": 585
+      },
+      {
+        "date": "2025-09-04",
+        "hours": 618
+      },
+      {
+        "date": "2025-10-08",
+        "hours": 652
+      },
+      {
+        "date": "2025-11-11",
+        "hours": 678
+      },
+      {
+        "date": "2025-12-15",
+        "hours": 706
+      },
+      {
+        "date": "2026-01-18",
+        "hours": 730
+      },
+      {
+        "date": "2026-02-21",
+        "hours": 758
+      },
+      {
+        "date": "2026-03-27",
+        "hours": 789
+      },
+      {
+        "date": "2026-04-30",
+        "hours": 819
+      },
+      {
+        "date": "2026-06-03",
+        "hours": 836
+      }
+    ],
+    "meta": {
+      "range": "2024-01-01 ~ 2026-06-03",
+      "barCount": 27,
+      "scrapedAt": "2026-06-04T06:14:54.735Z",
+      "source": "manual",
+      "locked": true
     }
   },
   "d5e2e0c14dcca4c4b10c7c9633022f52": {
-    "currentFollowers": 7101,
     "followers": [
       {
         "date": "2026-05-24",
@@ -4443,107 +4942,34 @@
       },
       {
         "date": "2026-05-31",
-        "followers": 7101
+        "followers": 8080
       }
     ],
-    "weeklyHours": [],
-    "cumulativeHours": [],
-    "meta": {}
-  },
-  "5ead7124638ac4c568f2cde0224b3b6b": {
-    "currentFollowers": 8436,
-    "followers": [
+    "currentFollowers": 8080,
+    "weeklyHours": [
       {
-        "date": "2026-05-24",
-        "followers": 0
+        "date": "2024-01-01",
+        "weeklyHours": 5.1
       },
       {
-        "date": "2026-05-31",
-        "followers": 8436
+        "date": "2026-06-03",
+        "weeklyHours": 80
       }
     ],
-    "weeklyHours": [],
-    "cumulativeHours": [],
-    "meta": {}
-  },
-  "941ea3807ba8b9b7dddb1670e3e7e5af": {
-    "currentFollowers": 8382,
-    "followers": [
+    "cumulativeHours": [
       {
-        "date": "2026-05-24",
-        "followers": 0
+        "date": "2024-01-01",
+        "hours": 1
       },
       {
-        "date": "2026-05-31",
-        "followers": 8382
+        "date": "2026-06-03",
+        "hours": 24
       }
     ],
-    "weeklyHours": [],
-    "cumulativeHours": [],
-    "meta": {}
-  },
-  "59aa824e4c4a56dd51e7a5e2e9172648": {
-    "currentFollowers": 8185,
-    "followers": [
-      {
-        "date": "2026-05-24",
-        "followers": 0
-      },
-      {
-        "date": "2026-05-31",
-        "followers": 8185
-      }
-    ],
-    "weeklyHours": [],
-    "cumulativeHours": [],
-    "meta": {}
-  },
-  "c0d9723cbb75dc223c6aa8a9d4f56002": {
-    "followers": [],
-    "currentFollowers": 0,
-    "weeklyHours": [],
-    "cumulativeHours": [],
     "meta": {
-      "range": null,
-      "barCount": 0,
-      "hoursError": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByText(/방송\\s*시간/).first()\n",
-      "scrapedAt": "2026-06-04T05:55:32.671Z"
-    }
-  },
-  "65a53076fe1a39636082dd6dba8b8a4b": {
-    "followers": [],
-    "currentFollowers": 0,
-    "weeklyHours": [],
-    "cumulativeHours": [],
-    "meta": {
-      "range": null,
-      "barCount": 0,
-      "hoursError": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByText(/방송\\s*시간/).first()\n",
-      "scrapedAt": "2026-06-04T05:56:39.271Z"
-    }
-  },
-  "b82e8bc2505e37156b2d1140ba1fc05c": {
-    "followers": [],
-    "currentFollowers": 0,
-    "weeklyHours": [],
-    "cumulativeHours": [],
-    "meta": {
-      "range": null,
-      "barCount": 0,
-      "hoursError": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByText(/방송\\s*시간/).first()\n",
-      "scrapedAt": "2026-06-04T05:57:45.878Z"
-    }
-  },
-  "798e100206987b59805cfb75f927e965": {
-    "followers": [],
-    "currentFollowers": 0,
-    "weeklyHours": [],
-    "cumulativeHours": [],
-    "meta": {
-      "range": null,
-      "barCount": 0,
-      "hoursError": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByText(/방송\\s*시간/).first()\n",
-      "scrapedAt": "2026-06-04T05:58:52.451Z"
+      "range": "2024-01-01 ~ 2026-06-03",
+      "barCount": 2,
+      "scrapedAt": "2026-06-04T06:15:39.340Z"
     }
   }
 }
