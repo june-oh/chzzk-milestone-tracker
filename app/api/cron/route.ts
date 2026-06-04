@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import { extractPaletteFromImageUrl } from "@/lib/imagePalette";
 
 const STREAMERS = [
   { id: "65c3035bdc598c81f15a8fe0e958b3ce", defaultName: "초승달", color: "lilac" },
@@ -176,6 +177,19 @@ export async function GET(req: NextRequest) {
       }
 
       // 4. Update core streamer states in KV
+      let cardBg = prevData?.cardBg as string | undefined;
+      let cardBorder = prevData?.cardBorder as string | undefined;
+      let accentHex = prevData?.accentHex as string | undefined;
+
+      if (imageUrl && (!cardBg || prevData?.channelImageUrl !== imageUrl)) {
+        const palette = await extractPaletteFromImageUrl(imageUrl);
+        if (palette) {
+          cardBg = palette.cardBg;
+          cardBorder = palette.cardBorder;
+          accentHex = palette.accentHex;
+        }
+      }
+
       const updatedStreamerState = {
         channelId: cid,
         channelName: name,
@@ -188,6 +202,9 @@ export async function GET(req: NextRequest) {
         followerCount,
         lastUpdated: new Date().toISOString(),
         color: streamer.color,
+        cardBg,
+        cardBorder,
+        accentHex,
       };
 
       await kv.hset(`streamer:${cid}`, updatedStreamerState);

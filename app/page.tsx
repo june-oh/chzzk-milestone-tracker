@@ -58,6 +58,9 @@ export default async function Home() {
             cheerCount: Number(data.cheerCount) || 0,
             followerCount: Number(data.followerCount) || fallback.followerCount || 0,
             color: data.color || fallback.color,
+            cardBg: data.cardBg || undefined,
+            cardBorder: data.cardBorder || undefined,
+            accentHex: data.accentHex || undefined,
             lastUpdated: data.lastUpdated || new Date().toISOString(),
             history,
           })

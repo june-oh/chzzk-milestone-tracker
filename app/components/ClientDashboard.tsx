@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import confetti from "canvas-confetti";
 import Image from "next/image";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users, Check, ArrowDown, ArrowUp } from "lucide-react";
@@ -33,6 +33,9 @@ interface Streamer {
   followerCount?: number;
   groupTag?: GroupTag;
   color: string;
+  cardBg?: string;
+  cardBorder?: string;
+  accentHex?: string;
   lastUpdated: string;
   history: StreamerHistory[];
 }
@@ -89,6 +92,21 @@ const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawH
 
 type CardSortField = "hours" | "followers" | null;
 type CardSortDir = "asc" | "desc";
+
+type CardSurfacePalette = {
+  cardBg: string;
+  cardBorder: string;
+};
+
+function getCardSurfacePalette(
+  streamer: Streamer,
+  extractedPalettes: Record<string, CardSurfacePalette>
+): CardSurfacePalette | null {
+  if (streamer.cardBg && streamer.cardBorder) {
+    return { cardBg: streamer.cardBg, cardBorder: streamer.cardBorder };
+  }
+  return extractedPalettes[streamer.channelId] ?? null;
+}
 
 function StreamerChannelImage({
   src,
@@ -297,6 +315,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [compareHeaderView, setCompareHeaderView] = useState(false);
   const [cardSortField, setCardSortField] = useState<CardSortField>(null);
   const [cardSortDir, setCardSortDir] = useState<CardSortDir>("desc");
+  const [extractedPalettes, setExtractedPalettes] = useState<Record<string, CardSurfacePalette>>({});
+  const fetchedPaletteIds = useRef(new Set<string>());
   const [hoveredHoursPointState, setHoveredHoursPoint] = useState<HoursChartPoint | null>(null);
   const [hoveredFollowersPointState, setHoveredFollowersPoint] = useState<FollowersChartPoint | null>(null);
   const [chartMarkerTooltip, setChartMarkerTooltip] = useState<ChartMarkerTooltip>(null);
@@ -479,6 +499,59 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fillMissingPalettes() {
+      const targets = streamers.filter(
+        (streamer) =>
+          !streamer.cardBg &&
+          streamer.channelImageUrl &&
+          !fetchedPaletteIds.current.has(streamer.channelId)
+      );
+      if (targets.length === 0) return;
+
+      targets.forEach((streamer) => fetchedPaletteIds.current.add(streamer.channelId));
+
+      const results = await Promise.all(
+        targets.map(async (streamer) => {
+          try {
+            const res = await fetch(`/api/image-palette?url=${encodeURIComponent(streamer.channelImageUrl)}`);
+            if (!res.ok) return null;
+            const data = await res.json();
+            if (!data.success || !data.cardBg || !data.cardBorder) return null;
+            return {
+              channelId: streamer.channelId,
+              cardBg: data.cardBg as string,
+              cardBorder: data.cardBorder as string,
+            };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      const nextEntries = results.filter(Boolean) as Array<CardSurfacePalette & { channelId: string }>;
+      if (nextEntries.length === 0) return;
+
+      setExtractedPalettes((prev) => {
+        const next = { ...prev };
+        nextEntries.forEach((entry) => {
+          next[entry.channelId] = { cardBg: entry.cardBg, cardBorder: entry.cardBorder };
+        });
+        return next;
+      });
+    }
+
+    fillMissingPalettes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [streamers]);
 
   // Compute milestone variables
   const getMilestoneStats = (hours: number) => {
@@ -2404,6 +2477,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         {sortedStreamers.map((streamer) => {
           const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
           const borderSet = BORDER_COLOR_MAP[streamer.color] || "border-neutral-200";
+          const cardPalette = getCardSurfacePalette(streamer, extractedPalettes);
           const isSelected = selectedForCompare.has(streamer.channelId);
 
           return (
@@ -2413,9 +2487,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               className="w-full min-w-0 cursor-pointer hover:-translate-y-1.5 transition-transform duration-300"
             >
               <div
-                className={`w-full h-full rounded-[20px] sm:rounded-[24px] border ${borderSet} ${colorSet.bg} p-3 sm:p-4 lg:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-lg transition-shadow overflow-hidden ${
-                  isSelected ? "ring-2 ring-black ring-offset-2" : ""
-                }`}
+                className={`w-full h-full rounded-[20px] sm:rounded-[24px] border p-3 sm:p-4 lg:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-lg transition-shadow overflow-hidden ${
+                  cardPalette ? "" : `${borderSet} ${colorSet.bg}`
+                } ${isSelected ? "ring-2 ring-black ring-offset-2" : ""}`}
+                style={
+                  cardPalette
+                    ? {
+                        backgroundColor: cardPalette.cardBg,
+                        borderColor: cardPalette.cardBorder,
+                      }
+                    : undefined
+                }
               >
                 <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-neutral-200/70 border border-hairline group">
                   <StreamerChannelImage
