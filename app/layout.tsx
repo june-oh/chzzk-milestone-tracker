@@ -14,8 +14,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://chzzk-milestone-tracker.vercel.app"),
   title: "치지직 방송 시간 마일스톤 트래커",
-  description: "치지직 최고 스트리머들의 총 방송 시간 1,000시간 마일스톤 돌파를 기념하고 실시간으로 응원하는 공간입니다.",
+  description:
+    "치지직 최고 스트리머들의 총 방송 시간 1,000시간 마일스톤 돌파를 기념하고 실시간으로 응원하는 공간입니다.",
+  verification: {
+    google: "3NG6ANGF43yASYHh7gQbtAjMSbga1Vcd_S21vS-VbcU",
+  },
 };
 
 export default function RootLayout({
