@@ -550,8 +550,20 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     const bandSize = nextMilestone - prevMilestone;
     const progressPercent = bandSize > 0 ? ((followers - prevMilestone) / bandSize) * 100 : 0;
     const followersRemaining = nextMilestone - followers;
-    const remainingPercent = followers > 0 ? (followersRemaining / followers) * 100 : 100;
-    return { nextMilestone, prevMilestone, progressPercent, followersRemaining, remainingPercent };
+    const bandRemainingPercent = bandSize > 0 ? (followersRemaining / bandSize) * 100 : 0;
+    // Higher milestones (e.g. 30만) weigh more than early ones (e.g. 2만) so large channels do not dominate.
+    const tierWeight = Math.sqrt(nextMilestone / 10000);
+    const weightedRemainingScore = followersRemaining * tierWeight;
+    const weightedRemainingPercent = bandRemainingPercent * tierWeight;
+    return {
+      nextMilestone,
+      prevMilestone,
+      progressPercent,
+      followersRemaining,
+      bandRemainingPercent,
+      weightedRemainingScore,
+      weightedRemainingPercent,
+    };
   };
 
   const getLastFollowerMilestone = (followers = 0) => {
@@ -1988,16 +2000,23 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   };
 
   const selectedStreamer = streamers.find((s) => s.channelId === activeStreamerId);
-  const topFollowerChasers = streamers
+  const topFollowerChasersByWeight = streamers
     .map((streamer) => ({
       streamer,
       stats: getFollowerMilestoneStats(streamer.followerCount || 0),
     }))
     .sort(
       (a, b) =>
-        a.stats.remainingPercent - b.stats.remainingPercent ||
+        a.stats.weightedRemainingScore - b.stats.weightedRemainingScore ||
         a.stats.followersRemaining - b.stats.followersRemaining
     )
+    .slice(0, 5);
+  const topFollowerChasersByCount = streamers
+    .map((streamer) => ({
+      streamer,
+      stats: getFollowerMilestoneStats(streamer.followerCount || 0),
+    }))
+    .sort((a, b) => a.stats.followersRemaining - b.stats.followersRemaining)
     .slice(0, 5);
   const topHoursChasers = streamers
     .map((streamer) => ({
@@ -2390,16 +2409,32 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-[960px] mx-auto mb-8 px-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-[1200px] mx-auto mb-8 px-4">
               {renderChaserColumn(
-                topFollowerChasers,
-                "Follower Closest",
+                topFollowerChasersByWeight,
+                "Follow · Weighted",
                 <Users className="w-4 h-4" />,
                 (entry) => (
                   <>
                     {formatFollowerMilestoneTarget(entry.stats.nextMilestone)}까지{" "}
-                    <strong className="text-black">{entry.stats.remainingPercent.toFixed(2)}%</strong> 남음
+                    <strong className="text-black">{entry.stats.weightedRemainingPercent.toFixed(1)}%</strong>{" "}
+                    <span className="text-neutral-500">(가중)</span>
                     <span className="text-neutral-400"> · {entry.stats.followersRemaining.toLocaleString()}명</span>
+                  </>
+                )
+              )}
+              {renderChaserColumn(
+                topFollowerChasersByCount,
+                "Follow · Count",
+                <Users className="w-4 h-4" />,
+                (entry) => (
+                  <>
+                    {formatFollowerMilestoneTarget(entry.stats.nextMilestone)}까지{" "}
+                    <strong className="text-black">{entry.stats.followersRemaining.toLocaleString()}명</strong> 남음
+                    <span className="text-neutral-400">
+                      {" "}
+                      · 구간 {entry.stats.bandRemainingPercent.toFixed(1)}%
+                    </span>
                   </>
                 )
               )}
