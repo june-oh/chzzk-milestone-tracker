@@ -44,11 +44,46 @@ export function formatDebutDPlus(firstLiveDate: string | Date | undefined, now =
   return `D+${days}`;
 }
 
+/** Human-readable elapsed time since debut (KST calendar). */
+export function formatDebutElapsed(firstLiveDate: string | Date | undefined, now = new Date()): string | null {
+  const days = getDebutDayCount(firstLiveDate, now);
+  if (days === null || !firstLiveDate) return null;
+
+  const debutParts =
+    firstLiveDate instanceof Date ? getKstCalendarParts(firstLiveDate) : parseCalendarDate(String(firstLiveDate));
+  if (!debutParts) return null;
+
+  const today = getKstCalendarParts(now);
+  let years = today.year - debutParts.year;
+  let months = today.month - debutParts.month;
+  if (today.day < debutParts.day) months--;
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+
+  if (years <= 0 && months <= 0) {
+    return days < 30 ? `${days}일` : "1개월 미만";
+  }
+
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years}년`);
+  if (months > 0) parts.push(`${months}개월`);
+  return parts.join(" ");
+}
+
 export type DebutAnniversaryMilestone = {
   label: string;
   targetDay: number;
   daysUntil: number;
   kind: "100days" | "year";
+};
+
+export type CommemorativeEvent = {
+  label: string;
+  daysUntil: number;
+  dLabel: string;
+  kind: "100days" | "year" | "birthday";
 };
 
 /** Nearest upcoming debut anniversary at 100-day or 1-year (365-day) intervals (KST). */
@@ -82,5 +117,60 @@ export function getNextDebutAnniversary(
 
   return candidates.sort(
     (a, b) => a.daysUntil - b.daysUntil || (a.kind === "year" ? -1 : 1)
+  )[0];
+}
+
+/** Days until next birthday in KST (D-N countdown). */
+export function getNextBirthdayEvent(birthdayMmDd: string | undefined, now = new Date()): CommemorativeEvent | null {
+  if (!birthdayMmDd) return null;
+  const [mm, dd] = birthdayMmDd.split("-").map(Number);
+  if (!mm || !dd) return null;
+
+  const today = getKstCalendarParts(now);
+  let targetYear = today.year;
+  let target: CalendarParts = { year: targetYear, month: mm - 1, day: dd };
+  let daysUntil = calendarDayDiff(today, target);
+
+  if (daysUntil < 0) {
+    targetYear += 1;
+    target = { year: targetYear, month: mm - 1, day: dd };
+    daysUntil = calendarDayDiff(today, target);
+  }
+
+  return {
+    label: "생일",
+    daysUntil,
+    dLabel: daysUntil === 0 ? "D-Day" : `D-${daysUntil}`,
+    kind: "birthday",
+  };
+}
+
+/** Closest upcoming debut anniversary or birthday (KST). */
+export function getNextCommemorativeEvent(
+  debutDate: string | undefined,
+  birthdayMmDd: string | undefined,
+  now = new Date()
+): CommemorativeEvent | null {
+  const candidates: CommemorativeEvent[] = [];
+
+  const debut = getNextDebutAnniversary(debutDate, now);
+  if (debut) {
+    candidates.push({
+      label: debut.label,
+      daysUntil: debut.daysUntil,
+      dLabel: `D+${debut.targetDay}`,
+      kind: debut.kind,
+    });
+  }
+
+  const birthday = getNextBirthdayEvent(birthdayMmDd, now);
+  if (birthday) candidates.push(birthday);
+
+  if (candidates.length === 0) return null;
+
+  return candidates.sort(
+    (a, b) =>
+      a.daysUntil - b.daysUntil ||
+      (a.kind === "birthday" ? -1 : 0) - (b.kind === "birthday" ? -1 : 0)
   )[0];
 }

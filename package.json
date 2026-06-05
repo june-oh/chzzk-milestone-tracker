@@ -12,6 +12,8 @@
     "scrape:softcon:cleanup": "node scripts/scrape-softcon-history.mjs --cleanup-empty",
     "scrape:namuwiki-colors": "npx tsx scripts/scrape-namuwiki-theme-colors.mjs --write",
     "scrape:namuwiki-colors:perplexity": "npx tsx scripts/scrape-namuwiki-theme-colors.mjs --perplexity --write",
+    "scrape:namuwiki-profiles": "npx tsx scripts/scrape-namuwiki-profiles.mjs --write",
+    "scrape:namuwiki-profiles:perplexity": "npx tsx scripts/scrape-namuwiki-profiles.mjs --perplexity --write",
     "build:image-theme-colors": "npx tsx scripts/build-image-theme-colors.mjs --write"
   },
   "dependencies": {

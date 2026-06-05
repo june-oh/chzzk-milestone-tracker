@@ -20,7 +20,8 @@ import type { GroupTag } from "@/lib/streamerMeta";
 import { resolveCardPalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
 import { getVerifiedNamuwikiThemePalette, hasVerifiedNamuwikiTheme } from "@/lib/namuwikiThemeColors";
 import { getBundledImageThemePalette } from "@/lib/imageThemeColors";
-import { formatDebutDPlus, getNextDebutAnniversary } from "@/lib/debutElapsed";
+import { formatDebutDPlus, formatDebutElapsed, getNextCommemorativeEvent } from "@/lib/debutElapsed";
+import { getNamuwikiUrl, getStreamerBirthday, hasNamuwikiProfile } from "@/lib/namuwikiProfiles";
 import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
@@ -2024,13 +2025,15 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const topDebutAnniversaryChasers = streamers
     .map((streamer) => ({
       streamer,
-      anniversary: getNextDebutAnniversary(getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate)),
+      event: getNextCommemorativeEvent(
+        getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate),
+        getStreamerBirthday(streamer.channelId)
+      ),
     }))
     .filter(
-      (entry): entry is typeof entry & { anniversary: NonNullable<typeof entry.anniversary> } =>
-        entry.anniversary !== null
+      (entry): entry is typeof entry & { event: NonNullable<typeof entry.event> } => entry.event !== null
     )
-    .sort((a, b) => a.anniversary.daysUntil - b.anniversary.daysUntil)
+    .sort((a, b) => a.event.daysUntil - b.event.daysUntil)
     .slice(0, 5);
   const topHoursChasers = streamers
     .map((streamer) => ({
@@ -2143,26 +2146,39 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         </div>
 
         {/* Sleek top navigation / Back button */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <button
             onClick={() => {
               handleSelectStreamer(null);
             }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-hairline hover:bg-neutral-50 text-neutral-800 text-[14px] font-bold transition-all shadow-sm active:scale-95"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white border border-hairline hover:bg-neutral-50 text-neutral-800 text-[14px] font-bold transition-all shadow-sm active:scale-95"
           >
             <ChevronLeft className="w-4 h-4" />
             <span>전체 스트리머 목록으로 돌아가기</span>
           </button>
 
-          <a
-            href={`https://chzzk.naver.com/${selectedStreamer.channelId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-100 hover:bg-emerald-100 text-[14px] font-bold transition-colors"
-          >
-            <span>치지직 채널 바로가기</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {hasNamuwikiProfile(selectedStreamer.channelId) && (
+              <a
+                href={getNamuwikiUrl(selectedStreamer.channelId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-green-50 text-green-900 border border-green-100 hover:bg-green-100 text-[14px] font-bold transition-colors"
+              >
+                <span>나무위키</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+            <a
+              href={`https://chzzk.naver.com/${selectedStreamer.channelId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-100 hover:bg-emerald-100 text-[14px] font-bold transition-colors"
+            >
+              <span>치지직 채널 바로가기</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
 
         {/* 1. TOP SECTION: Streamer Header & stat counters */}
@@ -2464,17 +2480,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 "Debut · Anniversary",
                 <Calendar className="w-4 h-4" />,
                 (entry) =>
-                  entry.anniversary.daysUntil === 0 ? (
+                  entry.event.daysUntil === 0 ? (
                     <>
-                      <strong className="text-black">{entry.anniversary.label}</strong>
-                      <span className="text-neutral-500"> · 오늘 기념일</span>
-                      <span className="text-neutral-400"> · D+{entry.anniversary.targetDay}</span>
+                      <strong className="text-black">{entry.event.label}</strong>
+                      <span className="text-neutral-500"> · {entry.event.dLabel}</span>
+                      <span className="text-neutral-400"> · 오늘</span>
                     </>
                   ) : (
                     <>
-                      <strong className="text-black">{entry.anniversary.label}</strong>까지{" "}
-                      <strong className="text-black">{entry.anniversary.daysUntil}일</strong>
-                      <span className="text-neutral-400"> · D+{entry.anniversary.targetDay}</span>
+                      <strong className="text-black">{entry.event.label}</strong>
+                      <span className="text-neutral-500"> · {entry.event.dLabel}</span>
+                      <span className="text-neutral-400"> · {entry.event.daysUntil}일 후</span>
                     </>
                   )
               )}
@@ -2629,7 +2645,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {sortedStreamers.map((streamer) => {
           const cardPalette = getCardSurfacePalette(streamer, extractedPalettes);
-          const debutDPlus = formatDebutDPlus(getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate));
+          const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
+          const debutDPlus = formatDebutDPlus(debutRef);
+          const debutElapsed = formatDebutElapsed(debutRef);
           const isSelected = selectedForCompare.has(streamer.channelId);
 
           return (
@@ -2708,40 +2726,34 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                     <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-1.5">
                       TOTAL HOURS
                     </span>
-                    <div className="flex items-baseline justify-between gap-2 min-w-0">
-                      <div className="min-w-0">
-                        <StatCounter value={streamer.totalLiveHours} size="sm" className="md:hidden" />
-                        <StatCounter value={streamer.totalLiveHours} size="md" className="hidden md:block" />
-                      </div>
-                      {debutDPlus && (
-                        <span
-                          className="font-mono text-[11px] font-bold text-neutral-400 shrink-0 tabular-nums"
-                          suppressHydrationWarning
-                        >
-                          {debutDPlus}
-                        </span>
-                      )}
-                    </div>
+                    <StatCounter value={streamer.totalLiveHours} size="sm" className="md:hidden" />
+                    <StatCounter value={streamer.totalLiveHours} size="md" className="hidden md:block" />
                   </div>
                   {streamer.followerCount !== undefined && (
                     <div className="min-w-0">
                       <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-1.5">
                         FOLLOWERS
                       </span>
-                      <div className="flex items-baseline justify-between gap-2 min-w-0">
-                        <div className="min-w-0">
-                          <StatCounter value={streamer.followerCount} size="sm" className="md:hidden" />
-                          <StatCounter value={streamer.followerCount} size="md" className="hidden md:block" />
-                        </div>
-                        {debutDPlus && (
-                          <span
-                            className="font-mono text-[11px] font-bold text-neutral-400 shrink-0 tabular-nums"
-                            suppressHydrationWarning
-                          >
-                            {debutDPlus}
-                          </span>
-                        )}
-                      </div>
+                      <StatCounter value={streamer.followerCount} size="sm" className="md:hidden" />
+                      <StatCounter value={streamer.followerCount} size="md" className="hidden md:block" />
+                    </div>
+                  )}
+                  {debutDPlus && (
+                    <div className="min-w-0">
+                      <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-1.5">
+                        DEBUT
+                      </span>
+                      {debutElapsed && (
+                        <p className="font-sans text-[12px] font-bold text-neutral-600 mb-1" suppressHydrationWarning>
+                          {debutElapsed}
+                        </p>
+                      )}
+                      <p
+                        className="font-mono font-bold tabular-nums tracking-tight text-black text-[18px] md:text-[24px] leading-none"
+                        suppressHydrationWarning
+                      >
+                        {debutDPlus}
+                      </p>
                     </div>
                   )}
                 </div>
