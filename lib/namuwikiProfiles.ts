@@ -1,5 +1,8 @@
 import profilesJson from "@/data/namuwiki-profiles.json";
-import { getDebutReferenceDate as getFallbackDebutDate } from "@/lib/streamerMeta";
+import {
+  getConfiguredDebutDate,
+  getDebutReferenceDate as getFallbackDebutDate,
+} from "@/lib/streamerMeta";
 
 export type NamuwikiProfile = {
   channelName: string;
@@ -11,6 +14,17 @@ export type NamuwikiProfile = {
 };
 
 const PROFILES = profilesJson.profiles as Record<string, NamuwikiProfile>;
+
+/** Reject pre-Chzzk career debuts and other bad scrapes (e.g. 2016, wrong infobox). */
+function isPlausibleChzzkDebut(debutDate: string): boolean {
+  const year = Number(debutDate.slice(0, 4));
+  const maxYear = new Date().getFullYear() + 1;
+  return year >= 2021 && year <= maxYear;
+}
+
+function isManualProfile(profile: NamuwikiProfile | undefined): boolean {
+  return profile?.source === "manual" || Boolean(profile?.source?.startsWith("manual"));
+}
 
 export function getNamuwikiProfile(channelId: string): NamuwikiProfile | undefined {
   return PROFILES[channelId];
@@ -31,10 +45,28 @@ export function getStreamerNamuwikiDebut(channelId: string): string | undefined 
   return debutDate ?? undefined;
 }
 
-/** Namuwiki debut first, then configured group/member debut, then API firstLiveDate. */
+/**
+ * Debut date for D+ / anniversaries:
+ * 1. Verified manual namuwiki
+ * 2. Group / per-member configured debut
+ * 3. Plausible scraped namuwiki (2021+)
+ * 4. Chzzk firstLiveDate fallback
+ */
 export function getDebutReferenceDate(channelId: string, firstLiveDate?: string): string | undefined {
-  const namuDebut = getStreamerNamuwikiDebut(channelId);
-  if (namuDebut) return namuDebut;
+  const profile = getNamuwikiProfile(channelId);
+
+  if (isManualProfile(profile) && profile?.debutDate) {
+    return profile.debutDate;
+  }
+
+  const configured = getConfiguredDebutDate(channelId);
+  if (configured) return configured;
+
+  const namuDebut = profile?.debutDate;
+  if (namuDebut && isPlausibleChzzkDebut(namuDebut)) {
+    return namuDebut;
+  }
+
   return getFallbackDebutDate(channelId, firstLiveDate);
 }
 

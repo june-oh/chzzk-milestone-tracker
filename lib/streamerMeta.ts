@@ -123,8 +123,8 @@ const LISTELLA_GROUP_DEBUT_IDS = new Set([
   "9351fb8417f73405c84e0846409e3263", // 햄쿠비
 ]);
 
-export function getDebutReferenceDate(channelId: string, firstLiveDate?: string): string | undefined {
-  const trimmed = firstLiveDate?.trim();
+/** Group or per-member configured debut only (excludes API firstLiveDate). */
+export function getConfiguredDebutDate(channelId: string): string | undefined {
   if (CHANNEL_DEBUT_DATES[channelId]) {
     return CHANNEL_DEBUT_DATES[channelId];
   }
@@ -132,11 +132,19 @@ export function getDebutReferenceDate(channelId: string, firstLiveDate?: string)
   const group = getGroupTag(channelId);
   if (group && GROUP_DEBUT_DATES[group]) {
     if (group === "Listella" && !LISTELLA_GROUP_DEBUT_IDS.has(channelId)) {
-      return trimmed || undefined;
+      return undefined;
     }
     return GROUP_DEBUT_DATES[group];
   }
 
+  return undefined;
+}
+
+export function getDebutReferenceDate(channelId: string, firstLiveDate?: string): string | undefined {
+  const configured = getConfiguredDebutDate(channelId);
+  if (configured) return configured;
+
+  const trimmed = firstLiveDate?.trim();
   return trimmed || undefined;
 }
 

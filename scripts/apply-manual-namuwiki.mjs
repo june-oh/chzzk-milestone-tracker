@@ -86,6 +86,10 @@ const MANUAL = {
     debutDate: "2025-09-14",
     source: "manual",
   },
+  "65c3035bdc598c81f15a8fe0e958b3ce": {
+    debutDate: "2024-02-26",
+    source: "manual",
+  },
 };
 
 const data = JSON.parse(fs.readFileSync(OUT_PATH, "utf8"));
