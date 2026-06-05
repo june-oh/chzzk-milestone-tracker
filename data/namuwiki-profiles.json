@@ -1,7 +1,8 @@
 {
   "meta": {
-    "updatedAt": "2026-06-05T01:14:38.703Z",
-    "count": 31,
+    "updatedAt": "2026-06-05T01:44:07.498Z",
+    "count": 42,
+    "withBirthday": 36,
     "total": 46
   },
   "profiles": {
@@ -9,187 +10,288 @@
       "channelName": "초승달",
       "pageTitle": "초승달(인터넷 방송인)",
       "url": "https://namu.wiki/w/%EC%B4%88%EC%8A%B9%EB%8B%AC(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
-      "birthday": null
+      "birthday": "09-10",
+      "source": "namuwiki:page"
     },
     "4de764d9dad3b25602284be6db3ac647": {
       "channelName": "아리사",
       "pageTitle": "아리사(인터넷 방송인)",
       "url": "https://namu.wiki/w/%EC%95%84%EB%A6%AC%EC%82%AC(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
-      "birthday": "01-08"
+      "birthday": "01-08",
+      "source": "namuwiki:page"
+    },
+    "32fb866e323242b770cdc790f991a6f6": {
+      "channelName": "카린",
+      "pageTitle": "카린(인터넷 방송인)",
+      "url": "https://namu.wiki/w/%EC%B9%B4%EB%A6%B0(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
+      "birthday": null,
+      "source": "namuwiki:page"
     },
     "475313e6c26639d5763628313b4c130e": {
       "channelName": "엘리",
       "pageTitle": "엘리양",
       "url": "https://namu.wiki/w/%EC%97%98%EB%A6%AC%EC%96%91",
-      "birthday": null
+      "birthday": "12-07",
+      "source": "namuwiki:page"
     },
     "17d8605fc37fb5ef49f5f67ae786fe4e": {
       "channelName": "에리스",
       "pageTitle": "에리스(인터넷 방송인)",
       "url": "https://namu.wiki/w/%EC%97%90%EB%A6%AC%EC%8A%A4(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
-      "birthday": "03-03"
+      "birthday": "03-03",
+      "source": "namuwiki:page"
     },
-    "088973112d8acc831ec20274f7ffbb99": {
-      "channelName": "미하루 Miharu",
-      "pageTitle": "미하루(인터넷 방송인)",
-      "url": "https://namu.wiki/w/%EB%AF%B8%ED%95%98%EB%A3%A8(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
-      "birthday": "11-01"
+    "a67b328bcc8eea4451ccfa754bc19ae1": {
+      "channelName": "달콤레나 씨",
+      "pageTitle": "달콤레나",
+      "url": "https://namu.wiki/w/%EB%8B%AC%EC%BD%A4%EB%A0%88%EB%82%98",
+      "birthday": "07-31",
+      "source": "namuwiki:group"
     },
     "a3ceb9179d99be8d1e63b3e911fcd16b": {
       "channelName": "키유 Kiyuu",
       "pageTitle": "키유",
       "url": "https://namu.wiki/w/%ED%82%A4%EC%9C%A0",
-      "birthday": "03-18"
+      "birthday": "03-18",
+      "source": "namuwiki:page"
+    },
+    "088973112d8acc831ec20274f7ffbb99": {
+      "channelName": "미하루 Miharu",
+      "pageTitle": "미하루(인터넷 방송인)",
+      "url": "https://namu.wiki/w/%EB%AF%B8%ED%95%98%EB%A3%A8(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
+      "birthday": "11-01",
+      "source": "namuwiki:page"
     },
     "c8adce2ff4a3618931e07c327e1fa070": {
       "channelName": "포키쨩",
       "pageTitle": "포키쨩",
       "url": "https://namu.wiki/w/%ED%8F%AC%ED%82%A4%EC%A8%A9",
-      "birthday": "08-28"
+      "birthday": "08-28",
+      "source": "namuwiki:page"
+    },
+    "6ccaebc2569f62344c6fc257f8f2b9ad": {
+      "channelName": "엘시v",
+      "pageTitle": "엘시(인터넷 방송인)",
+      "url": "https://namu.wiki/w/%EC%97%98%EC%8B%9C(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
+      "birthday": null,
+      "source": "namuwiki:page"
     },
     "5ead7124638ac4c568f2cde0224b3b6b": {
       "channelName": "카네코 파냐 Planeta",
       "pageTitle": "카네코 파냐",
       "url": "https://namu.wiki/w/%EC%B9%B4%EB%84%A4%EC%BD%94%20%ED%8C%8C%EB%83%90",
-      "birthday": "12-16"
+      "birthday": "12-16",
+      "source": "namuwiki:page"
     },
     "941ea3807ba8b9b7dddb1670e3e7e5af": {
       "channelName": "아마네 나기 Planeta",
       "pageTitle": "아마네 나기",
       "url": "https://namu.wiki/w/%EC%95%84%EB%A7%88%EB%84%A4%20%EB%82%98%EA%B8%B0",
-      "birthday": "08-08"
+      "birthday": "08-08",
+      "source": "namuwiki:page"
     },
     "c0d9723cbb75dc223c6aa8a9d4f56002": {
       "channelName": "허니츄러스",
       "pageTitle": "허니츄러스",
       "url": "https://namu.wiki/w/%ED%97%88%EB%8B%88%EC%B8%84%EB%9F%AC%EC%8A%A4",
-      "birthday": null
+      "birthday": "03-04",
+      "source": "namuwiki:page"
+    },
+    "65a53076fe1a39636082dd6dba8b8a4b": {
+      "channelName": "오화요 Ohwayo",
+      "pageTitle": "오화요",
+      "url": "https://namu.wiki/w/%EC%98%A4%ED%99%94%EC%9A%94",
+      "birthday": "12-02",
+      "source": "namuwiki:group"
+    },
+    "b82e8bc2505e37156b2d1140ba1fc05c": {
+      "channelName": "담유이",
+      "pageTitle": "담유이",
+      "url": "https://namu.wiki/w/%EB%8B%B4%EC%9C%A0%EC%9D%B4",
+      "birthday": "09-21",
+      "source": "namuwiki:group"
+    },
+    "798e100206987b59805cfb75f927e965": {
+      "channelName": "디디디용",
+      "pageTitle": "디디디용",
+      "url": "https://namu.wiki/w/%EB%94%94%EB%94%94%EB%94%94%EC%9A%A9",
+      "birthday": "06-09",
+      "source": "namuwiki:group"
     },
     "abe8aa82baf3d3ef54ad8468ee73e7fc": {
       "channelName": "아야 AyaUke",
       "pageTitle": "아야(인터넷 방송인)",
       "url": "https://namu.wiki/w/%EC%95%84%EC%95%BC(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
-      "birthday": null
+      "birthday": null,
+      "source": "namuwiki:page"
+    },
+    "bd07973b6021d72512240c01a386d5c9": {
+      "channelName": "망내",
+      "pageTitle": "망내",
+      "url": "https://namu.wiki/w/%EB%A7%9D%EB%82%B4",
+      "birthday": "07-25",
+      "source": "namuwiki:group"
+    },
+    "3e3781d3bd20dadc2f6f6d5d30091195": {
+      "channelName": "포포포포 POPOPOPO",
+      "pageTitle": "포포포포",
+      "url": "https://namu.wiki/w/%ED%8F%AC%ED%8F%AC%ED%8F%AC%ED%8F%AC",
+      "birthday": "04-04",
+      "source": "namuwiki:group"
     },
     "5c897b3e639045ca6e314bbaff991f73": {
       "channelName": "비올레타 모네",
       "pageTitle": "비올레타 모네",
       "url": "https://namu.wiki/w/%EB%B9%84%EC%98%AC%EB%A0%88%ED%83%80%20%EB%AA%A8%EB%84%A4",
-      "birthday": null
+      "birthday": "11-18",
+      "source": "namuwiki:page"
     },
     "dae2de8eaa005a59163f2e4c045e1aa1": {
       "channelName": "블레어 로즈",
       "pageTitle": "블레어 로즈",
       "url": "https://namu.wiki/w/%EB%B8%94%EB%A0%88%EC%96%B4%20%EB%A1%9C%EC%A6%88",
-      "birthday": null
+      "birthday": "12-29",
+      "source": "namuwiki:page"
+    },
+    "b33c957eac9335d38e4043c3dca97675": {
+      "channelName": "하시요 HaSiyo",
+      "pageTitle": "하시요",
+      "url": "https://namu.wiki/w/%ED%95%98%EC%8B%9C%EC%9A%94",
+      "birthday": "05-03",
+      "source": "namuwiki:group"
     },
     "f36320c432d9f06095ce2cfbbf681c26": {
       "channelName": "류시호 RyuSiho",
       "pageTitle": "류시호(인터넷 방송인)",
       "url": "https://namu.wiki/w/%EB%A5%98%EC%8B%9C%ED%98%B8(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
-      "birthday": null
+      "birthday": "05-25",
+      "source": "namuwiki:page"
     },
     "e87999abca4fd0c3214e05ef414ce951": {
       "channelName": "야토 Yato",
       "pageTitle": "야토(인터넷 방송인)",
       "url": "https://namu.wiki/w/%EC%95%BC%ED%86%A0(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
-      "birthday": "01-18"
+      "birthday": "01-18",
+      "source": "namuwiki:page"
     },
     "f3b204dd3fd6925835ca1848cd4b6d3c": {
       "channelName": "오단밍",
       "pageTitle": "오단밍",
       "url": "https://namu.wiki/w/%EC%98%A4%EB%8B%A8%EB%B0%8D",
-      "birthday": "06-01"
+      "birthday": "06-01",
+      "source": "namuwiki:page"
+    },
+    "9351fb8417f73405c84e0846409e3263": {
+      "channelName": "햄쿠비",
+      "pageTitle": "햄쿠비",
+      "url": "https://namu.wiki/w/%ED%96%84%EC%BF%A0%EB%B9%84",
+      "birthday": "04-12",
+      "source": "namuwiki:group"
     },
     "4325b1d5bbc321fad3042306646e2e50": {
       "channelName": "아카네 리제",
       "pageTitle": "아카네 리제",
       "url": "https://namu.wiki/w/%EC%95%84%EC%B9%B4%EB%84%A4%20%EB%A6%AC%EC%A0%9C",
-      "birthday": "10-01"
+      "birthday": "10-01",
+      "source": "namuwiki:page"
     },
     "64d76089fba26b180d9c9e48a32600d9": {
       "channelName": "텐코 시부키",
       "pageTitle": "텐코 시부키",
       "url": "https://namu.wiki/w/%ED%85%90%EC%BD%94%20%EC%8B%9C%EB%B6%80%ED%82%A4",
-      "birthday": "03-21"
+      "birthday": "03-21",
+      "source": "namuwiki:page"
     },
     "a6c4ddb09cdb160478996007bff35296": {
       "channelName": "아라하시 타비",
       "pageTitle": "아라하시 타비",
       "url": "https://namu.wiki/w/%EC%95%84%EB%9D%BC%ED%95%98%EC%8B%9C%20%ED%83%80%EB%B9%84",
-      "birthday": "07-28"
+      "birthday": "09-07",
+      "source": "namuwiki:page"
     },
     "4515b179f86b67b4981e16190817c580": {
       "channelName": "네네코 마시로",
       "pageTitle": "네네코 마시로",
       "url": "https://namu.wiki/w/%EB%84%A4%EB%84%A4%EC%BD%94%20%EB%A7%88%EC%8B%9C%EB%A1%9C",
-      "birthday": "02-22"
+      "birthday": "02-22",
+      "source": "namuwiki:page"
     },
     "b044e3a3b9259246bc92e863e7d3f3b8": {
       "channelName": "시라유키 히나",
       "pageTitle": "시라유키 히나",
       "url": "https://namu.wiki/w/%EC%8B%9C%EB%9D%BC%EC%9C%A0%ED%82%A4%20%ED%9E%88%EB%82%98",
-      "birthday": "01-05"
+      "birthday": "01-05",
+      "source": "namuwiki:page"
     },
     "45e71a76e949e16a34764deb962f9d9f": {
       "channelName": "아야츠노 유니",
       "pageTitle": "아야츠노 유니",
       "url": "https://namu.wiki/w/%EC%95%84%EC%95%BC%EC%B8%A0%EB%85%B8%20%EC%9C%A0%EB%8B%88",
-      "birthday": "05-21"
+      "birthday": "05-21",
+      "source": "namuwiki:page"
     },
     "36ddb9bb4f17593b60f1b63cec86611d": {
       "channelName": "사키하네 후야",
       "pageTitle": "사키하네 후야",
       "url": "https://namu.wiki/w/%EC%82%AC%ED%82%A4%ED%95%98%EB%84%A4%20%ED%9B%84%EC%95%BC",
-      "birthday": "07-07"
+      "birthday": "07-07",
+      "source": "namuwiki:page"
     },
     "516937b5f85cbf2249ce31b0ad046b0f": {
       "channelName": "아오쿠모 린",
       "pageTitle": "아오쿠모 린",
       "url": "https://namu.wiki/w/%EC%95%84%EC%98%A4%EC%BF%A0%EB%AA%A8%20%EB%A6%B0",
-      "birthday": "05-03"
+      "birthday": "05-03",
+      "source": "namuwiki:page"
     },
     "4d812b586ff63f8a2946e64fa860bbf5": {
       "channelName": "하나코 나나",
       "pageTitle": "하나코 나나",
       "url": "https://namu.wiki/w/%ED%95%98%EB%82%98%EC%BD%94%20%EB%82%98%EB%82%98",
-      "birthday": "08-07"
+      "birthday": "08-07",
+      "source": "namuwiki:page"
     },
     "8fd39bb8de623317de90654718638b10": {
       "channelName": "유즈하 리코",
       "pageTitle": "유즈하 리코",
       "url": "https://namu.wiki/w/%EC%9C%A0%EC%A6%88%ED%95%98%20%EB%A6%AC%EC%BD%94",
-      "birthday": "04-13"
+      "birthday": "04-13",
+      "source": "namuwiki:page"
     },
     "a54372e8197f6d241a43a318279860d6": {
       "channelName": "쿠레나이 나츠키",
       "pageTitle": "쿠레나이 나츠키",
       "url": "https://namu.wiki/w/%EC%BF%A0%EB%A0%88%EB%82%98%EC%9D%B4%20%EB%82%98%EC%B8%A0%ED%82%A4",
-      "birthday": "08-31"
+      "birthday": "08-31",
+      "source": "namuwiki:page"
     },
     "0a2020b09b8cc7f2285b7ae5de2ce4d3": {
       "channelName": "테리 눈나",
       "pageTitle": "테리 눈나",
       "url": "https://namu.wiki/w/%ED%85%8C%EB%A6%AC%20%EB%88%88%EB%82%98",
-      "birthday": null
+      "birthday": null,
+      "source": "namuwiki:page"
     },
     "a048127622edd6c3ee8e477471a1d823": {
       "channelName": "빙하유",
       "pageTitle": "빙하유",
       "url": "https://namu.wiki/w/%EB%B9%99%ED%95%98%EC%9C%A0",
-      "birthday": null
+      "birthday": "03-14",
+      "source": "namuwiki:page"
     },
     "f1869f490ddd660c420b2f57c649e6bb": {
       "channelName": "양메이",
       "pageTitle": "양메이",
       "url": "https://namu.wiki/w/%EC%96%91%EB%A9%94%EC%9D%B4",
-      "birthday": null
+      "birthday": null,
+      "source": "namuwiki:page"
     },
     "7b9c6553913c755812ef2cd9fbe1dc5c": {
       "channelName": "하네ㅣHane",
       "pageTitle": "하네(인터넷 방송인)",
       "url": "https://namu.wiki/w/%ED%95%98%EB%84%A4(%EC%9D%B8%ED%84%B0%EB%84%B7%20%EB%B0%A9%EC%86%A1%EC%9D%B8)",
-      "birthday": "10-26"
+      "birthday": "10-26",
+      "source": "namuwiki:page"
     }
   }
 }

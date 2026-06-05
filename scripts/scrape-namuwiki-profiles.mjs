@@ -21,7 +21,7 @@ const NAMU_TITLES = {
   "a3ceb9179d99be8d1e63b3e911fcd16b": "키유",
   "088973112d8acc831ec20274f7ffbb99": "미하루(인터넷 방송인)",
   "c8adce2ff4a3618931e07c327e1fa070": "포키쨩",
-  "6ccaebc2569f62344c6fc257f8f2b9ad": "엘시v",
+  "6ccaebc2569f62344c6fc257f8f2b9ad": "엘시(인터넷 방송인)",
   "d5e2e0c14dcca4c4b10c7c9633022f52": "치치(Planeta)",
   "5ead7124638ac4c568f2cde0224b3b6b": "카네코 파냐",
   "941ea3807ba8b9b7dddb1670e3e7e5af": "아마네 나기",
@@ -60,14 +60,31 @@ const NAMU_TITLES = {
   "f42e97f59c3177b8686dccfbf90792dd": "김아테",
 };
 
+/** Group pages where member 생일/출생 may be listed. */
+const GROUP_PAGES = {
+  "32fb866e323242b770cdc790f991a6f6": ["AESTHER", "카arin(인터넷 방송인)", "카arin", "카arin(버튜버)"],
+  "a67b328bcc8eea4451ccfa754bc19ae1": ["ENCHANT", "달콤레나 씨", "달콤레나"],
+  "6ccaebc2569f62344c6fc257f8f2b9ad": ["ENCHANT", "엘시v", "엘시 v", "엘시V"],
+  "d5e2e0c14dcca4c4b10c7c9633022f52": ["Planeta", "치치(Planeta)", "치치"],
+  "59aa824e4c4a56dd51e7a5e2e9172648": ["Planeta", "쿠온 레이"],
+  "65a53076fe1a39636082dd6dba8b8a4b": ["Honeyz", "오화요(인터넷 방송인)", "오화요"],
+  "b82e8bc2505e37156b2d1140ba1fc05c": ["Honeyz", "담유이(인터넷 방송인)", "담유이"],
+  "798e100206987b59805cfb75f927e965": ["Honeyz", "디디디용(인터넷 방송인)", "디디디용"],
+  "bd07973b6021d72512240c01a386d5c9": ["Honeyz", "망내(인터넷 방송인)", "망내"],
+  "3e3781d3bd20dadc2f6f6d5d30091195": ["PROJECT [i]", "포포포포(인터넷 방송인)", "포포포포"],
+  "b33c957eac9335d38e4043c3dca97675": ["PROJECT [i]", "하시요(인터넷 방송인)", "하시요"],
+  "9351fb8417f73405c84e0846409e3263": ["Listella", "햄쿠bi", "햄쿠비"],
+  "29a1ed5c0829fa620fab900dba7e011b": ["Over The Wall", "유리리(인터넷 방송인)", "유리리"],
+  "0f61ae00c2aef2b789dc009e51cbcc5a": ["Over The Wall", "온 하루", "온하루"],
+  "f42e97f59c3177b8686dccfbf90792dd": ["Over The Wall", "김아테", "김아테 l Ate"],
+};
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function guessNamuTitle(streamer) {
-  if (NAMU_TITLES[streamer.channelId]) return NAMU_TITLES[streamer.channelId];
-  const base = streamer.channelName.split(" ")[0];
-  return `${base}(인터넷 방송인)`;
+function stripHtml(text) {
+  return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function namuUrl(title) {
@@ -78,17 +95,120 @@ function pad2(n) {
   return String(n).padStart(2, "0");
 }
 
-function parseBirthday(html) {
-  const slice = html.match(/(?:생일|출생)[\s\S]{0,600}/i)?.[0];
-  if (!slice) return null;
-
-  const full = slice.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+function extractMmDd(text) {
+  const full = text.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
   if (full) return `${pad2(full[2])}-${pad2(full[3])}`;
 
-  const partial = slice.match(/(\d{1,2})월\s*(\d{1,2})일/);
+  const partial = text.match(/(\d{1,2})월\s*(\d{1,2})일/);
   if (partial) return `${pad2(partial[1])}-${pad2(partial[2])}`;
 
   return null;
+}
+
+/** Infobox 생일/출생 row. */
+function parseBirthdayFromInfobox(html) {
+  const slices = [
+    ...(html.match(/(?:생일|출생)[\s\S]{0,800}/gi) ?? []),
+    ...(html.match(/(?:birthday|Birth)[\s\S]{0,400}/gi) ?? []),
+  ];
+
+  for (const slice of slices) {
+    const birthday = extractMmDd(stripHtml(slice));
+    if (birthday) return birthday;
+  }
+  return null;
+}
+
+function searchNamesForStreamer(streamer) {
+  const names = new Set();
+  const raw = streamer.channelName;
+  names.add(raw);
+  names.add(raw.split(" ")[0]);
+  names.add(raw.replace(/ Planeta$/, ""));
+  names.add(raw.replace(/\s+[A-Za-z].*$/, "").trim());
+  names.add(raw.replace(/ㅣ.*$/, "").trim());
+  if (NAMU_TITLES[streamer.channelId]) {
+    names.add(NAMU_TITLES[streamer.channelId]);
+    names.add(NAMU_TITLES[streamer.channelId].replace(/\(.*\)$/, "").trim());
+  }
+  return [...names].filter(Boolean);
+}
+
+/** Find 생일/출생 near a member name (group pages, long docs). */
+function parseBirthdayNearName(html, names) {
+  const plain = stripHtml(html);
+
+  for (const name of names) {
+    if (!name || name.length < 2) continue;
+    let idx = plain.indexOf(name);
+    while (idx !== -1) {
+      const window = plain.slice(Math.max(0, idx - 120), idx + 420);
+      if (/(생일|출생)/.test(window)) {
+        const birthday = extractMmDd(window);
+        if (birthday) return birthday;
+      }
+      idx = plain.indexOf(name, idx + name.length);
+    }
+  }
+
+  return null;
+}
+
+function titleCandidates(streamer) {
+  const candidates = new Set();
+  const id = streamer.channelId;
+  const name = streamer.channelName;
+
+  if (NAMU_TITLES[id]) candidates.add(NAMU_TITLES[id]);
+
+  const parts = name.split(/\s+/);
+  candidates.add(name);
+  candidates.add(parts[0]);
+  candidates.add(name.replace(/ Planeta$/, ""));
+  candidates.add(`${parts[0]}(인터넷 방송인)`);
+  candidates.add(`${name.replace(/ Planeta$/, "")}(인터넷 방송인)`);
+
+  if (name.includes(" ")) {
+    candidates.add(parts.slice(0, 2).join(" "));
+    candidates.add(`${parts.slice(0, 2).join(" ")}(인터넷 방송인)`);
+  }
+
+  for (const groupTitle of GROUP_PAGES[id] ?? []) {
+    candidates.add(groupTitle);
+  }
+
+  return [...candidates];
+}
+
+const INVALID_PAGE_TITLES = new Set([
+  "생일",
+  "출생",
+  "Birthday",
+  "birthday",
+  "온",
+  "쿠온",
+  "카린",
+  "치치 곤잘레스",
+  "유리리 나카",
+]);
+
+function isValidPageTitle(title) {
+  if (!title || INVALID_PAGE_TITLES.has(title)) return false;
+  return title.trim().length >= 2;
+}
+
+function titleLikelyMatches(title, names, channelId) {
+  if (!isValidPageTitle(title)) return false;
+  if (NAMU_TITLES[channelId] === title) return true;
+  const bare = title.replace(/\(.*\)$/, "").trim();
+  if (bare.length <= 2) return false;
+
+  return names.some((name) => {
+    const base = name.split(" ")[0].replace(/ Planeta$/, "");
+    if (base.length < 2) return false;
+    if (title.includes(base) || bare === base || bare.includes(base)) return true;
+    return false;
+  });
 }
 
 function pageExists(html, status) {
@@ -106,8 +226,125 @@ async function fetchNamuTitle(title) {
       Accept: "text/html",
     },
   });
-  if (!res.ok) return { url, html: null, status: res.status };
-  return { url, html: await res.text(), status: res.status };
+  if (!res.ok) return { url, html: null, status: res.status, title };
+  return { url, html: await res.text(), status: res.status, title };
+}
+
+async function searchNamuTitles(query) {
+  const url = `https://namu.wiki/Search?q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; chzzk-milestone-profile-bot/1.0)",
+      Accept: "text/html",
+    },
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  const titles = new Set();
+  const re = /href="\/w\/([^"?#]+)"/g;
+  let match;
+  while ((match = re.exec(html))) {
+    try {
+      titles.add(decodeURIComponent(match[1].replace(/\+/g, " ")));
+    } catch {
+      titles.add(match[1]);
+    }
+  }
+  return [...titles].slice(0, 8);
+}
+
+async function resolveStreamerProfile(streamer) {
+  const names = searchNamesForStreamer(streamer);
+  let best = null;
+
+  const titles = [];
+  if (NAMU_TITLES[streamer.channelId]) titles.push(NAMU_TITLES[streamer.channelId]);
+  for (const title of titleCandidates(streamer)) {
+    if (!titles.includes(title)) titles.push(title);
+  }
+
+  for (const title of titles) {
+    const fetched = await fetchNamuTitle(title);
+    await sleep(600);
+    if (!pageExists(fetched.html, fetched.status)) continue;
+
+    const birthday =
+      parseBirthdayFromInfobox(fetched.html) ?? parseBirthdayNearName(fetched.html, names);
+    const isGroupPage = Boolean(GROUP_PAGES[streamer.channelId]?.includes(title));
+
+    if (!isGroupPage) {
+      const profile = {
+        channelName: streamer.channelName,
+        pageTitle: title,
+        url: fetched.url,
+        birthday,
+        source: "namuwiki:page",
+      };
+      if (birthday || titleLikelyMatches(title, names, streamer.channelId) || NAMU_TITLES[streamer.channelId] === title) {
+        return profile;
+      }
+      if (!best || (!best.birthday && birthday)) best = profile;
+      continue;
+    }
+
+    if (birthday && !best?.birthday) {
+      best = {
+        channelName: streamer.channelName,
+        pageTitle: title,
+        url: fetched.url,
+        birthday,
+        source: "namuwiki:group",
+      };
+    } else if (!best) {
+      best = {
+        channelName: streamer.channelName,
+        pageTitle: title,
+        url: fetched.url,
+        birthday: null,
+        source: "namuwiki:group",
+      };
+    }
+  }
+
+  if (best?.birthday) return best;
+
+  for (const query of [`${names[0]} 생일`, `${names[0]} 출생`, `${names[0]} 인터넷 방송인`]) {
+    const titles = await searchNamuTitles(query);
+    await sleep(600);
+    for (const title of titles) {
+      if (/분류:|틀:|파일:/.test(title)) continue;
+      if (!isValidPageTitle(title)) continue;
+      const fetched = await fetchNamuTitle(title);
+      await sleep(600);
+      if (!pageExists(fetched.html, fetched.status)) continue;
+
+      const birthday =
+        parseBirthdayFromInfobox(fetched.html) ?? parseBirthdayNearName(fetched.html, names);
+      const isLikelyPersonal = titleLikelyMatches(title, names, streamer.channelId);
+
+      if (birthday && (isLikelyPersonal || parseBirthdayNearName(fetched.html, names))) {
+        return {
+          channelName: streamer.channelName,
+          pageTitle: title,
+          url: fetched.url,
+          birthday,
+          source: isLikelyPersonal ? "namuwiki:search" : "namuwiki:search-group",
+        };
+      }
+
+      if (isLikelyPersonal && !best) {
+        best = {
+          channelName: streamer.channelName,
+          pageTitle: title,
+          url: fetched.url,
+          birthday: null,
+          source: "namuwiki:search",
+        };
+      }
+    }
+  }
+
+  return best;
 }
 
 async function perplexityFill(missing) {
@@ -126,7 +363,7 @@ async function perplexityFill(missing) {
       messages: [
         {
           role: "user",
-          content: `For each VTuber streamer below, find their namu.wiki page title and birthday (MM-DD) from namu.wiki infobox only. JSON array only: [{"channelId":"...","pageTitle":"... or null","birthday":"MM-DD or null"}]\n\n${list}`,
+          content: `For each VTuber streamer below, find namu.wiki page title and birthday (MM-DD) from infobox 생일 or 출생 field. JSON only: [{"channelId":"...","pageTitle":"... or null","birthday":"MM-DD or null"}]\n\n${list}`,
         },
       ],
       search_domain_filter: ["namu.wiki"],
@@ -155,29 +392,21 @@ async function main() {
   const missing = [];
 
   for (const streamer of FALLBACK_STREAMERS) {
-    const title = guessNamuTitle(streamer);
-    process.stdout.write(`→ ${streamer.channelName} (${title})... `);
+    process.stdout.write(`→ ${streamer.channelName}... `);
     try {
-      const { url, html, status } = await fetchNamuTitle(title);
-      if (!pageExists(html, status)) {
-        console.log(`skip (${status})`);
+      const profile = await resolveStreamerProfile(streamer);
+      if (profile) {
+        profiles[streamer.channelId] = profile;
+        const tag = profile.birthday ? profile.birthday : profile.url ? "no birthday" : "partial";
+        console.log(`${profile.pageTitle ?? "?"} · ${tag}`);
+      } else {
+        console.log("not found");
         missing.push(streamer);
-        await sleep(1200);
-        continue;
       }
-      const birthday = parseBirthday(html);
-      profiles[streamer.channelId] = {
-        channelName: streamer.channelName,
-        pageTitle: title,
-        url,
-        birthday,
-      };
-      console.log(birthday ? `ok · ${birthday}` : "ok · no birthday");
     } catch (err) {
       console.log("error", err.message);
       missing.push(streamer);
     }
-    await sleep(1200);
   }
 
   if (usePerplexity && missing.length) {
@@ -185,26 +414,49 @@ async function main() {
     const filled = await perplexityFill(missing);
     for (const streamer of missing) {
       const row = filled[streamer.channelId];
-      if (row?.pageTitle) {
-        const { url, html, status } = await fetchNamuTitle(row.pageTitle);
+      if (!row) continue;
+
+      let birthday = row.birthday ?? null;
+      let pageTitle = row.pageTitle ?? null;
+      let url = pageTitle ? namuUrl(pageTitle) : null;
+
+      if (pageTitle) {
+        const { html, status } = await fetchNamuTitle(pageTitle);
+        await sleep(600);
         if (pageExists(html, status)) {
-          profiles[streamer.channelId] = {
-            channelName: streamer.channelName,
-            pageTitle: row.pageTitle,
-            url,
-            birthday: parseBirthday(html) ?? row.birthday ?? null,
-          };
-          continue;
+          birthday =
+            parseBirthdayFromInfobox(html) ??
+            parseBirthdayNearName(html, searchNamesForStreamer(streamer)) ??
+            birthday;
+          url = namuUrl(pageTitle);
         }
       }
-      if (row?.pageTitle) {
+
+      if (pageTitle || birthday) {
         profiles[streamer.channelId] = {
           channelName: streamer.channelName,
-          pageTitle: row.pageTitle,
-          url: namuUrl(row.pageTitle),
-          birthday: row.birthday ?? null,
+          pageTitle,
+          url,
+          birthday,
+          source: "perplexity",
         };
       }
+    }
+  }
+
+  // Second pass: fill birthdays on existing pages that still lack one
+  for (const streamer of FALLBACK_STREAMERS) {
+    const existing = profiles[streamer.channelId];
+    if (!existing || existing.birthday || !existing.pageTitle) continue;
+
+    const { html, status } = await fetchNamuTitle(existing.pageTitle);
+    await sleep(600);
+    if (!pageExists(html, status)) continue;
+
+    const birthday = parseBirthdayFromInfobox(html) ?? parseBirthdayNearName(html, searchNamesForStreamer(streamer));
+    if (birthday) {
+      existing.birthday = birthday;
+      existing.source = `${existing.source}+birthday`;
     }
   }
 
@@ -212,12 +464,15 @@ async function main() {
     meta: {
       updatedAt: new Date().toISOString(),
       count: Object.keys(profiles).length,
+      withBirthday: Object.values(profiles).filter((p) => p.birthday).length,
       total: FALLBACK_STREAMERS.length,
     },
     profiles,
   };
 
-  console.log(`\nResolved ${Object.keys(profiles).length}/${FALLBACK_STREAMERS.length}`);
+  console.log(
+    `\nResolved ${Object.keys(profiles).length}/${FALLBACK_STREAMERS.length} · birthdays ${payload.meta.withBirthday}`
+  );
 
   if (write) {
     fs.writeFileSync(OUT_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
