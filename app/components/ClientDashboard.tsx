@@ -2074,18 +2074,28 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               key={entry.streamer.channelId}
               type="button"
               onClick={() => handleSelectStreamer(entry.streamer.channelId)}
-              className={`group w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-neutral-50/90 ${
-                index === 0 ? "bg-neutral-50/60" : "bg-white/40"
+              className={`group w-full flex items-center gap-3 px-4 text-left transition-colors ${
+                index === 0
+                  ? "py-3.5 bg-gradient-to-r from-amber-50 via-white to-white hover:from-amber-100/80 ring-1 ring-inset ring-amber-200/70 shadow-[inset_3px_0_0_0_rgba(0,0,0,0.85)]"
+                  : "py-3 bg-white/40 hover:bg-neutral-50/90"
               }`}
             >
               <span
-                className={`font-mono text-[11px] font-bold w-7 shrink-0 ${
-                  index === 0 ? "text-black" : "text-neutral-400"
+                className={`font-mono font-bold shrink-0 flex items-center justify-center ${
+                  index === 0
+                    ? "w-7 h-7 rounded-full bg-black text-white text-[10px]"
+                    : "w-7 text-[11px] text-neutral-400"
                 }`}
               >
                 #{index + 1}
               </span>
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-hairline shrink-0 bg-neutral-100">
+              <div
+                className={`relative rounded-full overflow-hidden shrink-0 bg-neutral-100 ${
+                  index === 0
+                    ? "w-11 h-11 border-2 border-black/15 ring-2 ring-amber-200/80"
+                    : "w-10 h-10 border border-hairline"
+                }`}
+              >
                 <StreamerChannelImage
                   src={entry.streamer.channelImageUrl}
                   alt={entry.streamer.channelName}
@@ -2100,13 +2110,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 >
                   {entry.streamer.channelName}
                 </div>
-                <div className="text-[11px] text-neutral-500 font-medium leading-snug mt-0.5">{getDetail(entry)}</div>
+                <div
+                  className={`text-[11px] font-medium leading-snug mt-0.5 ${
+                    index === 0 ? "text-neutral-700" : "text-neutral-500"
+                  }`}
+                >
+                  {getDetail(entry)}
+                </div>
               </div>
-              {index === 0 && (
-                <span className="shrink-0 font-mono text-[9px] font-bold tracking-mono text-black/70 uppercase px-2 py-0.5 rounded-full border border-black/10 bg-white/70">
-                  Closest
-                </span>
-              )}
             </button>
           ))}
         </div>
@@ -2436,10 +2447,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       <div id="dashboard-content" className="border-t border-hairline bg-neutral-50/50 py-12">
         <div className="max-w-[1280px] mx-auto px-6">
           {/* Infinite Marquee Slider section - Placed directly at the top of the dashboard */}
-          <div className="mb-14 border-t border-b border-hairline pt-8 pb-4 bg-white overflow-hidden relative">
-            <div className="absolute top-0 bottom-0 left-0 w-24 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-            <div className="absolute top-0 bottom-0 right-0 w-24 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
-            
+          <div className="mb-14 border-t border-b border-hairline pt-8 pb-4 bg-white overflow-hidden">
             <div className="text-center mb-4">
               <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
                 TRACKED STREAMERS
@@ -2476,7 +2484,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               )}
               {renderChaserColumn(
                 topHoursChasers,
-                "Hours Closest",
+                "Hours",
                 <Trophy className="w-4 h-4" />,
                 (entry) => (
                   <>
