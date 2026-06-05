@@ -121,7 +121,7 @@ export function getNextDebutAnniversary(
   )[0];
 }
 
-/** Days until next birthday in KST (D-N countdown). */
+/** Days until next birthday in KST (upcoming: D-N, birthday day: D+0). */
 export function getNextBirthdayEvent(birthdayMmDd: string | undefined, now = new Date()): CommemorativeEvent | null {
   if (!birthdayMmDd) return null;
   const [mm, dd] = birthdayMmDd.split("-").map(Number);
@@ -141,7 +141,7 @@ export function getNextBirthdayEvent(birthdayMmDd: string | undefined, now = new
   return {
     label: "생일",
     daysUntil,
-    dLabel: daysUntil === 0 ? "D-Day" : `D-${daysUntil}`,
+    dLabel: daysUntil === 0 ? "D+0" : `D-${daysUntil}`,
     kind: "birthday",
   };
 }
