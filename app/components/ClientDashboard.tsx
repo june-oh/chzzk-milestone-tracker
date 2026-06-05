@@ -7,6 +7,12 @@ import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, Extern
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   getDebutReferenceDate,
+  getNamuwikiUrl,
+  getStreamerBirthday,
+  formatBirthdayLabel,
+  hasNamuwikiProfile,
+} from "@/lib/namuwikiProfiles";
+import {
   getGroupTag,
   GROUP_FILTER_ORDER,
   getManualCumulativeHoursHistory,
@@ -21,7 +27,6 @@ import { resolveCardPalette, getGlassCardStyle, type CardSurfacePalette as Glass
 import { getVerifiedNamuwikiThemePalette, hasVerifiedNamuwikiTheme } from "@/lib/namuwikiThemeColors";
 import { getBundledImageThemePalette } from "@/lib/imageThemeColors";
 import { formatDebutDPlus, formatDebutElapsed, getNextCommemorativeEvent } from "@/lib/debutElapsed";
-import { getNamuwikiUrl, getStreamerBirthday, hasNamuwikiProfile } from "@/lib/namuwikiProfiles";
 import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
@@ -2399,14 +2404,19 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       {/* Hero Poster Section - Shown only on the main dashboard */}
       <section className="bg-white flex flex-col items-center text-center px-6 pt-[96px] pb-[48px] max-w-[1280px] mx-auto w-full">
         <span className="font-mono text-[12px] font-bold tracking-mono uppercase text-neutral-500 mb-6">
-          HOURS &amp; FOLLOWERS MILESTONE
+          CHZZK CREATOR MILESTONES
         </span>
         <h1 className="font-sans text-[48px] md:text-[86px] leading-[1.05] font-bold tracking-display-xl max-w-[1000px] mb-8 break-keep">
-          열정의 기록,<br className="sm:hidden" /> 천 시간과 만 팔로워의 감동
+          방송의 시간, 팬의 마음,<br className="sm:hidden" /> 그리고 모든 특별한 날
         </h1>
-        <p className="font-sans text-[18px] md:text-[20px] font-light leading-[1.45] text-neutral-800 max-w-[680px] mb-10 break-keep">
-          치지직 크리에이터의 누적 방송 시간과 팔로워를 매일 추적합니다. 1,000시간·1만 팔로워 단위로 돌파할 때마다 함께 기록하고 축하하는 대시보드입니다.
-        </p>
+        <div className="font-sans text-[18px] md:text-[20px] font-light leading-[1.45] text-neutral-800 max-w-[680px] mb-10 break-keep space-y-4">
+          <p>
+            치지직 크리에이터의 누적 방송 시간, 팔로워 성장, 생일과 데뷔 기념일까지 한눈에 확인할 수 있는 마일스톤 대시보드입니다.
+          </p>
+          <p>
+            1,000시간마다, 1만 팔로워마다, 데뷔 100일과 n주년마다 찾아오는 특별한 순간을 기록하고 함께 축하합니다.
+          </p>
+        </div>
         <div className="flex flex-wrap items-center justify-center gap-4 mb-4">
           <a
             href="#dashboard-content"
@@ -2648,6 +2658,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
           const debutDPlus = formatDebutDPlus(debutRef);
           const debutElapsed = formatDebutElapsed(debutRef);
+          const birthdayMmDd = getStreamerBirthday(streamer.channelId);
+          const birthdayLabel = birthdayMmDd ? formatBirthdayLabel(birthdayMmDd) : "";
           const isSelected = selectedForCompare.has(streamer.channelId);
 
           return (
@@ -2740,9 +2752,19 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   )}
                   {debutDPlus && (
                     <div className="min-w-0">
-                      <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-1.5">
-                        DEBUT
-                      </span>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="font-mono text-[10px] tracking-mono text-neutral-400 uppercase">
+                          DEBUT
+                        </span>
+                        {birthdayLabel && (
+                          <span
+                            className="font-mono text-[10px] font-bold text-neutral-500 tabular-nums shrink-0"
+                            suppressHydrationWarning
+                          >
+                            🎂 {birthdayLabel}
+                          </span>
+                        )}
+                      </div>
                       {debutElapsed && (
                         <p className="font-sans text-[12px] font-bold text-neutral-600 mb-1" suppressHydrationWarning>
                           {debutElapsed}

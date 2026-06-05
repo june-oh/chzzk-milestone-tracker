@@ -36,7 +36,7 @@ export default async function Home() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-hairline h-[56px] flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <a href="/" className="font-mono text-[12px] font-bold tracking-mono uppercase hover:text-neutral-500 transition-colors">
-            CHZZK MILESTONE
+            CHZZK CREATOR MILESTONES
           </a>
         </div>
         <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ export default async function Home() {
         <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           <div className="md:col-span-2">
             <span className="font-sans text-[24px] font-bold tracking-display-lg block mb-4">
-              CHZZK MILESTONE
+              CHZZK CREATOR MILESTONES
             </span>
             <p className="font-sans text-[14px] text-neutral-400 max-w-[500px] leading-relaxed">
               본 트래커는 네이버 치지직의 공식 서비스가 아니며, 크리에이터들의 활발한 방송 활동을 응원하고 팬들이 돌파 기록을 축하하기 위해 제작된 팬 메이드 프로젝트입니다.

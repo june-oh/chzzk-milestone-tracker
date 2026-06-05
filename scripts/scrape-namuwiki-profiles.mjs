@@ -105,6 +105,18 @@ function extractMmDd(text) {
   return null;
 }
 
+function extractYmd(text) {
+  const full = text.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+  if (full) return `${full[1]}-${pad2(full[2])}-${pad2(full[3])}`;
+  return null;
+}
+
+function parseFieldsFromHtml(html, names) {
+  const birthday = parseBirthdayFromInfobox(html) ?? parseBirthdayNearName(html, names);
+  const debutDate = parseDebutFromInfobox(html) ?? parseDebutNearName(html, names);
+  return { birthday, debutDate };
+}
+
 /** Infobox 생일/출생 row. */
 function parseBirthdayFromInfobox(html) {
   const slices = [
@@ -116,6 +128,39 @@ function parseBirthdayFromInfobox(html) {
     const birthday = extractMmDd(stripHtml(slice));
     if (birthday) return birthday;
   }
+  return null;
+}
+
+/** Infobox 데뷔/첫 방송일 row. */
+function parseDebutFromInfobox(html) {
+  const slices = [
+    ...(html.match(/(?:데뷔|첫\s*방송일|첫방송일)[\s\S]{0,800}/gi) ?? []),
+  ];
+
+  for (const slice of slices) {
+    const debutDate = extractYmd(stripHtml(slice));
+    if (debutDate) return debutDate;
+  }
+  return null;
+}
+
+/** Find 데뷔/첫 방송일 near a member name (group pages). */
+function parseDebutNearName(html, names) {
+  const plain = stripHtml(html);
+
+  for (const name of names) {
+    if (!name || name.length < 2) continue;
+    let idx = plain.indexOf(name);
+    while (idx !== -1) {
+      const window = plain.slice(Math.max(0, idx - 120), idx + 420);
+      if (/(데뷔|첫\s*방송)/.test(window)) {
+        const debutDate = extractYmd(window);
+        if (debutDate) return debutDate;
+      }
+      idx = plain.indexOf(name, idx + name.length);
+    }
+  }
+
   return null;
 }
 
@@ -268,8 +313,7 @@ async function resolveStreamerProfile(streamer) {
     await sleep(600);
     if (!pageExists(fetched.html, fetched.status)) continue;
 
-    const birthday =
-      parseBirthdayFromInfobox(fetched.html) ?? parseBirthdayNearName(fetched.html, names);
+    const { birthday, debutDate } = parseFieldsFromHtml(fetched.html, names);
     const isGroupPage = Boolean(GROUP_PAGES[streamer.channelId]?.includes(title));
 
     if (!isGroupPage) {
@@ -278,6 +322,7 @@ async function resolveStreamerProfile(streamer) {
         pageTitle: title,
         url: fetched.url,
         birthday,
+        debutDate,
         source: "namuwiki:page",
       };
       if (birthday || titleLikelyMatches(title, names, streamer.channelId) || NAMU_TITLES[streamer.channelId] === title) {
@@ -293,6 +338,7 @@ async function resolveStreamerProfile(streamer) {
         pageTitle: title,
         url: fetched.url,
         birthday,
+        debutDate,
         source: "namuwiki:group",
       };
     } else if (!best) {
@@ -301,14 +347,17 @@ async function resolveStreamerProfile(streamer) {
         pageTitle: title,
         url: fetched.url,
         birthday: null,
+        debutDate: debutDate ?? null,
         source: "namuwiki:group",
       };
+    } else if (debutDate && !best.debutDate) {
+      best.debutDate = debutDate;
     }
   }
 
-  if (best?.birthday) return best;
+  if (best?.birthday || best?.debutDate) return best;
 
-  for (const query of [`${names[0]} 생일`, `${names[0]} 출생`, `${names[0]} 인터넷 방송인`]) {
+  for (const query of [`${names[0]} 생일`, `${names[0]} 출생`, `${names[0]} 인터넷 방송인`, `${names[0]} 데뷔`]) {
     const titles = await searchNamuTitles(query);
     await sleep(600);
     for (const title of titles) {
@@ -318,16 +367,16 @@ async function resolveStreamerProfile(streamer) {
       await sleep(600);
       if (!pageExists(fetched.html, fetched.status)) continue;
 
-      const birthday =
-        parseBirthdayFromInfobox(fetched.html) ?? parseBirthdayNearName(fetched.html, names);
+      const { birthday, debutDate } = parseFieldsFromHtml(fetched.html, names);
       const isLikelyPersonal = titleLikelyMatches(title, names, streamer.channelId);
 
-      if (birthday && (isLikelyPersonal || parseBirthdayNearName(fetched.html, names))) {
+      if ((birthday || debutDate) && (isLikelyPersonal || parseBirthdayNearName(fetched.html, names) || parseDebutNearName(fetched.html, names))) {
         return {
           channelName: streamer.channelName,
           pageTitle: title,
           url: fetched.url,
           birthday,
+          debutDate,
           source: isLikelyPersonal ? "namuwiki:search" : "namuwiki:search-group",
         };
       }
@@ -338,6 +387,7 @@ async function resolveStreamerProfile(streamer) {
           pageTitle: title,
           url: fetched.url,
           birthday: null,
+          debutDate: debutDate ?? null,
           source: "namuwiki:search",
         };
       }
@@ -385,27 +435,65 @@ async function perplexityFill(missing) {
   return byId;
 }
 
+function isManualProfile(profile) {
+  return profile?.source === "manual" || profile?.source?.startsWith("manual");
+}
+
+async function patchExistingProfiles(profiles) {
+  for (const streamer of FALLBACK_STREAMERS) {
+    const existing = profiles[streamer.channelId];
+    if (!existing?.pageTitle) continue;
+    if (isManualProfile(existing)) {
+      console.log(`↻ ${streamer.channelName}... manual skip`);
+      continue;
+    }
+
+    process.stdout.write(`↻ ${streamer.channelName}... `);
+    const { html, status } = await fetchNamuTitle(existing.pageTitle);
+    await sleep(600);
+    if (!pageExists(html, status)) {
+      console.log("skip");
+      continue;
+    }
+
+    const fields = parseFieldsFromHtml(html, searchNamesForStreamer(streamer));
+    if (fields.birthday) existing.birthday = fields.birthday;
+    if (fields.debutDate) existing.debutDate = fields.debutDate;
+    console.log(
+      `${existing.birthday ?? "-"} · ${existing.debutDate ?? "-"}`
+    );
+  }
+}
+
 async function main() {
   const write = process.argv.includes("--write");
   const usePerplexity = process.argv.includes("--perplexity");
-  const profiles = {};
+  const patchOnly = process.argv.includes("--patch-only");
+  const profiles = patchOnly && fs.existsSync(OUT_PATH)
+    ? JSON.parse(fs.readFileSync(OUT_PATH, "utf8")).profiles
+    : {};
   const missing = [];
 
-  for (const streamer of FALLBACK_STREAMERS) {
-    process.stdout.write(`→ ${streamer.channelName}... `);
-    try {
-      const profile = await resolveStreamerProfile(streamer);
-      if (profile) {
-        profiles[streamer.channelId] = profile;
-        const tag = profile.birthday ? profile.birthday : profile.url ? "no birthday" : "partial";
-        console.log(`${profile.pageTitle ?? "?"} · ${tag}`);
-      } else {
-        console.log("not found");
+  if (patchOnly) {
+    console.log(`Patching ${Object.keys(profiles).length} existing profiles...\n`);
+    await patchExistingProfiles(profiles);
+  } else {
+    for (const streamer of FALLBACK_STREAMERS) {
+      process.stdout.write(`→ ${streamer.channelName}... `);
+      try {
+        const profile = await resolveStreamerProfile(streamer);
+        if (profile) {
+          profiles[streamer.channelId] = profile;
+          const tag = [profile.birthday, profile.debutDate].filter(Boolean).join(" · ") || "partial";
+          console.log(`${profile.pageTitle ?? "?"} · ${tag}`);
+        } else {
+          console.log("not found");
+          missing.push(streamer);
+        }
+      } catch (err) {
+        console.log("error", err.message);
         missing.push(streamer);
       }
-    } catch (err) {
-      console.log("error", err.message);
-      missing.push(streamer);
     }
   }
 
@@ -444,20 +532,32 @@ async function main() {
     }
   }
 
-  // Second pass: fill birthdays on existing pages that still lack one
+  // Second pass: fill missing birthday/debut on existing pages
   for (const streamer of FALLBACK_STREAMERS) {
     const existing = profiles[streamer.channelId];
-    if (!existing || existing.birthday || !existing.pageTitle) continue;
+    if (!existing?.pageTitle) continue;
+    if (isManualProfile(existing)) continue;
+    if (existing.birthday && existing.debutDate) continue;
 
     const { html, status } = await fetchNamuTitle(existing.pageTitle);
     await sleep(600);
     if (!pageExists(html, status)) continue;
 
-    const birthday = parseBirthdayFromInfobox(html) ?? parseBirthdayNearName(html, searchNamesForStreamer(streamer));
-    if (birthday) {
-      existing.birthday = birthday;
+    const fields = parseFieldsFromHtml(html, searchNamesForStreamer(streamer));
+    if (!existing.birthday && fields.birthday) {
+      existing.birthday = fields.birthday;
       existing.source = `${existing.source}+birthday`;
     }
+    if (!existing.debutDate && fields.debutDate) {
+      existing.debutDate = fields.debutDate;
+      existing.source = `${existing.source}+debut`;
+    }
+  }
+
+  for (const streamer of FALLBACK_STREAMERS) {
+    const profile = profiles[streamer.channelId];
+    if (profile && profile.debutDate === undefined) profile.debutDate = null;
+    if (profile && profile.birthday === undefined) profile.birthday = null;
   }
 
   const payload = {
@@ -465,13 +565,14 @@ async function main() {
       updatedAt: new Date().toISOString(),
       count: Object.keys(profiles).length,
       withBirthday: Object.values(profiles).filter((p) => p.birthday).length,
+      withDebut: Object.values(profiles).filter((p) => p.debutDate).length,
       total: FALLBACK_STREAMERS.length,
     },
     profiles,
   };
 
   console.log(
-    `\nResolved ${Object.keys(profiles).length}/${FALLBACK_STREAMERS.length} · birthdays ${payload.meta.withBirthday}`
+    `\nResolved ${Object.keys(profiles).length}/${FALLBACK_STREAMERS.length} · birthdays ${payload.meta.withBirthday} · debuts ${payload.meta.withDebut}`
   );
 
   if (write) {

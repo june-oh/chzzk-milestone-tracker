@@ -15,9 +15,9 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chzzk-milestone-tracker.vercel.app"),
-  title: "치지직 방송 시간 마일스톤 트래커",
+  title: "CHZZK Creator Milestones",
   description:
-    "치지직 스트리머의 누적 방송 시간·팔로워를 추적하고, 1,000시간·1만 팔로워 마일스톤 돌파를 함께 축하하는 대시보드입니다.",
+    "치지직 크리에이터의 누적 방송 시간, 팔로워 성장, 생일과 데뷔 기념일까지 한눈에 확인할 수 있는 마일스톤 대시보드입니다.",
   verification: {
     google: "3NG6ANGF43yASYHh7gQbtAjMSbga1Vcd_S21vS-VbcU",
   },
