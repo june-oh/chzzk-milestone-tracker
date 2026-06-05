@@ -103,7 +103,7 @@ const COLOR_MAP: Record<string, { bg: string; accent: string; text: string; rawH
   lime: { bg: "bg-[#e2fc52]/10", accent: "bg-[#e2fc52]", text: "text-[#4d5d03]", rawHex: "#b5db00" }, // Special style for signature figma lime
 };
 
-type CardSortField = "hours" | "followers" | null;
+type CardSortField = "hours" | "followers" | "debut" | null;
 type CardSortDir = "asc" | "desc";
 
 type CardSurfacePalette = GlassPalette;
@@ -1200,6 +1200,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     </div>
   );
 
+  const getDebutSortTime = (streamer: Streamer): number | null => {
+    const debut = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
+    if (!debut) return null;
+    return parseSafeDate(debut).getTime();
+  };
+
   const sortedStreamers = useMemo(() => {
     let list = filteredStreamers;
 
@@ -1207,6 +1213,15 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     list = [...list];
     list.sort((a, b) => {
+      if (cardSortField === "debut") {
+        const left = getDebutSortTime(a);
+        const right = getDebutSortTime(b);
+        if (left === null && right === null) return 0;
+        if (left === null) return 1;
+        if (right === null) return -1;
+        return cardSortDir === "desc" ? right - left : left - right;
+      }
+
       const left = cardSortField === "hours" ? a.totalLiveHours : a.followerCount ?? 0;
       const right = cardSortField === "hours" ? b.totalLiveHours : b.followerCount ?? 0;
       return cardSortDir === "desc" ? right - left : left - right;
@@ -2694,6 +2709,19 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           <Users className="w-3.5 h-3.5" />
           팔로워
           {cardSortField === "followers" && (cardSortDir === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />)}
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleCardSort("debut")}
+          className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-bold transition-colors ${
+            cardSortField === "debut"
+              ? "bg-black text-white border-black"
+              : "bg-white text-neutral-700 border-hairline hover:bg-neutral-50"
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          데뷔일
+          {cardSortField === "debut" && (cardSortDir === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />)}
         </button>
         {cardSortField && (
           <button
