@@ -112,6 +112,9 @@ const CHANNEL_DEBUT_DATES: Record<string, string> = {
   "5ead7124638ac4c568f2cde0224b3b6b": "2026-05-30", // 카네코 파냐 (Planeta)
   "59aa824e4c4a56dd51e7a5e2e9172648": "2026-05-31", // 쿠온 레이 (Planeta)
   "d5e2e0c14dcca4c4b10c7c9633022f52": "2026-05-31", // 치치 (Planeta)
+  "dae2de8eaa005a59163f2e4c045e1aa1": "2025-09-13", // 블레어 로즈 (ACAXIA)
+  "b33c957eac9335d38e4043c3dca97675": "2025-09-14", // 하시요 (ACAXIA)
+  "f36320c432d9f06095ce2cfbbf681c26": "2025-09-14", // 류시호 (ACAXIA)
 };
 
 /** Listella sub-unit debut; 야토 등 솔로 활동 후 합류 멤버는 개인 firstLiveDate 유지. */

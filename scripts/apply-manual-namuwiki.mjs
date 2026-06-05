@@ -74,7 +74,15 @@ const MANUAL = {
     debutDate: "2025-09-13",
     source: "manual",
   },
+  "dae2de8eaa005a59163f2e4c045e1aa1": {
+    debutDate: "2025-09-13",
+    source: "manual",
+  },
   "b33c957eac9335d38e4043c3dca97675": {
+    debutDate: "2025-09-14",
+    source: "manual",
+  },
+  "f36320c432d9f06095ce2cfbbf681c26": {
     debutDate: "2025-09-14",
     source: "manual",
   },
