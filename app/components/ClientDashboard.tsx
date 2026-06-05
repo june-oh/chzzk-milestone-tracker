@@ -20,7 +20,7 @@ import type { GroupTag } from "@/lib/streamerMeta";
 import { resolveCardPalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
 import { getVerifiedNamuwikiThemePalette, hasVerifiedNamuwikiTheme } from "@/lib/namuwikiThemeColors";
 import { getBundledImageThemePalette } from "@/lib/imageThemeColors";
-import { formatDebutDPlus } from "@/lib/debutElapsed";
+import { formatDebutDPlus, getNextDebutAnniversary } from "@/lib/debutElapsed";
 import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
@@ -2014,12 +2014,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         a.stats.followersRemaining - b.stats.followersRemaining
     )
     .slice(0, 5);
-  const topFollowerChasersByCount = streamers
+  const topDebutAnniversaryChasers = streamers
     .map((streamer) => ({
       streamer,
-      stats: getFollowerMilestoneStats(streamer.followerCount || 0),
+      anniversary: getNextDebutAnniversary(getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate)),
     }))
-    .sort((a, b) => a.stats.followersRemaining - b.stats.followersRemaining)
+    .filter(
+      (entry): entry is typeof entry & { anniversary: NonNullable<typeof entry.anniversary> } =>
+        entry.anniversary !== null
+    )
+    .sort((a, b) => a.anniversary.daysUntil - b.anniversary.daysUntil)
     .slice(0, 5);
   const topHoursChasers = streamers
     .map((streamer) => ({
@@ -2427,19 +2431,23 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 )
               )}
               {renderChaserColumn(
-                topFollowerChasersByCount,
-                "Follow · Count",
-                <Users className="w-4 h-4" />,
-                (entry) => (
-                  <>
-                    {formatFollowerMilestoneTarget(entry.stats.nextMilestone)}까지{" "}
-                    <strong className="text-black">{entry.stats.followersRemaining.toLocaleString()}명</strong> 남음
-                    <span className="text-neutral-400">
-                      {" "}
-                      · 구간 {entry.stats.bandRemainingPercent.toFixed(1)}%
-                    </span>
-                  </>
-                )
+                topDebutAnniversaryChasers,
+                "Debut · Anniversary",
+                <Calendar className="w-4 h-4" />,
+                (entry) =>
+                  entry.anniversary.daysUntil === 0 ? (
+                    <>
+                      <strong className="text-black">{entry.anniversary.label}</strong>
+                      <span className="text-neutral-500"> · 오늘 기념일</span>
+                      <span className="text-neutral-400"> · D+{entry.anniversary.targetDay}</span>
+                    </>
+                  ) : (
+                    <>
+                      <strong className="text-black">{entry.anniversary.label}</strong>까지{" "}
+                      <strong className="text-black">{entry.anniversary.daysUntil}일</strong>
+                      <span className="text-neutral-400"> · D+{entry.anniversary.targetDay}</span>
+                    </>
+                  )
               )}
               {renderChaserColumn(
                 topHoursChasers,

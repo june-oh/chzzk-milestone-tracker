@@ -103,12 +103,15 @@ export const GROUP_DEBUT_DATES: Partial<Record<GroupTag, string>> = {
   CLUEZ: "2025-11-29",
   ACAXIA: "2025-09-13",
   Listella: "2024-09-15",
-  Planeta: "2026-05-30",
 };
 
-/** Members who joined after the group's initial debut. */
-const LATER_MEMBER_DEBUT_DATES: Record<string, string> = {
+/** Per-member debut overrides (group debut differs or member joined later). */
+const CHANNEL_DEBUT_DATES: Record<string, string> = {
   "36ddb9bb4f17593b60f1b63cec86611d": "2025-09-20", // 사키하네 후야 (StelLive)
+  "941ea3807ba8b9b7dddb1670e3e7e5af": "2026-05-30", // 아마네 나기 (Planeta)
+  "5ead7124638ac4c568f2cde0224b3b6b": "2026-05-30", // 카네코 파냐 (Planeta)
+  "59aa824e4c4a56dd51e7a5e2e9172648": "2026-05-31", // 쿠온 레이 (Planeta)
+  "d5e2e0c14dcca4c4b10c7c9633022f52": "2026-05-31", // 치치 (Planeta)
 };
 
 /** Listella sub-unit debut; 야토 등 솔로 활동 후 합류 멤버는 개인 firstLiveDate 유지. */
@@ -119,8 +122,8 @@ const LISTELLA_GROUP_DEBUT_IDS = new Set([
 
 export function getDebutReferenceDate(channelId: string, firstLiveDate?: string): string | undefined {
   const trimmed = firstLiveDate?.trim();
-  if (LATER_MEMBER_DEBUT_DATES[channelId]) {
-    return LATER_MEMBER_DEBUT_DATES[channelId];
+  if (CHANNEL_DEBUT_DATES[channelId]) {
+    return CHANNEL_DEBUT_DATES[channelId];
   }
 
   const group = getGroupTag(channelId);
