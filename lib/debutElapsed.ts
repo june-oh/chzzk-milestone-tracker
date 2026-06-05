@@ -15,41 +15,21 @@ function parseDebutDate(firstLiveDate: string | Date): Date | null {
   return Number.isNaN(debut.getTime()) ? null : debut;
 }
 
-function calendarDiff(from: Date, to: Date) {
-  let years = to.getFullYear() - from.getFullYear();
-  let months = to.getMonth() - from.getMonth();
-  let days = to.getDate() - from.getDate();
-
-  if (days < 0) {
-    months -= 1;
-    days += new Date(to.getFullYear(), to.getMonth(), 0).getDate();
-  }
-  if (months < 0) {
-    years -= 1;
-    months += 12;
-  }
-
-  return { years, months, days };
-}
-
-/** Human-readable elapsed time since debut (Korean, calendar-based). */
-export function formatDebutElapsed(firstLiveDate: string | Date | undefined, now = new Date()): string | null {
-  const debut = firstLiveDate ? parseDebutDate(firstLiveDate) : null;
+/** Days since debut (debut day = 0). */
+export function getDebutDayCount(firstLiveDate: string | Date | undefined, now = new Date()): number | null {
+  if (!firstLiveDate) return null;
+  const debut = parseDebutDate(firstLiveDate);
   if (!debut) return null;
 
   const diffMs = now.getTime() - debut.getTime();
   if (diffMs < 0) return null;
 
-  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (totalDays === 0) return "데뷔 당일";
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
 
-  const { years, months, days } = calendarDiff(debut, now);
-
-  if (years > 0) {
-    return months > 0 ? `데뷔 ${years}년 ${months}개월` : `데뷔 ${years}년`;
-  }
-  if (months > 0) {
-    return days > 0 ? `데뷔 ${months}개월 ${days}일` : `데뷔 ${months}개월`;
-  }
-  return `데뷔 ${totalDays}일`;
+/** D+N badge for profile cards (debut day = D+0). */
+export function formatDebutDPlus(firstLiveDate: string | Date | undefined, now = new Date()): string | null {
+  const days = getDebutDayCount(firstLiveDate, now);
+  if (days === null) return null;
+  return `D+${days}`;
 }

@@ -103,6 +103,7 @@ export const GROUP_DEBUT_DATES: Partial<Record<GroupTag, string>> = {
   CLUEZ: "2025-11-29",
   ACAXIA: "2025-09-13",
   Listella: "2024-09-15",
+  Planeta: "2026-05-30",
 };
 
 /** Members who joined after the group's initial debut. */

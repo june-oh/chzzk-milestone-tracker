@@ -3,14 +3,14 @@
     "updatedAt": "2026-06-04T12:00:00.000Z",
     "count": 46,
     "total": 46,
-    "source": "namu.wiki via Perplexity research + manual verification (초승달 #8ea0ff, 카린 #E55567)"
+    "source": "namu.wiki — DENEB 1기 + manual verification"
   },
   "colors": {
     "65c3035bdc598c81f15a8fe0e958b3ce": {
       "channelName": "초승달",
-      "hex": "#8EA0FF",
-      "colorName": "라벤더 블루",
-      "source": "namu.wiki/w/초승달(인터넷 방송인)",
+      "hex": "#69242B",
+      "colorName": "버건디",
+      "source": "namu.wiki/w/초승달(인터넷 방송인) 상징색",
       "estimated": false
     },
     "4de764d9dad3b25602284be6db3ac647": {
@@ -36,17 +36,17 @@
     },
     "17d8605fc37fb5ef49f5f67ae786fe4e": {
       "channelName": "에리스",
-      "hex": "#DC2626",
-      "colorName": "빨간색",
-      "source": "namu.wiki/w/에리스(인터넷 방송인)",
-      "estimated": true
+      "hex": "#A2E0E1",
+      "colorName": "민트",
+      "source": "namu.wiki/w/에리스(인터넷 방송인) 상징색",
+      "estimated": false
     },
     "a67b328bcc8eea4451ccfa754bc19ae1": {
       "channelName": "달콤레나 씨",
-      "hex": "#E2FC52",
-      "colorName": "라임",
-      "source": "ENCHANT 공식 테마 (Perplexity 추정)",
-      "estimated": true
+      "hex": "#B97BFF",
+      "colorName": "보라",
+      "source": "namu.wiki/w/달콤레나 씨 상징색",
+      "estimated": false
     },
     "a3ceb9179d99be8d1e63b3e911fcd16b": {
       "channelName": "키유 Kiyuu",
@@ -78,31 +78,31 @@
     },
     "d5e2e0c14dcca4c4b10c7c9633022f52": {
       "channelName": "치치 Planeta",
-      "hex": "#EE869A",
-      "colorName": "로지 핑크",
-      "source": "Perplexity+namu.wiki",
-      "estimated": true
+      "hex": "#76A170",
+      "colorName": "그린",
+      "source": "namu.wiki DENEB 1기 (.dnb-chichi)",
+      "estimated": false
     },
     "5ead7124638ac4c568f2cde0224b3b6b": {
       "channelName": "카네코 파냐 Planeta",
       "hex": "#F9BE4B",
-      "colorName": "망고 옐로우",
-      "source": "namu.wiki/w/카네코 파냐",
+      "colorName": "옐로우",
+      "source": "namu.wiki DENEB 1기 (.dnb-panya)",
       "estimated": false
     },
     "941ea3807ba8b9b7dddb1670e3e7e5af": {
       "channelName": "아마네 나기 Planeta",
-      "hex": "#7FC2FF",
-      "colorName": "스카이 블루",
-      "source": "Perplexity+namu.wiki",
-      "estimated": true
+      "hex": "#F4516E",
+      "colorName": "핑크",
+      "source": "namu.wiki DENEB 1기 (.dnb-nagi)",
+      "estimated": false
     },
     "59aa824e4c4a56dd51e7a5e2e9172648": {
       "channelName": "쿠온 레이 Planeta",
-      "hex": "#9A7BFF",
-      "colorName": "라일락 퍼플",
-      "source": "Perplexity+namu.wiki",
-      "estimated": true
+      "hex": "#80B6E6",
+      "colorName": "스카이 블루",
+      "source": "namu.wiki DENEB 1기 (.dnb-rei)",
+      "estimated": false
     },
     "c0d9723cbb75dc223c6aa8a9d4f56002": {
       "channelName": "허니츄러스",

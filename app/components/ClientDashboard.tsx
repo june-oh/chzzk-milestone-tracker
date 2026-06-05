@@ -20,7 +20,7 @@ import type { GroupTag } from "@/lib/streamerMeta";
 import { resolveCardPalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
 import { getVerifiedNamuwikiThemePalette, hasVerifiedNamuwikiTheme } from "@/lib/namuwikiThemeColors";
 import { getBundledImageThemePalette } from "@/lib/imageThemeColors";
-import { formatDebutElapsed } from "@/lib/debutElapsed";
+import { formatDebutDPlus } from "@/lib/debutElapsed";
 import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
@@ -2603,7 +2603,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {sortedStreamers.map((streamer) => {
           const cardPalette = getCardSurfacePalette(streamer, extractedPalettes);
-          const debutElapsed = formatDebutElapsed(getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate));
+          const debutDPlus = formatDebutDPlus(getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate));
           const isSelected = selectedForCompare.has(streamer.channelId);
 
           return (
@@ -2679,33 +2679,43 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
                 <div className="relative z-10 border-t border-white/40 pt-3 md:pt-4 flex flex-col gap-2 min-w-0 mt-auto">
                   <div className="min-w-0">
-                    <div className="flex items-baseline justify-between gap-2 mb-1.5">
-                      <span className="font-mono text-[10px] tracking-mono text-neutral-400 uppercase shrink-0">
-                        TOTAL HOURS
-                      </span>
-                      {debutElapsed && (
-                        <span className="font-sans text-[10px] font-semibold text-neutral-500 truncate" suppressHydrationWarning>
-                          {debutElapsed}
+                    <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-1.5">
+                      TOTAL HOURS
+                    </span>
+                    <div className="flex items-baseline justify-between gap-2 min-w-0">
+                      <div className="min-w-0">
+                        <StatCounter value={streamer.totalLiveHours} size="sm" className="md:hidden" />
+                        <StatCounter value={streamer.totalLiveHours} size="md" className="hidden md:block" />
+                      </div>
+                      {debutDPlus && (
+                        <span
+                          className="font-mono text-[11px] font-bold text-neutral-400 shrink-0 tabular-nums"
+                          suppressHydrationWarning
+                        >
+                          {debutDPlus}
                         </span>
                       )}
                     </div>
-                    <StatCounter value={streamer.totalLiveHours} size="sm" className="md:hidden" />
-                    <StatCounter value={streamer.totalLiveHours} size="md" className="hidden md:block" />
                   </div>
                   {streamer.followerCount !== undefined && (
                     <div className="min-w-0">
-                      <div className="flex items-baseline justify-between gap-2 mb-1.5">
-                        <span className="font-mono text-[10px] tracking-mono text-neutral-400 uppercase shrink-0">
-                          FOLLOWERS
-                        </span>
-                        {debutElapsed && (
-                          <span className="font-sans text-[10px] font-semibold text-neutral-500 truncate md:hidden" suppressHydrationWarning>
-                            {debutElapsed}
+                      <span className="font-mono text-[10px] tracking-mono text-neutral-400 block uppercase mb-1.5">
+                        FOLLOWERS
+                      </span>
+                      <div className="flex items-baseline justify-between gap-2 min-w-0">
+                        <div className="min-w-0">
+                          <StatCounter value={streamer.followerCount} size="sm" className="md:hidden" />
+                          <StatCounter value={streamer.followerCount} size="md" className="hidden md:block" />
+                        </div>
+                        {debutDPlus && (
+                          <span
+                            className="font-mono text-[11px] font-bold text-neutral-400 shrink-0 tabular-nums"
+                            suppressHydrationWarning
+                          >
+                            {debutDPlus}
                           </span>
                         )}
                       </div>
-                      <StatCounter value={streamer.followerCount} size="sm" className="md:hidden" />
-                      <StatCounter value={streamer.followerCount} size="md" className="hidden md:block" />
                     </div>
                   )}
                 </div>
