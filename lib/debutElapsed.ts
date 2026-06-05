@@ -24,7 +24,7 @@ function calendarDayDiff(from: CalendarParts, to: CalendarParts): number {
   return Math.floor((toUtc - fromUtc) / (1000 * 60 * 60 * 24));
 }
 
-/** Days since debut in KST (debut day = D+0). */
+/** Elapsed days since debut in KST (debut day = D+1, inclusive — matches common D-day calculators). */
 export function getDebutDayCount(firstLiveDate: string | Date | undefined, now = new Date()): number | null {
   if (!firstLiveDate) return null;
 
@@ -34,10 +34,11 @@ export function getDebutDayCount(firstLiveDate: string | Date | undefined, now =
 
   const today = getKstCalendarParts(now);
   const diff = calendarDayDiff(debutParts, today);
-  return diff < 0 ? null : diff;
+  if (diff < 0) return null;
+  return diff + 1;
 }
 
-/** D+N badge for profile cards (debut day = D+0, KST). */
+/** D+N badge for profile cards (debut day = D+1, KST). */
 export function formatDebutDPlus(firstLiveDate: string | Date | undefined, now = new Date()): string | null {
   const days = getDebutDayCount(firstLiveDate, now);
   if (days === null) return null;

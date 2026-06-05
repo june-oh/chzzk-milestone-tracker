@@ -15,13 +15,6 @@ export type NamuwikiProfile = {
 
 const PROFILES = profilesJson.profiles as Record<string, NamuwikiProfile>;
 
-/** Reject pre-Chzzk career debuts and other bad scrapes (e.g. 2016, wrong infobox). */
-function isPlausibleChzzkDebut(debutDate: string): boolean {
-  const year = Number(debutDate.slice(0, 4));
-  const maxYear = new Date().getFullYear() + 1;
-  return year >= 2021 && year <= maxYear;
-}
-
 function isManualProfile(profile: NamuwikiProfile | undefined): boolean {
   return profile?.source === "manual" || Boolean(profile?.source?.startsWith("manual"));
 }
@@ -49,7 +42,7 @@ export function getStreamerNamuwikiDebut(channelId: string): string | undefined 
  * Debut date for D+ / anniversaries:
  * 1. Verified manual namuwiki
  * 2. Group / per-member configured debut
- * 3. Plausible scraped namuwiki (2021+)
+ * 3. Namuwiki scraped debut
  * 4. Chzzk firstLiveDate fallback
  */
 export function getDebutReferenceDate(channelId: string, firstLiveDate?: string): string | undefined {
@@ -63,9 +56,7 @@ export function getDebutReferenceDate(channelId: string, firstLiveDate?: string)
   if (configured) return configured;
 
   const namuDebut = profile?.debutDate;
-  if (namuDebut && isPlausibleChzzkDebut(namuDebut)) {
-    return namuDebut;
-  }
+  if (namuDebut) return namuDebut;
 
   return getFallbackDebutDate(channelId, firstLiveDate);
 }

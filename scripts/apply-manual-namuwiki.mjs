@@ -87,7 +87,7 @@ const MANUAL = {
     source: "manual",
   },
   "65c3035bdc598c81f15a8fe0e958b3ce": {
-    debutDate: "2024-02-26",
+    debutDate: "2016-07-22",
     source: "manual",
   },
 };
