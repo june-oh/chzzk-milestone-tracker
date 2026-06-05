@@ -284,7 +284,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [compareHeaderView, setCompareHeaderView] = useState(false);
   const [cardSortField, setCardSortField] = useState<CardSortField>(null);
   const [cardSortDir, setCardSortDir] = useState<CardSortDir>("desc");
-  const [groupFilter, setGroupFilter] = useState<GroupTag | "all">("all");
+  const [selectedGroupFilters, setSelectedGroupFilters] = useState<Set<GroupTag>>(() => new Set());
   const [extractedPalettes, setExtractedPalettes] = useState<Record<string, CardSurfacePalette>>({});
   const fetchedPaletteIds = useRef(new Set<string>());
   const [hoveredHoursPointState, setHoveredHoursPoint] = useState<HoursChartPoint | null>(null);
@@ -1138,11 +1138,70 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     return counts;
   }, [streamers]);
 
+  const isAllGroupsSelected = selectedGroupFilters.size === 0;
+
+  const toggleGroupFilter = (tag: GroupTag) => {
+    setSelectedGroupFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  };
+
+  const clearGroupFilters = () => setSelectedGroupFilters(new Set());
+
+  const filteredStreamers = useMemo(() => {
+    if (selectedGroupFilters.size === 0) return streamers;
+    return streamers.filter((s) => {
+      const tag = s.groupTag || getGroupTag(s.channelId);
+      return tag && selectedGroupFilters.has(tag);
+    });
+  }, [streamers, selectedGroupFilters]);
+
+  const groupFilterBar = (
+    <div className="flex flex-wrap items-center gap-2 mb-6">
+      <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-500 uppercase mr-1 shrink-0">
+        소속
+      </span>
+      <span className="font-sans text-[11px] text-neutral-400 mr-1 shrink-0">복수 선택</span>
+      <button
+        type="button"
+        onClick={clearGroupFilters}
+        className={`inline-flex items-center h-9 px-3.5 rounded-full border text-[13px] font-bold transition-colors ${
+          isAllGroupsSelected
+            ? "bg-black text-white border-black"
+            : "bg-white/70 text-neutral-700 border-white/80 hover:bg-white/90 glass-card-surface"
+        }`}
+      >
+        전체
+        <span className="ml-1.5 text-[11px] opacity-70">{streamers.length}</span>
+      </button>
+      {GROUP_FILTER_ORDER.filter((tag) => (groupCounts[tag] ?? 0) > 0).map((tag) => (
+        <button
+          key={tag}
+          type="button"
+          onClick={() => toggleGroupFilter(tag)}
+          className={`inline-flex items-center h-9 px-3.5 rounded-full border text-[13px] font-bold transition-colors ${
+            selectedGroupFilters.has(tag)
+              ? "bg-black text-white border-black"
+              : `bg-white/70 hover:bg-white/90 glass-card-surface ${GROUP_TAG_STYLES[tag]}`
+          }`}
+        >
+          {tag}
+          <span className="ml-1.5 text-[11px] opacity-70">{groupCounts[tag]}</span>
+        </button>
+      ))}
+      {!isAllGroupsSelected && (
+        <span className="font-sans text-[12px] text-neutral-500 ml-1">
+          {filteredStreamers.length}명 표시
+        </span>
+      )}
+    </div>
+  );
+
   const sortedStreamers = useMemo(() => {
-    let list =
-      groupFilter === "all"
-        ? streamers
-        : streamers.filter((s) => (s.groupTag || getGroupTag(s.channelId)) === groupFilter);
+    let list = filteredStreamers;
 
     if (!cardSortField) return list;
 
@@ -1153,7 +1212,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       return cardSortDir === "desc" ? right - left : left - right;
     });
     return list;
-  }, [streamers, groupFilter, cardSortField, cardSortDir]);
+  }, [filteredStreamers, cardSortField, cardSortDir]);
 
   const formatDateShort = (dateStr: string | Date) => {
     try {
@@ -2009,44 +2068,60 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   };
 
   const selectedStreamer = streamers.find((s) => s.channelId === activeStreamerId);
-  const topFollowerChasersByWeight = streamers
-    .map((streamer) => ({
-      streamer,
-      stats: getFollowerMilestoneStats(streamer.followerCount || 0),
-    }))
-    .sort(
-      (a, b) =>
-        a.stats.weightedRemainingScore - b.stats.weightedRemainingScore ||
-        a.stats.followersRemaining - b.stats.followersRemaining
-    )
-    .slice(0, 5);
-  const topFollowerChasersByCount = streamers
-    .map((streamer) => ({
-      streamer,
-      stats: getFollowerMilestoneStats(streamer.followerCount || 0),
-    }))
-    .sort((a, b) => a.stats.followersRemaining - b.stats.followersRemaining)
-    .slice(0, 5);
-  const topDebutAnniversaryChasers = streamers
-    .map((streamer) => ({
-      streamer,
-      event: getNextCommemorativeEvent(
-        getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate),
-        getStreamerBirthday(streamer.channelId)
-      ),
-    }))
-    .filter(
-      (entry): entry is typeof entry & { event: NonNullable<typeof entry.event> } => entry.event !== null
-    )
-    .sort((a, b) => a.event.daysUntil - b.event.daysUntil)
-    .slice(0, 5);
-  const topHoursChasers = streamers
-    .map((streamer) => ({
-      streamer,
-      stats: getMilestoneStats(streamer.totalLiveHours),
-    }))
-    .sort((a, b) => a.stats.hoursRemaining - b.stats.hoursRemaining)
-    .slice(0, 5);
+  const topFollowerChasersByWeight = useMemo(
+    () =>
+      filteredStreamers
+        .map((streamer) => ({
+          streamer,
+          stats: getFollowerMilestoneStats(streamer.followerCount || 0),
+        }))
+        .sort(
+          (a, b) =>
+            a.stats.weightedRemainingScore - b.stats.weightedRemainingScore ||
+            a.stats.followersRemaining - b.stats.followersRemaining
+        )
+        .slice(0, 5),
+    [filteredStreamers]
+  );
+  const topFollowerChasersByCount = useMemo(
+    () =>
+      filteredStreamers
+        .map((streamer) => ({
+          streamer,
+          stats: getFollowerMilestoneStats(streamer.followerCount || 0),
+        }))
+        .sort((a, b) => a.stats.followersRemaining - b.stats.followersRemaining)
+        .slice(0, 5),
+    [filteredStreamers]
+  );
+  const topDebutAnniversaryChasers = useMemo(
+    () =>
+      filteredStreamers
+        .map((streamer) => ({
+          streamer,
+          event: getNextCommemorativeEvent(
+            getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate),
+            getStreamerBirthday(streamer.channelId)
+          ),
+        }))
+        .filter(
+          (entry): entry is typeof entry & { event: NonNullable<typeof entry.event> } => entry.event !== null
+        )
+        .sort((a, b) => a.event.daysUntil - b.event.daysUntil)
+        .slice(0, 5),
+    [filteredStreamers]
+  );
+  const topHoursChasers = useMemo(
+    () =>
+      filteredStreamers
+        .map((streamer) => ({
+          streamer,
+          stats: getMilestoneStats(streamer.totalLiveHours),
+        }))
+        .sort((a, b) => a.stats.hoursRemaining - b.stats.hoursRemaining)
+        .slice(0, 5),
+    [filteredStreamers]
+  );
 
   const renderChaserColumn = <T extends { streamer: Streamer }>(
     entries: T[],
@@ -2446,6 +2521,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
       <div id="dashboard-content" className="border-t border-hairline bg-neutral-50/50 py-12">
         <div className="max-w-[1280px] mx-auto px-6">
+          {groupFilterBar}
+
           {/* Infinite Marquee Slider section - Placed directly at the top of the dashboard */}
           <div className="mb-14 border-t border-b border-hairline pt-8 pb-4 bg-white overflow-hidden">
             <div className="text-center mb-4">
@@ -2515,9 +2592,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </div>
 
             <div className="relative w-full flex pt-4 pb-10 overflow-hidden">
+              {filteredStreamers.length === 0 ? (
+                <p className="w-full text-center py-6 text-neutral-500 font-sans text-[14px]">
+                  선택한 소속에 해당하는 스트리머가 없습니다.
+                </p>
+              ) : (
               <div className="animate-marquee flex gap-10 items-center">
                 {/* Duplicated to create seamless loop. Circles only, sliding infinitely! */}
-            {[...streamers, ...streamers, ...streamers, ...streamers].map((streamer, idx) => (
+            {[...filteredStreamers, ...filteredStreamers, ...filteredStreamers, ...filteredStreamers].map((streamer, idx) => (
               <div
                 key={idx}
                 className="relative group cursor-pointer flex-shrink-0"
@@ -2538,6 +2620,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
 
@@ -2580,39 +2663,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </div>
           )}
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-500 uppercase mr-1 shrink-0">
-          소속
-        </span>
-        <button
-          type="button"
-          onClick={() => setGroupFilter("all")}
-          className={`inline-flex items-center h-9 px-3.5 rounded-full border text-[13px] font-bold transition-colors ${
-            groupFilter === "all"
-              ? "bg-black text-white border-black"
-              : "bg-white/70 text-neutral-700 border-white/80 hover:bg-white/90 glass-card-surface"
-          }`}
-        >
-          전체
-          <span className="ml-1.5 text-[11px] opacity-70">{streamers.length}</span>
-        </button>
-        {GROUP_FILTER_ORDER.filter((tag) => (groupCounts[tag] ?? 0) > 0).map((tag) => (
-          <button
-            key={tag}
-            type="button"
-            onClick={() => setGroupFilter(tag)}
-            className={`inline-flex items-center h-9 px-3.5 rounded-full border text-[13px] font-bold transition-colors ${
-              groupFilter === tag
-                ? "bg-black text-white border-black"
-                : `bg-white/70 hover:bg-white/90 glass-card-surface ${GROUP_TAG_STYLES[tag]}`
-            }`}
-          >
-            {tag}
-            <span className="ml-1.5 text-[11px] opacity-70">{groupCounts[tag]}</span>
-          </button>
-        ))}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
