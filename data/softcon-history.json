@@ -4948,18 +4948,18 @@
     "currentFollowers": 8080,
     "weeklyHours": [
       {
-        "date": "2024-01-01",
-        "weeklyHours": 5.1
+        "date": "2026-05-31",
+        "weeklyHours": 24
       },
       {
         "date": "2026-06-03",
-        "weeklyHours": 80
+        "weeklyHours": 56
       }
     ],
     "cumulativeHours": [
       {
-        "date": "2024-01-01",
-        "hours": 1
+        "date": "2026-05-31",
+        "hours": 0
       },
       {
         "date": "2026-06-03",
@@ -4967,7 +4967,7 @@
       }
     ],
     "meta": {
-      "range": "2024-01-01 ~ 2026-06-03",
+      "range": "2026-05-31 ~ 2026-06-03",
       "barCount": 2,
       "scrapedAt": "2026-06-04T06:15:39.340Z"
     }
@@ -4986,18 +4986,18 @@
     "currentFollowers": 10532,
     "weeklyHours": [
       {
-        "date": "2024-01-01",
-        "weeklyHours": 3.4
+        "date": "2026-05-30",
+        "weeklyHours": 30
       },
       {
         "date": "2026-06-03",
-        "weeklyHours": 80
+        "weeklyHours": 50
       }
     ],
     "cumulativeHours": [
       {
-        "date": "2024-01-01",
-        "hours": 1
+        "date": "2026-05-30",
+        "hours": 0
       },
       {
         "date": "2026-06-03",
@@ -5005,7 +5005,7 @@
       }
     ],
     "meta": {
-      "range": "2024-01-01 ~ 2026-06-03",
+      "range": "2026-05-30 ~ 2026-06-03",
       "barCount": 2,
       "scrapedAt": "2026-06-04T06:19:48.497Z",
       "source": "playwright"
@@ -5025,19 +5025,27 @@
     "currentFollowers": 9487,
     "weeklyHours": [
       {
+        "date": "2026-05-31",
+        "weeklyHours": 37
+      },
+      {
         "date": "2026-06-03",
-        "weeklyHours": 80
+        "weeklyHours": 43
       }
     ],
     "cumulativeHours": [
+      {
+        "date": "2026-05-31",
+        "hours": 0
+      },
       {
         "date": "2026-06-03",
         "hours": 37
       }
     ],
     "meta": {
-      "range": "2024-01-01 ~ 2026-06-03",
-      "barCount": 1,
+      "range": "2026-05-31 ~ 2026-06-03",
+      "barCount": 2,
       "scrapedAt": "2026-06-04T06:19:52.824Z",
       "source": "playwright"
     }

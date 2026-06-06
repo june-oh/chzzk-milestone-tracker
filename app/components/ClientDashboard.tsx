@@ -21,6 +21,7 @@ import {
   getSoftconHoursMilestoneDate,
   hasSoftconFollowerHistory,
   hasSoftconHoursHistory,
+  sanitizeHoursHistoryForChart,
 } from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
 import { resolveCardPalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
@@ -395,9 +396,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       return { date: verified.date, isEstimated: false };
     }
 
-    // Estimate using linear interpolation based on current stats and debut
+    // Estimate using linear interpolation based on current stats and debut reference
     try {
-      const startDate = parseSafeDate(matchingStreamer.firstLiveDate);
+      const debutRef = getDebutReferenceDate(matchingStreamer.channelId, matchingStreamer.firstLiveDate);
+      if (!debutRef) throw new Error("no debut reference");
+      const startDate = parseSafeDate(debutRef);
       const endDate = parseSafeDate(matchingStreamer.lastUpdated || new Date().toISOString());
       
       if (type === "hours") {
@@ -756,15 +759,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           isEstimated: false,
         });
       } else if (!hasSoftconHoursHistory(streamer.channelId)) {
-        // Fallback: estimate date using linear interpolation
+        // Fallback: estimate date using linear interpolation from debut reference
         try {
-          const startDate = parseSafeDate(streamer.firstLiveDate);
+          const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
+          if (!debutRef) throw new Error("no debut reference");
+          const startDate = parseSafeDate(debutRef);
           const endDate = parseSafeDate(streamer.lastUpdated || new Date().toISOString());
           const totalHours = streamer.totalLiveHours;
           if (totalHours > 0) {
             const timeSpan = endDate.getTime() - startDate.getTime();
             const msPerHour = timeSpan / totalHours;
-            const estimatedMs = startDate.getTime() + (milestoneVal * msPerHour);
+            const estimatedMs = startDate.getTime() + milestoneVal * msPerHour;
             list.push({
               milestone: milestoneVal,
               date: new Date(estimatedMs).toISOString(),
@@ -783,15 +788,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   // Generate monotonically increasing curve data starting from (firstLiveDate, 0)
   const getFullHistoryData = (streamer: Streamer, streamerMilestones: { milestone: number; date: string }[]) => {
     const points: { date: Date; hours: number; label: string; isMilestone: boolean }[] = [];
-    const manualHoursHistory = getManualCumulativeHoursHistory(
-      streamer.channelId,
+    const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
+    const manualHoursHistory = sanitizeHoursHistoryForChart(
+      getManualCumulativeHoursHistory(streamer.channelId, streamer.totalLiveHours),
+      debutRef,
       streamer.totalLiveHours
     );
     const hasManualHoursHistory = manualHoursHistory.length > 0;
 
-    if (!hasManualHoursHistory && streamer.firstLiveDate) {
+    if (!hasManualHoursHistory && debutRef) {
       points.push({
-        date: parseSafeDate(streamer.firstLiveDate),
+        date: parseSafeDate(debutRef),
         hours: 0,
         label: "방송 시작일",
         isMilestone: false,
@@ -810,23 +817,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     }
 
     if (hasManualHoursHistory) {
-      if (streamer.firstLiveDate) {
-        const debut = parseSafeDate(streamer.firstLiveDate);
-        const firstWeekly = parseHistoryDate(manualHoursHistory[0].date);
-        if (firstWeekly.getTime() > debut.getTime() && manualHoursHistory[0].hours > 0) {
-          points.push({
-            date: debut,
-            hours: 0,
-            label: "방송 시작일",
-            isMilestone: false,
-          });
-        }
-      }
       manualHoursHistory.forEach((point) => {
         points.push({
           date: parseHistoryDate(point.date),
           hours: point.hours,
-          label: `${Math.round(point.hours).toLocaleString()}시간`,
+          label: point.hours === 0 ? "방송 시작일" : `${Math.round(point.hours).toLocaleString()}시간`,
           isMilestone: false,
         });
       });

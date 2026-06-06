@@ -204,6 +204,47 @@ export function getManualWeeklyHoursHistory(channelId: string): ManualWeeklyHour
   return [];
 }
 
+function parseDateOnlyMs(dateStr: string): number {
+  const match = String(dateStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return NaN;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+/** Drop pre-debut scrape noise and anchor charts at official debut (0h). */
+export function sanitizeHoursHistoryForChart(
+  points: ManualHoursPoint[],
+  debutDate?: string,
+  targetTotal?: number
+): ManualHoursPoint[] {
+  if (points.length === 0 || !debutDate) return points;
+
+  const debutMs = parseDateOnlyMs(debutDate);
+  if (!Number.isFinite(debutMs)) return points;
+
+  const debutDay = debutDate.slice(0, 10);
+  const onOrAfterDebut = [...points]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .filter((p) => parseDateOnlyMs(p.date) >= debutMs);
+
+  const result: ManualHoursPoint[] = [{ date: debutDay, hours: 0 }];
+
+  for (const point of onOrAfterDebut) {
+    if (parseDateOnlyMs(point.date) === debutMs && point.hours <= 0) continue;
+    result.push(point);
+  }
+
+  if (result.length === 1 && targetTotal !== undefined && targetTotal > 0) {
+    result.push({ date: new Date().toISOString().slice(0, 10), hours: Math.round(targetTotal) });
+  }
+
+  if (targetTotal !== undefined && result.length > 0) {
+    const last = result[result.length - 1];
+    result[result.length - 1] = { ...last, hours: Math.round(targetTotal) };
+  }
+
+  return result;
+}
+
 /** Cumulative broadcast hours built from Softcon weekly bars. */
 export function getManualCumulativeHoursHistory(
   channelId: string,
