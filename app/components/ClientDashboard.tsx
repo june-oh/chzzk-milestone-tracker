@@ -152,31 +152,20 @@ function StreamerChannelImage({
         ? "object-cover object-[center_20%]"
         : "object-cover object-[center_22%]";
 
-  const sizes =
-    variant === "card"
-      ? "(max-width: 768px) 45vw, 22vw"
-      : variant === "avatar"
-        ? "44px"
-        : "84px";
+  const pixelSize =
+    variant === "avatar" ? 44 : variant === "thumb" ? 84 : 132;
 
-  const image = (
+  return (
     <Image
       src={src}
       alt={alt}
-      fill
-      sizes={sizes}
+      width={pixelSize}
+      height={pixelSize}
       quality={90}
-      className={`${objectClass} ${className}`}
+      className={`h-full w-full ${objectClass} ${className}`}
       unoptimized={!src.includes("pstatic.net")}
     />
   );
-
-  // Avatar/thumb parents already have fixed relative size — skip h-full wrapper that collapses in flex rows.
-  if (variant === "avatar" || variant === "thumb") {
-    return image;
-  }
-
-  return <div className="relative h-full w-full">{image}</div>;
 }
 
 const BORDER_COLOR_MAP: Record<string, string> = {
