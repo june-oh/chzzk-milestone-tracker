@@ -1233,6 +1233,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     }
   };
 
+  const buildChartTimeTicks = (minTimestamp: number, maxTimestamp: number, count = 6) => {
+    if (!Number.isFinite(minTimestamp) || !Number.isFinite(maxTimestamp)) return [];
+    if (minTimestamp >= maxTimestamp) return [minTimestamp];
+    return Array.from({ length: count }, (_, index) =>
+      Math.round(minTimestamp + ((maxTimestamp - minTimestamp) * index) / (count - 1))
+    );
+  };
+
   const createDailyInterpolatedData = (
     sourceData: NumericLinePoint[],
     valueKey: "hours" | "followers",
@@ -1321,6 +1329,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           ? `${value.toLocaleString()}시간`
           : `${value.toLocaleString()}시간 (추정)`
     );
+    const hourChartTimeTicks = buildChartTimeTicks(
+      chartData[0]?.timestamp ?? 0,
+      chartData[chartData.length - 1]?.timestamp ?? 0
+    );
     const hourMarkerData = streamerMilestones
       .map((m) => {
         const fallbackTimestamp = parseSafeDate(m.date).getTime();
@@ -1351,10 +1363,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               type="number"
               scale="time"
               domain={["dataMin", "dataMax"]}
+              ticks={hourChartTimeTicks}
               tickFormatter={(value) => formatDateShort(new Date(Number(value)))}
               tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
               tickMargin={12}
-              minTickGap={34}
             />
             <YAxis
               width={58}
@@ -1710,6 +1722,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       (value) =>
         usesSoftconFollowers ? formatFollowers(value) : `${formatFollowers(value)} (추정)`
     );
+    const followerChartTimeTicks = buildChartTimeTicks(
+      chartData[0]?.timestamp ?? 0,
+      chartData[chartData.length - 1]?.timestamp ?? 0
+    );
     const followerMarkerData = followerMilestones
       .map((m) => {
         const fallbackTimestamp = parseSafeDate(m.date).getTime();
@@ -1740,10 +1756,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               type="number"
               scale="time"
               domain={["dataMin", "dataMax"]}
+              ticks={followerChartTimeTicks}
               tickFormatter={(value) => formatDateShort(new Date(Number(value)))}
               tick={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
               tickMargin={12}
-              minTickGap={34}
             />
             <YAxis
               width={58}
