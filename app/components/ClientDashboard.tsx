@@ -124,6 +124,16 @@ function getCardSurfacePalette(
   });
 }
 
+function getStreamerAccentHex(
+  streamer: Streamer,
+  extractedPalettes: Record<string, CardSurfacePalette>
+): string {
+  return (
+    getCardSurfacePalette(streamer, extractedPalettes).accentHex ??
+    (COLOR_MAP[streamer.color] || COLOR_MAP.lime).rawHex
+  );
+}
+
 function StreamerChannelImage({
   src,
   alt,
@@ -624,14 +634,18 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   };
 
   const renderStreamerProfileHeader = (streamer: Streamer) => {
-    const colorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
-    const borderSet = BORDER_COLOR_MAP[streamer.color] || "border-neutral-200";
+    const cardPalette = getCardSurfacePalette(streamer, extractedPalettes);
+    const accentHex = getStreamerAccentHex(streamer, extractedPalettes);
     const hoursStats = getMilestoneStats(streamer.totalLiveHours);
     const followerStats = getFollowerMilestoneStats(streamer.followerCount || 0);
     const lastFollowerClub = getLastFollowerMilestone(streamer.followerCount || 0);
 
     return (
-      <div className={`rounded-[32px] border ${borderSet} ${colorSet.bg} p-8 md:p-12 shadow-sm relative overflow-hidden`}>
+      <div
+        className="rounded-[32px] border p-8 md:p-12 shadow-sm relative overflow-hidden glass-card-surface border-white/70"
+        style={getGlassCardStyle(cardPalette)}
+      >
+        <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-br from-white/18 via-transparent to-white/5" />
         <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left flex-1 min-w-0">
             <div className="w-[110px] h-[110px] rounded-full overflow-hidden border-4 border-white shadow-lg shrink-0 relative bg-neutral-100">
@@ -639,7 +653,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             </div>
             <div className="space-y-3 min-w-0">
               <div className="flex items-center justify-center md:justify-start gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${colorSet.accent}`} />
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: accentHex }} />
                 <span className="font-mono text-[12px] font-bold tracking-mono text-neutral-500 uppercase">
                   CHZZK PARTNER CREATOR
                 </span>
@@ -676,8 +690,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   </div>
                   <div className="w-full h-3 bg-neutral-200/50 rounded-full overflow-hidden border border-hairline-soft mb-2.5">
                     <div
-                      className={`h-full ${colorSet.accent} transition-all duration-500`}
-                      style={{ width: `${hoursStats.progressPercent}%` }}
+                      className="h-full transition-all duration-500"
+                      style={{ width: `${hoursStats.progressPercent}%`, backgroundColor: accentHex }}
                     />
                   </div>
                   <p className="font-sans text-[12px] text-neutral-800 font-medium leading-snug">
@@ -1306,7 +1320,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     if (chartPoints.length < 2) return null;
 
-    const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
+    const chartColorSet = {
+      rawHex: getStreamerAccentHex(streamer, extractedPalettes),
+    };
     const dataPeakHours = Math.max(...chartPoints.map((point) => point.hours));
     const { max: chartMaxHours, ticks: hourTicks } = getHoursChartScale(
       streamer.totalLiveHours,
@@ -1704,7 +1720,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     if (chartPoints.length < 2) return null;
 
-    const chartColorSet = COLOR_MAP[streamer.color] || COLOR_MAP.lime;
+    const chartColorSet = {
+      rawHex: getStreamerAccentHex(streamer, extractedPalettes),
+    };
     const chartMaxFollowers = Math.ceil((streamer.followerCount || 10000) / 10000) * 10000;
     const followerTicks = Array.from({ length: Math.floor(chartMaxFollowers / 10000) + 1 }, (_, index) => index * 10000);
     const usesSoftconFollowers = hasSoftconFollowerHistory(streamer.channelId);
@@ -2228,7 +2246,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
   // If a streamer is selected, render their DEDICATED FULL-SCREEN PROFILE PAGE
   if (selectedStreamer) {
-    const colorSet = COLOR_MAP[selectedStreamer.color] || COLOR_MAP.lime;
+    const accentHex = getStreamerAccentHex(selectedStreamer, extractedPalettes);
     const streamerMilestones = getStreamerMilestones(selectedStreamer);
 
     return (
@@ -2316,7 +2334,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               </div>
               <div className="flex items-center gap-4 text-[12px] font-medium text-neutral-500">
                 <span className="flex items-center gap-1.5">
-                  <span className={`w-3 h-1.5 rounded-full ${colorSet.accent}`} /> 성장 곡선
+                  <span className="w-3 h-1.5 rounded-full" style={{ backgroundColor: accentHex }} /> 성장 곡선
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-1.5 border-b border-dashed border-neutral-300" /> 1,000H 마일스톤
@@ -2345,7 +2363,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               </div>
               <div className="flex items-center gap-4 text-[12px] font-medium text-neutral-500">
                 <span className="flex items-center gap-1.5">
-                  <span className={`w-3 h-1.5 rounded-full ${colorSet.accent}`} /> 성장 곡선
+                  <span className="w-3 h-1.5 rounded-full" style={{ backgroundColor: accentHex }} /> 성장 곡선
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-1.5 border-b border-dashed border-neutral-300" /> 1만명 마일스톤
