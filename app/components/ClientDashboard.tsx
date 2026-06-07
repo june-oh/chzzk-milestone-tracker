@@ -2177,34 +2177,34 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     if (entries.length === 0) return null;
 
     return (
-      <div className="rounded-[20px] border border-hairline bg-white/80 backdrop-blur-sm overflow-hidden shadow-sm">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-hairline bg-neutral-50/70">
-          <div className="flex items-center gap-2 min-w-0">
+      <div className="flex h-full min-w-0 flex-col rounded-[20px] border border-hairline bg-white/80 backdrop-blur-sm overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-hairline bg-neutral-50/70 shrink-0">
+          <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-neutral-400 shrink-0">{icon}</span>
             <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-500 uppercase truncate">
               {title}
             </span>
           </div>
-          <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 shrink-0">TOP 5</span>
+          <span className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 shrink-0 ml-2">TOP 5</span>
         </div>
 
-        <div className="divide-y divide-hairline-soft">
+        <div className="divide-y divide-hairline-soft flex-1">
           {entries.map((entry, index) => (
             <button
               key={entry.streamer.channelId}
               type="button"
               onClick={() => handleSelectStreamer(entry.streamer.channelId)}
-              className={`group w-full flex items-center gap-3 px-4 text-left transition-colors ${
+              className={`group w-full flex h-[52px] min-h-[52px] items-center gap-2 px-3 text-left transition-colors ${
                 index === 0
-                  ? "py-3.5 bg-gradient-to-r from-amber-50 via-white to-white hover:from-amber-100/80 ring-1 ring-inset ring-amber-200/70 shadow-[inset_3px_0_0_0_rgba(0,0,0,0.85)]"
-                  : "py-3 bg-white/40 hover:bg-neutral-50/90"
+                  ? "bg-gradient-to-r from-amber-50 via-white to-white hover:from-amber-100/80 ring-1 ring-inset ring-amber-200/70 shadow-[inset_3px_0_0_0_rgba(0,0,0,0.85)]"
+                  : "bg-white/40 hover:bg-neutral-50/90"
               }`}
             >
               <span
                 className={`font-mono font-bold shrink-0 flex items-center justify-center ${
                   index === 0
-                    ? "w-7 h-7 rounded-full bg-black text-white text-[10px]"
-                    : "w-7 text-[11px] text-neutral-400"
+                    ? "w-6 h-6 rounded-full bg-black text-white text-[9px]"
+                    : "w-6 text-[10px] text-neutral-400"
                 }`}
               >
                 #{index + 1}
@@ -2212,8 +2212,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <div
                 className={`relative aspect-square shrink-0 overflow-hidden rounded-full bg-neutral-100 ${
                   index === 0
-                    ? "size-11 border-2 border-black/15 ring-2 ring-inset ring-amber-200/80"
-                    : "size-10 border border-hairline"
+                    ? "size-9 border-2 border-black/15 ring-2 ring-inset ring-amber-200/80"
+                    : "size-8 border border-hairline"
                 }`}
               >
                 <StreamerChannelImage
@@ -2222,16 +2222,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   variant="avatar"
                 />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <div
                   className={`font-sans truncate leading-tight ${
-                    index === 0 ? "text-[15px] font-extrabold text-black" : "text-[13px] font-bold text-neutral-800"
+                    index === 0 ? "text-[13px] font-extrabold text-black" : "text-[12px] font-bold text-neutral-800"
                   }`}
                 >
                   {entry.streamer.channelName}
                 </div>
                 <div
-                  className={`text-[11px] font-medium leading-snug mt-0.5 ${
+                  className={`truncate whitespace-nowrap text-[10px] font-medium leading-tight mt-0.5 ${
                     index === 0 ? "text-neutral-700" : "text-neutral-500"
                   }`}
                 >
@@ -2579,7 +2579,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-6 max-w-[1400px] mx-auto mb-8 px-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 items-stretch gap-4 lg:gap-5 max-w-[1400px] mx-auto mb-8 px-4">
               {renderChaserColumn(
                 topFollowerChasersByWeight,
                 "Follow · Weighted",
