@@ -152,19 +152,31 @@ function StreamerChannelImage({
         ? "object-cover object-[center_20%]"
         : "object-cover object-[center_22%]";
 
-  return (
-    <div className="relative w-full h-full">
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        sizes={variant === "card" ? "(max-width: 768px) 45vw, 22vw" : variant === "avatar" ? "56px" : "84px"}
-        quality={90}
-        className={`${objectClass} ${className}`}
-        unoptimized={!src.includes("pstatic.net")}
-      />
-    </div>
+  const sizes =
+    variant === "card"
+      ? "(max-width: 768px) 45vw, 22vw"
+      : variant === "avatar"
+        ? "44px"
+        : "84px";
+
+  const image = (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes={sizes}
+      quality={90}
+      className={`${objectClass} ${className}`}
+      unoptimized={!src.includes("pstatic.net")}
+    />
   );
+
+  // Avatar/thumb parents already have fixed relative size — skip h-full wrapper that collapses in flex rows.
+  if (variant === "avatar" || variant === "thumb") {
+    return image;
+  }
+
+  return <div className="relative h-full w-full">{image}</div>;
 }
 
 const BORDER_COLOR_MAP: Record<string, string> = {
@@ -2209,10 +2221,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 #{index + 1}
               </span>
               <div
-                className={`relative rounded-full overflow-hidden shrink-0 bg-neutral-100 ${
+                className={`relative shrink-0 overflow-hidden rounded-full bg-neutral-100 ${
                   index === 0
-                    ? "w-11 h-11 border-2 border-black/15 ring-2 ring-amber-200/80"
-                    : "w-10 h-10 border border-hairline"
+                    ? "size-11 border-2 border-black/15 ring-2 ring-inset ring-amber-200/80"
+                    : "size-10 border border-hairline"
                 }`}
               >
                 <StreamerChannelImage
