@@ -162,7 +162,7 @@ function StreamerChannelImage({
       width={pixelSize}
       height={pixelSize}
       quality={90}
-      className={`h-full w-full ${objectClass} ${className}`}
+      className={`block h-full w-full rounded-full ${objectClass} ${className}`}
       unoptimized={!src.includes("pstatic.net")}
     />
   );
@@ -649,7 +649,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-br from-white/18 via-transparent to-white/5" />
         <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left flex-1 min-w-0">
-            <div className="w-[110px] h-[110px] rounded-full overflow-hidden border-4 border-white shadow-lg shrink-0 relative bg-neutral-100">
+            <div className="relative aspect-square w-[110px] h-[110px] shrink-0 overflow-hidden rounded-full border-4 border-white bg-neutral-100 shadow-lg">
               <StreamerChannelImage src={streamer.channelImageUrl} alt={streamer.channelName} variant="avatar" />
             </div>
             <div className="space-y-3 min-w-0">
@@ -2210,7 +2210,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 #{index + 1}
               </span>
               <div
-                className={`relative shrink-0 overflow-hidden rounded-full bg-neutral-100 ${
+                className={`relative aspect-square shrink-0 overflow-hidden rounded-full bg-neutral-100 ${
                   index === 0
                     ? "size-11 border-2 border-black/15 ring-2 ring-inset ring-amber-200/80"
                     : "size-10 border border-hairline"
@@ -2651,7 +2651,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 onClick={() => handleSelectStreamer(streamer.channelId)}
               >
                     {/* Infinite marquee profiles display: Clean, sleek circles with custom hover effects */}
-                    <div className={`w-[84px] h-[84px] rounded-full overflow-hidden border-4 border-white shadow-md transition-all duration-300 group-hover:scale-110 group-active:scale-95 relative bg-neutral-100`}>
+                    <div className="relative aspect-square h-[84px] w-[84px] overflow-hidden rounded-full border-4 border-white bg-neutral-100 shadow-md transition-all duration-300 group-hover:scale-110 group-active:scale-95">
                       <StreamerChannelImage
                         src={streamer.channelImageUrl}
                         alt={streamer.channelName}
@@ -2811,7 +2811,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 </button>
 
                 <div className="relative z-10 flex justify-center pt-7 sm:pt-8">
-                  <div className="relative w-[120px] h-[120px] sm:w-[132px] sm:h-[132px] rounded-full overflow-hidden bg-neutral-200/70 border border-hairline group shrink-0">
+                  <div className="relative aspect-square w-[120px] h-[120px] sm:w-[132px] sm:h-[132px] shrink-0 overflow-hidden rounded-full bg-neutral-200/70 border border-hairline group">
                     <StreamerChannelImage
                       src={streamer.channelImageUrl}
                       alt={streamer.channelName}
@@ -2962,15 +2962,15 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         className="group hover:bg-neutral-50/50 transition-colors cursor-pointer"
                       >
                         <td className="py-4 font-sans text-[15px] font-medium flex items-center gap-3">
-                          <div className="w-7 h-7 rounded-full overflow-hidden bg-neutral-100 border border-hairline flex-shrink-0">
+                          <div className="relative aspect-square size-7 shrink-0 overflow-hidden rounded-full bg-neutral-100 border border-hairline">
                             {displayImageUrl ? (
-                              <img
+                              <StreamerChannelImage
                                 src={displayImageUrl}
                                 alt={log.channelName}
-                                className="w-full h-full object-cover"
+                                variant="avatar"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[10px] bg-neutral-200">
+                              <div className="flex h-full w-full items-center justify-center bg-neutral-200 text-[10px]">
                                 ⭐
                               </div>
                             )}
@@ -3054,15 +3054,15 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                         className="group hover:bg-neutral-50/50 transition-colors cursor-pointer"
                       >
                         <td className="py-4 font-sans text-[15px] font-medium flex items-center gap-3">
-                          <div className="w-7 h-7 rounded-full overflow-hidden bg-neutral-100 border border-hairline flex-shrink-0">
+                          <div className="relative aspect-square size-7 shrink-0 overflow-hidden rounded-full bg-neutral-100 border border-hairline">
                             {displayImageUrl ? (
-                              <img
+                              <StreamerChannelImage
                                 src={displayImageUrl}
                                 alt={log.channelName}
-                                className="w-full h-full object-cover"
+                                variant="avatar"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[10px] bg-neutral-200">
+                              <div className="flex h-full w-full items-center justify-center bg-neutral-200 text-[10px]">
                                 ⭐
                               </div>
                             )}
