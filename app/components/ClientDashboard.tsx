@@ -376,13 +376,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     };
   }, [initialStreamers]);
 
-  // Helper to resolve milestone dates and flag estimated status for those not verified in static fallbacks.
-  // This avoids auto-created 20th May dates for other streamers from taking over the dashboard recent achievements lists.
+  // Resolve milestone dates for dashboard lists: prefer Softcon/cron records, estimate only as last resort.
   const resolveMilestoneDateAndStatus = (log: Milestone) => {
-    const matchingStreamer = streamers.find(s => s.channelId === log.channelId);
-    if (!matchingStreamer) {
-      return { date: log.date, isEstimated: false };
-    }
+    const type = log.type || "hours";
 
     const verifiedMilestones = [
       { channelId: "4de764d9dad3b25602284be6db3ac647", milestone: 7000, type: "hours", date: "2026-05-10T12:00:00.000Z" },
@@ -395,31 +391,54 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       { channelId: "475313e6c26639d5763628313b4c130e", milestone: 50000, type: "followers", date: "2026-04-25T11:00:00.000Z" },
       { channelId: "475313e6c26639d5763628313b4c130e", milestone: 10000, type: "followers", date: "2024-02-21T12:00:00.000Z" },
       { channelId: "475313e6c26639d5763628313b4c130e", milestone: 5000, type: "hours", date: "2026-04-20T15:00:00.000Z" },
-      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" }
+      { channelId: "65c3035bdc598c81f15a8fe0e958b3ce", milestone: 4000, type: "hours", date: "2026-04-15T09:00:00.000Z" },
     ];
 
-    const type = log.type || "hours";
     const verified = verifiedMilestones.find(
-      v => v.channelId === log.channelId && v.milestone === log.milestone && v.type === type
+      (v) => v.channelId === log.channelId && v.milestone === log.milestone && v.type === type
     );
-
     if (verified) {
       return { date: verified.date, isEstimated: false };
     }
 
-    // Estimate using linear interpolation based on current stats and debut reference
+    const softconDate =
+      type === "hours"
+        ? getSoftconHoursMilestoneDate(log.channelId, log.milestone)
+        : getSoftconFollowerMilestoneDate(log.channelId, log.milestone);
+    if (softconDate) {
+      return { date: softconDate, isEstimated: false };
+    }
+
+    if (log.date) {
+      return { date: log.date, isEstimated: false };
+    }
+
+    const matchingStreamer = streamers.find((s) => s.channelId === log.channelId);
+    if (!matchingStreamer) {
+      return { date: log.date, isEstimated: false };
+    }
+
+    const hasCollectedHistory =
+      type === "hours"
+        ? hasSoftconHoursHistory(log.channelId)
+        : hasSoftconFollowerHistory(log.channelId);
+    if (hasCollectedHistory) {
+      return { date: log.date, isEstimated: false };
+    }
+
+    // No recorded date — estimate using linear interpolation from debut reference
     try {
       const debutRef = getDebutReferenceDate(matchingStreamer.channelId, matchingStreamer.firstLiveDate);
       if (!debutRef) throw new Error("no debut reference");
       const startDate = parseSafeDate(debutRef);
       const endDate = parseSafeDate(matchingStreamer.lastUpdated || new Date().toISOString());
-      
+
       if (type === "hours") {
         const totalHours = matchingStreamer.totalLiveHours;
         if (totalHours > 0) {
           const timeSpan = endDate.getTime() - startDate.getTime();
           const msPerHour = timeSpan / totalHours;
-          const estimatedMs = startDate.getTime() + (log.milestone * msPerHour);
+          const estimatedMs = startDate.getTime() + log.milestone * msPerHour;
           return { date: new Date(estimatedMs).toISOString(), isEstimated: true };
         }
       } else {
@@ -427,7 +446,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         if (totalFollowers > 0) {
           const timeSpan = endDate.getTime() - startDate.getTime();
           const msPerFollower = timeSpan / totalFollowers;
-          const estimatedMs = startDate.getTime() + (log.milestone * msPerFollower);
+          const estimatedMs = startDate.getTime() + log.milestone * msPerFollower;
           return { date: new Date(estimatedMs).toISOString(), isEstimated: true };
         }
       }
