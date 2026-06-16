@@ -384,6 +384,10 @@ export function hasDailyFollowerCron(history: { date: string; followers?: number
   return getCronFollowerHistoryForChart(history).length >= 3;
 }
 
+export function hasDailyHoursCron(history: { date: string; hours?: number }[] | undefined): boolean {
+  return (history || []).filter((row) => row.hours !== undefined).length >= 3;
+}
+
 export function resolveFollowerMilestoneDate(
   channelId: string,
   milestoneFollowers: number,
@@ -568,11 +572,21 @@ export function buildDailyBroadcastHoursMap(
   channelId: string,
   streamerHistory: { date: string; hours: number }[] = []
 ): Map<string, number> {
+  const kvDaily = kvHistoryToDailyMap(streamerHistory);
   const weeklyDaily = weeklyHoursToDailyMap(getManualWeeklyHoursHistory(channelId));
   const cumulativeDaily = cumulativeHoursToDailyMap(getManualCumulativeHoursHistory(channelId));
-  const kvDaily = kvHistoryToDailyMap(streamerHistory);
 
-  // Prefer archived weekly distribution; KV only fills gaps (no overwrite spikes).
+  if (hasDailyHoursCron(streamerHistory)) {
+    const merged = new Map(kvDaily);
+    for (const [day, hours] of mergeDailyMaps(cumulativeDaily, weeklyDaily)) {
+      if (!merged.has(day) || (merged.get(day) || 0) <= 0) {
+        merged.set(day, Math.min(MAX_DAILY_BROADCAST_HOURS, hours));
+      }
+    }
+    return merged;
+  }
+
+  // No daily cron — archived weekly distribution first, KV fills gaps.
   const merged = mergeDailyMaps(weeklyDaily);
   for (const [day, hours] of cumulativeDaily) {
     if (!merged.has(day) || (merged.get(day) || 0) <= 0) {
@@ -680,6 +694,9 @@ export function hasBroadcastActivityData(
   channelId: string,
   streamerHistory: { date: string; hours: number }[] = []
 ): boolean {
+  if (hasDailyHoursCron(streamerHistory)) {
+    return kvHistoryToDailyMap(streamerHistory).size > 0;
+  }
   const daily = buildDailyBroadcastHoursMap(channelId, streamerHistory);
   return daily.size > 0 || getManualWeeklyHoursHistory(channelId).length > 0;
 }
@@ -711,14 +728,19 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
     historyByDate.set(row.date, { ...row });
   });
 
-  manualHours.forEach((point) => {
-    const existing = historyByDate.get(point.date);
-    historyByDate.set(point.date, {
-      date: point.date,
-      hours: point.hours,
-      followers: existing?.followers,
+  const kvHoursSnapshots = (streamer.history || []).filter((row) => row.hours !== undefined).length;
+  const hasDailyHoursCron = kvHoursSnapshots >= 3;
+
+  if (!hasDailyHoursCron) {
+    manualHours.forEach((point) => {
+      const existing = historyByDate.get(point.date);
+      historyByDate.set(point.date, {
+        date: point.date,
+        hours: point.hours,
+        followers: existing?.followers,
+      });
     });
-  });
+  }
 
   const kvFollowerSnapshots = (streamer.history || []).filter(
     (row) => row.followers !== undefined && row.followers > 0
@@ -768,7 +790,11 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
       : getArchivedHistoryEntry(streamer.channelId)?.currentFollowers;
 
   const latestManualHours =
-    manualHours.length > 0 ? manualHours[manualHours.length - 1].hours : undefined;
+    hasDailyHoursCron
+      ? undefined
+      : manualHours.length > 0
+        ? manualHours[manualHours.length - 1].hours
+        : undefined;
 
   return {
     ...streamer,
