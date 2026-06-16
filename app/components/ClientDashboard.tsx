@@ -1037,6 +1037,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       debutRef
     );
     const hasManualFollowerHistory = manualFollowerHistory.length > 0;
+    const cronFollowerHistory = sanitizeFollowerHistoryForChart(
+      (streamer.history || [])
+        .filter((row) => row.followers !== undefined)
+        .map((row) => ({
+          date: row.date.slice(0, 10),
+          followers: row.followers!,
+        })),
+      debutRef
+    ).filter((point) => point.followers > 0);
+    const useCronFollowerHistory = cronFollowerHistory.length >= 3;
 
     followerMilestones.forEach((m) => {
       points.push({
@@ -1047,7 +1057,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     });
 
-    if (hasManualFollowerHistory) {
+    if (useCronFollowerHistory) {
+      cronFollowerHistory.forEach((point) => {
+        points.push({
+          date: parseHistoryDate(point.date),
+          followers: point.followers,
+          label: `${formatFollowers(point.followers)}`,
+          isMilestone: false,
+        });
+      });
+    } else if (hasManualFollowerHistory) {
       manualFollowerHistory.forEach((point) => {
         points.push({
           date: parseHistoryDate(point.date),
@@ -1068,7 +1087,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
-    if (!hasManualFollowerHistory && points.length < 2 && currentFollowers > 0) {
+    if (!useCronFollowerHistory && !hasManualFollowerHistory && points.length < 2 && currentFollowers > 0) {
       const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
       const hasSnapshot = points.some((p) => p.date.getTime() === snapshotDate.getTime());
 
@@ -1111,6 +1130,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     });
 
     if (
+      !useCronFollowerHistory &&
       !hasManualFollowerHistory &&
       streamer.totalLiveHours === 0 &&
       currentFollowers > 0

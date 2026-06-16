@@ -662,6 +662,9 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
 
   manualFollowers.forEach((point) => {
     const existing = historyByDate.get(point.date);
+    // Daily cron snapshots win — archive only fills dates cron never recorded.
+    if (existing?.followers !== undefined && existing.followers > 0) return;
+
     historyByDate.set(point.date, {
       date: point.date,
       hours: existing?.hours ?? streamer.totalLiveHours,
