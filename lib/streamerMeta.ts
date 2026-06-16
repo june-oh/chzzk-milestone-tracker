@@ -245,6 +245,29 @@ export function sanitizeHoursHistoryForChart(
   return result;
 }
 
+/** Remove scrape chart baselines — followers are not reset to 0 at debut. */
+export function sanitizeFollowerHistoryForChart(
+  points: ManualFollowerPoint[],
+  debutDate?: string
+): ManualFollowerPoint[] {
+  if (points.length === 0) return points;
+
+  let sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
+  const debutMs = debutDate ? parseDateOnlyMs(debutDate) : NaN;
+
+  if (Number.isFinite(debutMs)) {
+    sorted = sorted.filter(
+      (point) => !(point.followers === 0 && parseDateOnlyMs(point.date) < debutMs)
+    );
+  }
+
+  while (sorted.length >= 2 && sorted[0].followers === 0 && sorted[1].followers > 0) {
+    sorted = sorted.slice(1);
+  }
+
+  return sorted;
+}
+
 /** Cumulative broadcast hours built from archived weekly bars. */
 export function getManualCumulativeHoursHistory(
   channelId: string,
@@ -611,13 +634,18 @@ type EnrichableStreamer = {
   channelId: string;
   totalLiveHours: number;
   followerCount?: number;
+  firstLiveDate?: string;
   groupTag?: GroupTag;
   history?: StreamerHistoryRow[];
 };
 
 export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
   const groupTag = getGroupTag(streamer.channelId);
-  const manualFollowers = getManualFollowerHistory(streamer.channelId);
+  const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
+  const manualFollowers = sanitizeFollowerHistoryForChart(
+    getManualFollowerHistory(streamer.channelId),
+    debutRef
+  );
   const manualHours = getManualCumulativeHoursHistory(
     streamer.channelId,
     streamer.totalLiveHours
@@ -638,6 +666,8 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
   });
 
   manualFollowers.forEach((point) => {
+    if (point.followers <= 0) return;
+
     const existing = historyByDate.get(point.date);
     historyByDate.set(point.date, {
       date: point.date,

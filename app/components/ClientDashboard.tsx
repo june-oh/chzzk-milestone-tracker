@@ -24,6 +24,7 @@ import {
   hasArchivedFollowerHistory,
   hasArchivedHoursHistory,
   resolveBroadcastActivityEndDay,
+  sanitizeFollowerHistoryForChart,
   sanitizeHoursHistoryForChart,
   type BroadcastActivityRange,
 } from "@/lib/streamerMeta";
@@ -956,13 +957,15 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     );
     milestoneCount = Math.max(milestoneCount, Math.floor(maxObservedFollowers / 10000));
 
-    const manualFollowerHistory = getManualFollowerHistory(streamer.channelId);
+    const manualFollowerHistory = sanitizeFollowerHistoryForChart(
+      getManualFollowerHistory(streamer.channelId),
+      getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate)
+    );
+    const firstFollowerAnchor = manualFollowerHistory.find((point) => point.followers > 0);
     const anchors = [
-      ...(manualFollowerHistory.length > 0
-        ? [{ milestone: manualFollowerHistory[0].followers, date: manualFollowerHistory[0].date }]
-        : streamer.firstLiveDate && streamer.totalLiveHours > 0
-          ? [{ milestone: 0, date: streamer.firstLiveDate }]
-          : []),
+      ...(firstFollowerAnchor
+        ? [{ milestone: firstFollowerAnchor.followers, date: firstFollowerAnchor.date }]
+        : []),
       ...exactRecords,
       {
         milestone: followerCount,
@@ -1025,21 +1028,15 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     return list;
   };
 
-  // Generate monotonically increasing curve data starting from (firstLiveDate, 0) for followers
+  // Follower growth curve — never force 0 at debut (pre-debut followers are valid).
   const getFullFollowerHistoryData = (streamer: Streamer, followerMilestones: { milestone: number; date: string }[]) => {
     const points: { date: Date; followers: number; label: string; isMilestone: boolean }[] = [];
     const currentFollowers = streamer.followerCount || 0;
-    const manualFollowerHistory = getManualFollowerHistory(streamer.channelId);
-    const hasManualFollowerHistory = manualFollowerHistory.length > 0;
-
-    if (!hasManualFollowerHistory && streamer.firstLiveDate && streamer.totalLiveHours > 0) {
-      points.push({
-        date: parseSafeDate(streamer.firstLiveDate),
-        followers: 0,
-        label: "방송 시작일",
-        isMilestone: false,
-      });
-    }
+    const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
+    const manualFollowerHistory = sanitizeFollowerHistoryForChart(
+      getManualFollowerHistory(streamer.channelId),
+      debutRef
+    );
 
     followerMilestones.forEach((m) => {
       points.push({
@@ -1050,7 +1047,19 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     });
 
-    if (hasManualFollowerHistory) {
+    const historyRows =
+      streamer.history?.filter((row) => row.followers !== undefined && row.followers > 0) ?? [];
+
+    if (historyRows.length > 0) {
+      historyRows.forEach((h) => {
+        points.push({
+          date: parseHistoryDate(h.date),
+          followers: h.followers!,
+          label: `${formatFollowers(h.followers)}`,
+          isMilestone: false,
+        });
+      });
+    } else if (manualFollowerHistory.length > 0) {
       manualFollowerHistory.forEach((point) => {
         points.push({
           date: parseHistoryDate(point.date),
@@ -1059,19 +1068,9 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           isMilestone: false,
         });
       });
-    } else if (streamer.history && streamer.history.length > 0) {
-      streamer.history.forEach((h) => {
-        const hFollowers = h.followers !== undefined ? h.followers : (streamer.followerCount || 0);
-        points.push({
-          date: parseHistoryDate(h.date),
-          followers: hFollowers,
-          label: `${formatFollowers(hFollowers)}`,
-          isMilestone: false,
-        });
-      });
     }
 
-    if (!hasManualFollowerHistory && points.length < 2 && currentFollowers > 0) {
+    if (points.length < 2 && currentFollowers > 0) {
       const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
       const hasSnapshot = points.some((p) => p.date.getTime() === snapshotDate.getTime());
 
@@ -1114,13 +1113,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     });
 
     if (
-      !hasManualFollowerHistory &&
-      streamer.totalLiveHours === 0 &&
-      currentFollowers > 0
+      points.length < 2 &&
+      currentFollowers > 0 &&
+      streamer.totalLiveHours === 0
     ) {
-      const withoutZeroBaseline = uniquePoints.filter(
-        (p) => p.followers > 0 || (p.isMilestone && p.followers > 0)
-      );
+      const withoutZeroBaseline = uniquePoints.filter((p) => p.followers > 0);
 
       if (withoutZeroBaseline.length >= 2) {
         return withoutZeroBaseline;
