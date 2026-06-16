@@ -362,9 +362,17 @@ function distributeHoursEvenly(
 
   if (days.length === 0) return;
 
-  const perDay = totalHours / days.length;
-  for (const day of days) {
-    daily.set(day, (daily.get(day) || 0) + perDay);
+  let remaining = totalHours;
+  for (let index = 0; index < days.length; index++) {
+    const day = days[index];
+    const slotsLeft = days.length - index;
+    const room = MAX_DAILY_BROADCAST_HOURS - (daily.get(day) || 0);
+    if (room <= 0) continue;
+    const share = index === days.length - 1 ? remaining : Math.min(room, remaining / slotsLeft);
+    const applied = Math.min(room, share);
+    if (applied <= 0) continue;
+    daily.set(day, (daily.get(day) || 0) + applied);
+    remaining -= applied;
   }
 }
 
@@ -490,16 +498,13 @@ function mergeDailyMaps(...maps: Map<string, number>[]): Map<string, number> {
   return merged;
 }
 
-/** Build a day → broadcast hours map from archived weekly bars, cumulative points, and KV snapshots. */
+/** Build a day → broadcast hours map for activity charts (never scale to live API totals). */
 export function buildDailyBroadcastHoursMap(
   channelId: string,
-  streamerHistory: { date: string; hours: number }[] = [],
-  targetTotal?: number
+  streamerHistory: { date: string; hours: number }[] = []
 ): Map<string, number> {
   const weeklyDaily = weeklyHoursToDailyMap(getManualWeeklyHoursHistory(channelId));
-  const cumulativeDaily = cumulativeHoursToDailyMap(
-    getManualCumulativeHoursHistory(channelId, targetTotal)
-  );
+  const cumulativeDaily = cumulativeHoursToDailyMap(getManualCumulativeHoursHistory(channelId));
   const kvDaily = kvHistoryToDailyMap(streamerHistory);
 
   // Prefer archived weekly distribution; KV only fills gaps (no overwrite spikes).
@@ -516,6 +521,14 @@ export function buildDailyBroadcastHoursMap(
   }
 
   return merged;
+}
+
+function sumDailyHoursInRange(dailyMap: Map<string, number>, startDay: string, endDay: string): number {
+  let total = 0;
+  for (let current = startDay; current <= endDay; current = addUtcDays(current, 1)) {
+    total += dailyMap.get(current) || 0;
+  }
+  return Math.round(total * 10) / 10;
 }
 
 function getWeekStartMonday(dateStr: string): string {
@@ -557,14 +570,14 @@ export function resolveBroadcastActivityEndDay(
 export function getBroadcastActivityBars(
   channelId: string,
   streamerHistory: { date: string; hours: number }[] = [],
-  targetTotal?: number,
   range: BroadcastActivityRange = "7d",
   referenceEndDay?: string
-): BroadcastActivityBar[] {
+): { bars: BroadcastActivityBar[]; periodTotal: number } {
   const endDay = referenceEndDay || resolveBroadcastActivityEndDay(channelId, streamerHistory);
   const lookbackDays = range === "7d" ? 6 : range === "30d" ? 29 : 89;
   const startDay = addUtcDays(endDay, -lookbackDays);
-  const dailyMap = buildDailyBroadcastHoursMap(channelId, streamerHistory, targetTotal);
+  const dailyMap = buildDailyBroadcastHoursMap(channelId, streamerHistory);
+  const periodTotal = sumDailyHoursInRange(dailyMap, startDay, endDay);
 
   if (range === "90d") {
     const weekMap = new Map<string, number>();
@@ -573,13 +586,16 @@ export function getBroadcastActivityBars(
       weekMap.set(weekKey, (weekMap.get(weekKey) || 0) + (dailyMap.get(current) || 0));
     }
 
-    return Array.from(weekMap.entries())
+    const bars = Array.from(weekMap.entries())
+      .filter(([, hours]) => hours > 0)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([key, hours]) => ({
         key,
         label: formatActivityWeekLabel(key),
         hours: Math.round(hours * 10) / 10,
       }));
+
+    return { bars, periodTotal };
   }
 
   const bars: BroadcastActivityBar[] = [];
@@ -592,7 +608,7 @@ export function getBroadcastActivityBars(
     });
   }
 
-  return bars;
+  return { bars, periodTotal };
 }
 
 export function hasBroadcastActivityData(

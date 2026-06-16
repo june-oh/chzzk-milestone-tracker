@@ -1778,16 +1778,23 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     ];
 
     const activeOption = rangeOptions.find((option) => option.range === broadcastActivityRange) ?? rangeOptions[0];
-    const bars = getBroadcastActivityBars(
+    const { bars, periodTotal } = getBroadcastActivityBars(
       streamer.channelId,
       streamer.history,
-      streamer.totalLiveHours,
       broadcastActivityRange,
       endDay
     );
+
+    if (bars.length === 0) {
+      return (
+        <div className="w-full rounded-[24px] border border-dashed border-hairline bg-neutral-50 px-6 py-10 text-center text-[14px] font-medium text-neutral-500">
+          선택한 기간에 표시할 방송 활동 기록이 없습니다.
+        </div>
+      );
+    }
+
     const maxHours = Math.max(...bars.map((bar) => bar.hours), 1);
-    const yMax = Math.ceil(maxHours * 1.15);
-    const totalHours = bars.reduce((sum, bar) => sum + bar.hours, 0);
+    const yMax = Math.max(Math.ceil(maxHours * 1.08), 8);
 
     return (
       <div className="space-y-4">
@@ -1818,7 +1825,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           <div className="text-right">
             <div className="font-mono text-[10px] font-bold text-neutral-400 uppercase">기간 합계</div>
             <div className="font-mono text-[16px] font-extrabold text-black">
-              {Math.round(totalHours).toLocaleString()}시간
+              {periodTotal.toLocaleString()}시간
             </div>
           </div>
         </div>
