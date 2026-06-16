@@ -531,23 +531,34 @@ function cumulativeHoursToDailyMap(cumulative: ManualHoursPoint[]): Map<string, 
 function kvHistoryToDailyMap(history: { date: string; hours: number }[]): Map<string, number> {
   const daily = new Map<string, number>();
   const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  if (sorted.length === 0) return daily;
 
+  let anchorIndex = 0;
   for (let index = 1; index < sorted.length; index++) {
-    const prev = sorted[index - 1];
+    const anchor = sorted[anchorIndex];
     const curr = sorted[index];
-    const delta = curr.hours - prev.hours;
-    if (delta <= 0) continue;
+    if (curr.hours === anchor.hours) continue;
 
-    const gapDays =
-      (parseDateOnlyMs(dayKey(curr.date)) - parseDateOnlyMs(dayKey(prev.date))) / 86_400_000;
-    const startDay = addUtcDays(dayKey(prev.date), 1);
+    const delta = curr.hours - anchor.hours;
+    if (delta <= 0) {
+      anchorIndex = index;
+      continue;
+    }
+
     const endDay = dayKey(curr.date);
+    const startDay = addUtcDays(dayKey(anchor.date), 1);
 
-    if (gapDays <= 1 && delta <= MAX_DAILY_BROADCAST_HOURS) {
+    // First hours off zero — attribute to the change day only (avoid smearing pre-debut zeros).
+    if (anchor.hours === 0 || startDay > endDay) {
+      assignDailyHours(daily, endDay, delta);
+    } else if (startDay === endDay) {
       assignDailyHours(daily, endDay, delta);
     } else {
+      // Spread across days between snapshots when cumulative was flat (API catch-up lag).
       spreadHoursAcrossDays(daily, startDay, endDay, delta);
     }
+
+    anchorIndex = index;
   }
 
   return daily;
