@@ -24,6 +24,7 @@ import {
   hasArchivedFollowerHistory,
   hasArchivedHoursHistory,
   resolveBroadcastActivityEndDay,
+  enforceMonotonicFollowerPoints,
   sanitizeFollowerHistoryForChart,
   sanitizeHoursHistoryForChart,
   type BroadcastActivityRange,
@@ -1140,12 +1141,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       );
 
       if (withoutZeroBaseline.length >= 2) {
-        return withoutZeroBaseline;
+        return enforceMonotonicFollowerPoints(withoutZeroBaseline);
       }
 
       const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
       const previousDate = new Date(snapshotDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return [
+      return enforceMonotonicFollowerPoints([
         {
           date: previousDate,
           followers: currentFollowers,
@@ -1158,10 +1159,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           label: `${formatFollowers(currentFollowers)}`,
           isMilestone: false,
         },
-      ];
+      ]);
     }
 
-    return uniquePoints;
+    return enforceMonotonicFollowerPoints(uniquePoints);
   };
 
   // Helper date utilities

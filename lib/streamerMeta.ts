@@ -268,6 +268,15 @@ export function sanitizeFollowerHistoryForChart(
   return sorted;
 }
 
+/** Follower totals should not dip on the chart when a bad archive point slips in. */
+export function enforceMonotonicFollowerPoints<T extends { followers: number }>(points: T[]): T[] {
+  let peak = 0;
+  return points.map((point) => {
+    peak = Math.max(peak, point.followers);
+    return { ...point, followers: peak };
+  });
+}
+
 /** Cumulative broadcast hours built from archived weekly bars. */
 export function getManualCumulativeHoursHistory(
   channelId: string,
@@ -660,17 +669,24 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
     });
   });
 
-  manualFollowers.forEach((point) => {
-    const existing = historyByDate.get(point.date);
-    // Daily cron snapshots win — archive only fills dates cron never recorded.
-    if (existing?.followers !== undefined && existing.followers > 0) return;
+  const kvFollowerSnapshots = (streamer.history || []).filter(
+    (row) => row.followers !== undefined && row.followers > 0
+  ).length;
+  const hasDailyFollowerCron = kvFollowerSnapshots >= 3;
 
-    historyByDate.set(point.date, {
-      date: point.date,
-      hours: existing?.hours ?? streamer.totalLiveHours,
-      followers: point.followers,
+  if (!hasDailyFollowerCron) {
+    manualFollowers.forEach((point) => {
+      const existing = historyByDate.get(point.date);
+      // Daily cron snapshots win — archive only fills dates cron never recorded.
+      if (existing?.followers !== undefined && existing.followers > 0) return;
+
+      historyByDate.set(point.date, {
+        date: point.date,
+        hours: existing?.hours ?? streamer.totalLiveHours,
+        followers: point.followers,
+      });
     });
-  });
+  }
 
   const mergedHistory =
     manualFollowers.length > 0 || manualHours.length > 0 || historyByDate.size > 0
