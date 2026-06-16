@@ -268,12 +268,14 @@ export function sanitizeFollowerHistoryForChart(
   return sorted;
 }
 
-/** Follower totals should not dip on the chart when a bad archive point slips in. */
-export function enforceMonotonicFollowerPoints<T extends { followers: number }>(points: T[]): T[] {
-  let peak = 0;
-  return points.map((point) => {
-    peak = Math.max(peak, point.followers);
-    return { ...point, followers: peak };
+/** Drop isolated cron spikes (e.g. stale archive value written before the next snapshot). */
+export function dropCorruptedFollowerSnapshots(
+  points: ManualFollowerPoint[]
+): ManualFollowerPoint[] {
+  const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
+  return sorted.filter((point, index, arr) => {
+    const next = arr[index + 1];
+    return !(next && point.followers > next.followers);
   });
 }
 
@@ -677,7 +679,6 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
   if (!hasDailyFollowerCron) {
     manualFollowers.forEach((point) => {
       const existing = historyByDate.get(point.date);
-      // Daily cron snapshots win — archive only fills dates cron never recorded.
       if (existing?.followers !== undefined && existing.followers > 0) return;
 
       historyByDate.set(point.date, {
@@ -686,6 +687,24 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
         followers: point.followers,
       });
     });
+  } else {
+    const cleanedFollowers = dropCorruptedFollowerSnapshots(
+      Array.from(historyByDate.values())
+        .filter((row) => row.followers !== undefined)
+        .map((row) => ({
+          date: row.date.slice(0, 10),
+          followers: row.followers!,
+        }))
+    );
+    const keptDates = new Set(cleanedFollowers.map((point) => point.date));
+
+    for (const row of historyByDate.values()) {
+      const dateKey = row.date.slice(0, 10);
+      if (row.followers === undefined) continue;
+      if (!keptDates.has(dateKey)) {
+        delete row.followers;
+      }
+    }
   }
 
   const mergedHistory =
@@ -693,8 +712,9 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
       ? Array.from(historyByDate.values()).sort((a, b) => a.date.localeCompare(b.date))
       : streamer.history;
 
-  const latestManualFollowers =
-    manualFollowers.length > 0
+  const latestManualFollowers = hasDailyFollowerCron
+    ? undefined
+    : manualFollowers.length > 0
       ? manualFollowers[manualFollowers.length - 1].followers
       : getArchivedHistoryEntry(streamer.channelId)?.currentFollowers;
 

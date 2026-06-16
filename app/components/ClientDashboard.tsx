@@ -24,7 +24,7 @@ import {
   hasArchivedFollowerHistory,
   hasArchivedHoursHistory,
   resolveBroadcastActivityEndDay,
-  enforceMonotonicFollowerPoints,
+  dropCorruptedFollowerSnapshots,
   sanitizeFollowerHistoryForChart,
   sanitizeHoursHistoryForChart,
   type BroadcastActivityRange,
@@ -1038,14 +1038,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       debutRef
     );
     const hasManualFollowerHistory = manualFollowerHistory.length > 0;
-    const cronFollowerHistory = sanitizeFollowerHistoryForChart(
-      (streamer.history || [])
-        .filter((row) => row.followers !== undefined)
-        .map((row) => ({
-          date: row.date.slice(0, 10),
-          followers: row.followers!,
-        })),
-      debutRef
+    const cronFollowerHistory = dropCorruptedFollowerSnapshots(
+      sanitizeFollowerHistoryForChart(
+        (streamer.history || [])
+          .filter((row) => row.followers !== undefined)
+          .map((row) => ({
+            date: row.date.slice(0, 10),
+            followers: row.followers!,
+          })),
+        debutRef
+      )
     ).filter((point) => point.followers > 0);
     const useCronFollowerHistory = cronFollowerHistory.length >= 3;
 
@@ -1141,12 +1143,12 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       );
 
       if (withoutZeroBaseline.length >= 2) {
-        return enforceMonotonicFollowerPoints(withoutZeroBaseline);
+        return withoutZeroBaseline;
       }
 
       const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
       const previousDate = new Date(snapshotDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return enforceMonotonicFollowerPoints([
+      return [
         {
           date: previousDate,
           followers: currentFollowers,
@@ -1159,10 +1161,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           label: `${formatFollowers(currentFollowers)}`,
           isMilestone: false,
         },
-      ]);
+      ];
     }
 
-    return enforceMonotonicFollowerPoints(uniquePoints);
+    return uniquePoints;
   };
 
   // Helper date utilities
