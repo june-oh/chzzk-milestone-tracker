@@ -293,12 +293,18 @@ function projectSeriesCrossing(
   return null;
 }
 
-export function getSoftconHoursMilestoneDate(channelId: string, milestoneHours: number): string | null {
+export function getSoftconHoursMilestoneDate(
+  channelId: string,
+  milestoneHours: number,
+  targetTotal?: number,
+  debutDate?: string
+): string | null {
   const entry = getSoftconEntry(channelId);
-  const history = getManualCumulativeHoursHistory(
-    channelId,
-    entry?.cumulativeHours?.[entry.cumulativeHours.length - 1]?.hours
-  );
+  const resolvedTarget = targetTotal ?? entry?.cumulativeHours?.[entry.cumulativeHours.length - 1]?.hours;
+  let history = getManualCumulativeHoursHistory(channelId, resolvedTarget);
+  if (debutDate) {
+    history = sanitizeHoursHistoryForChart(history, debutDate, resolvedTarget);
+  }
   if (history.length === 0) return null;
   return projectSeriesCrossing(
     history.map((point) => ({ date: point.date, value: point.hours })),

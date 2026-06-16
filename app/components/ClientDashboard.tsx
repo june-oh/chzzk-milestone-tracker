@@ -401,9 +401,19 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       return { date: verified.date, isEstimated: false };
     }
 
+    const matchingStreamer = streamers.find((s) => s.channelId === log.channelId);
+    const debutRef = matchingStreamer
+      ? getDebutReferenceDate(matchingStreamer.channelId, matchingStreamer.firstLiveDate) ?? undefined
+      : undefined;
+
     const softconDate =
       type === "hours"
-        ? getSoftconHoursMilestoneDate(log.channelId, log.milestone)
+        ? getSoftconHoursMilestoneDate(
+            log.channelId,
+            log.milestone,
+            matchingStreamer?.totalLiveHours,
+            debutRef
+          )
         : getSoftconFollowerMilestoneDate(log.channelId, log.milestone);
     if (softconDate) {
       return { date: softconDate, isEstimated: false };
@@ -413,7 +423,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       return { date: log.date, isEstimated: false };
     }
 
-    const matchingStreamer = streamers.find((s) => s.channelId === log.channelId);
     if (!matchingStreamer) {
       return { date: log.date, isEstimated: false };
     }
@@ -428,7 +437,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     // No recorded date — estimate using linear interpolation from debut reference
     try {
-      const debutRef = getDebutReferenceDate(matchingStreamer.channelId, matchingStreamer.firstLiveDate);
       if (!debutRef) throw new Error("no debut reference");
       const startDate = parseSafeDate(debutRef);
       const endDate = parseSafeDate(matchingStreamer.lastUpdated || new Date().toISOString());
@@ -767,11 +775,38 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const getStreamerMilestones = (streamer: Streamer) => {
     const milestoneCount = Math.floor(streamer.totalLiveHours / 1000);
     const list = [];
+    const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate) ?? undefined;
+
+    const pushEstimatedHoursMilestone = (milestoneVal: number) => {
+      try {
+        if (!debutRef) throw new Error("no debut reference");
+        const startDate = parseSafeDate(debutRef);
+        const endDate = parseSafeDate(streamer.lastUpdated || new Date().toISOString());
+        const totalHours = streamer.totalLiveHours;
+        if (totalHours > 0) {
+          const timeSpan = endDate.getTime() - startDate.getTime();
+          const msPerHour = timeSpan / totalHours;
+          const estimatedMs = startDate.getTime() + milestoneVal * msPerHour;
+          list.push({
+            milestone: milestoneVal,
+            date: new Date(estimatedMs).toISOString(),
+            isEstimated: true,
+          });
+        }
+      } catch (err) {
+        console.warn("Milestone estimation failed:", err);
+      }
+    };
 
     for (let m = 1; m <= milestoneCount; m++) {
       const milestoneVal = m * 1000;
 
-      const softconDate = getSoftconHoursMilestoneDate(streamer.channelId, milestoneVal);
+      const softconDate = getSoftconHoursMilestoneDate(
+        streamer.channelId,
+        milestoneVal,
+        streamer.totalLiveHours,
+        debutRef
+      );
       if (softconDate) {
         list.push({
           milestone: milestoneVal,
@@ -792,27 +827,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           date: exactRecord.date,
           isEstimated: false,
         });
-      } else if (!hasSoftconHoursHistory(streamer.channelId)) {
-        // Fallback: estimate date using linear interpolation from debut reference
-        try {
-          const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
-          if (!debutRef) throw new Error("no debut reference");
-          const startDate = parseSafeDate(debutRef);
-          const endDate = parseSafeDate(streamer.lastUpdated || new Date().toISOString());
-          const totalHours = streamer.totalLiveHours;
-          if (totalHours > 0) {
-            const timeSpan = endDate.getTime() - startDate.getTime();
-            const msPerHour = timeSpan / totalHours;
-            const estimatedMs = startDate.getTime() + milestoneVal * msPerHour;
-            list.push({
-              milestone: milestoneVal,
-              date: new Date(estimatedMs).toISOString(),
-              isEstimated: true,
-            });
-          }
-        } catch (err) {
-          console.warn("Milestone estimation failed:", err);
-        }
+      } else {
+        pushEstimatedHoursMilestone(milestoneVal);
       }
     }
 
@@ -974,10 +990,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         continue;
       }
 
-      if (hasSoftconFollowerHistory(streamer.channelId)) {
-        continue;
-      }
-
       // Estimate missing milestones between adjacent known anchors, not across the full lifetime.
       const lowerAnchor = [...anchors].reverse().find((point) => point.milestone < milestoneVal);
       const upperAnchor = anchors.find((point) => point.milestone > milestoneVal);
@@ -994,7 +1006,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         list.push({
           milestone: milestoneVal,
           date: new Date(estimatedMs).toISOString(),
-          isEstimated: true,
+          isEstimated: !hasSoftconFollowerHistory(streamer.channelId),
         });
       } catch (err) {
         console.warn("Follower milestone estimation failed:", err);
