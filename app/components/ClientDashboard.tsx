@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import confetti from "canvas-confetti";
 import Image from "next/image";
 import { Sparkles, Trophy, Calendar, Heart, Flame, ArrowRight, RotateCcw, ExternalLink, X, TrendingUp, ChevronLeft, Users, Check, ArrowDown, ArrowUp } from "lucide-react";
-import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   getDebutReferenceDate,
   getNamuwikiUrl,
@@ -17,11 +17,15 @@ import {
   GROUP_FILTER_ORDER,
   getManualCumulativeHoursHistory,
   getManualFollowerHistory,
+  getBroadcastActivityBars,
   getSoftconFollowerMilestoneDate,
   getSoftconHoursMilestoneDate,
+  hasBroadcastActivityData,
   hasSoftconFollowerHistory,
   hasSoftconHoursHistory,
+  resolveBroadcastActivityEndDay,
   sanitizeHoursHistoryForChart,
+  type BroadcastActivityRange,
 } from "@/lib/streamerMeta";
 import type { GroupTag } from "@/lib/streamerMeta";
 import { resolveCardPalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
@@ -1746,6 +1750,113 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     );
   };
 
+  const renderBroadcastActivityCharts = (streamer: Streamer) => {
+    if (!hasBroadcastActivityData(streamer.channelId, streamer.history)) {
+      return (
+        <div className="w-full rounded-[24px] border border-dashed border-hairline bg-neutral-50 px-6 py-10 text-center text-[14px] font-medium text-neutral-500">
+          Softcon 방송 기록이 수집되면 최근 활동 막대 그래프가 표시됩니다.
+        </div>
+      );
+    }
+
+    const accentHex = getStreamerAccentHex(streamer, extractedPalettes);
+    const endDay = resolveBroadcastActivityEndDay(
+      streamer.channelId,
+      streamer.history,
+      streamer.lastUpdated
+    );
+
+    const panels: { range: BroadcastActivityRange; title: string; subtitle: string }[] = [
+      { range: "7d", title: "최근 7일", subtitle: "일별 방송 시간" },
+      { range: "30d", title: "최근 30일", subtitle: "일별 방송 시간" },
+      { range: "90d", title: "최근 90일", subtitle: "주별 방송 시간" },
+    ];
+
+    return (
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {panels.map(({ range, title, subtitle }) => {
+          const bars = getBroadcastActivityBars(
+            streamer.channelId,
+            streamer.history,
+            streamer.totalLiveHours,
+            range,
+            endDay
+          );
+          const maxHours = Math.max(...bars.map((bar) => bar.hours), 1);
+          const yMax = Math.ceil(maxHours * 1.15);
+          const totalHours = bars.reduce((sum, bar) => sum + bar.hours, 0);
+
+          return (
+            <div
+              key={range}
+              className="rounded-[24px] border border-hairline-soft bg-neutral-50 p-4 flex flex-col gap-3 min-h-[280px]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">
+                    {subtitle}
+                  </div>
+                  <h4 className="font-sans text-[16px] font-bold text-black mt-0.5">{title}</h4>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="font-mono text-[10px] font-bold text-neutral-400 uppercase">합계</div>
+                  <div className="font-mono text-[14px] font-extrabold text-black">
+                    {Math.round(totalHours).toLocaleString()}h
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-[220px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={bars} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="#e5e5e5" strokeDasharray="4 4" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
+                      tickMargin={8}
+                      interval={range === "30d" ? 4 : range === "90d" ? 1 : 0}
+                      minTickGap={range === "30d" ? 8 : 4}
+                    />
+                    <YAxis
+                      domain={[0, yMax]}
+                      tick={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
+                      tickFormatter={(value) => `${value}h`}
+                      width={42}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const item = payload[0].payload as { label: string; hours: number };
+                        return (
+                          <div className="rounded-[10px] border border-black bg-white px-3 py-2 text-left shadow-sm">
+                            <div className="font-mono text-[11px] font-bold text-neutral-400">{item.label}</div>
+                            <div className="mt-1 font-mono text-[14px] font-extrabold text-black">
+                              {item.hours.toLocaleString()}시간
+                            </div>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="hours" radius={[6, 6, 0, 0]} maxBarSize={range === "30d" ? 18 : 36}>
+                      {bars.map((bar) => (
+                        <Cell
+                          key={`${range}-${bar.key}`}
+                          fill={bar.hours > 0 ? accentHex : "#d4d4d4"}
+                          fillOpacity={bar.hours > 0 ? 0.92 : 0.35}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderFullFollowerHistoryChart = (streamer: Streamer) => {
     const followerMilestones = getStreamerFollowerMilestones(streamer);
     const chartPoints = getFullFollowerHistoryData(streamer, []);
@@ -2379,6 +2490,29 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <div className="bg-neutral-50 p-4 rounded-2xl border border-hairline-soft text-[13px] text-neutral-600 leading-relaxed text-center font-medium">
                 ✨ 데뷔일로부터의 일대기를 담은 방송 누적 성장 곡선입니다. 원형 노드 점은 해당 스트리머가 매 1,000시간 마일스톤 고지를 넘어선 순간들을 가리킵니다.
               </div>
+            </div>
+          </div>
+
+          {/* Recent broadcast activity bar charts */}
+          <div className="bg-white border border-hairline rounded-[32px] p-6 md:p-8 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-hairline-soft pb-4">
+              <div>
+                <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-400 uppercase">
+                  BROADCAST ACTIVITY (BAR)
+                </span>
+                <h3 className="font-sans text-[22px] font-bold text-black tracking-tight mt-0.5">
+                  최근 방송 활동 막대 그래프
+                </h3>
+              </div>
+              <div className="text-[12px] font-medium text-neutral-500">
+                Softcon 주간/일별 기록 + 최근 스냅샷 기준
+              </div>
+            </div>
+
+            {renderBroadcastActivityCharts(selectedStreamer)}
+
+            <div className="bg-neutral-50 p-4 rounded-2xl border border-hairline-soft text-[13px] text-neutral-600 leading-relaxed text-center font-medium">
+              ✨ 최근 7일·30일은 하루 단위, 90일은 주 단위로 방송 시간을 보여줍니다. Softcon 주간 막대는 해당 기간 일수로 분배해 표시합니다.
             </div>
           </div>
 

@@ -321,6 +321,243 @@ export function getSoftconFollowerMilestoneDate(channelId: string, milestoneFoll
   );
 }
 
+export type BroadcastActivityBar = {
+  key: string;
+  label: string;
+  hours: number;
+};
+
+export type BroadcastActivityRange = "7d" | "30d" | "90d";
+
+function dayKey(dateStr: string): string {
+  return dateStr.slice(0, 10);
+}
+
+function addUtcDays(dateStr: string, days: number): string {
+  const ms = parseDateOnlyMs(dayKey(dateStr)) + days * 86_400_000;
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function medianGapDays(gaps: number[]): number {
+  const positive = gaps.filter((gap) => gap > 0);
+  if (positive.length === 0) return 7;
+  const sorted = [...positive].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+function distributeHoursEvenly(
+  startDay: string,
+  endDay: string,
+  totalHours: number,
+  daily: Map<string, number>
+) {
+  if (totalHours <= 0 || startDay > endDay) return;
+
+  const days: string[] = [];
+  let current = startDay;
+  while (current <= endDay) {
+    days.push(current);
+    current = addUtcDays(current, 1);
+  }
+
+  if (days.length === 0) return;
+
+  const perDay = totalHours / days.length;
+  for (const day of days) {
+    daily.set(day, (daily.get(day) || 0) + perDay);
+  }
+}
+
+function weeklyHoursToDailyMap(weekly: ManualWeeklyHoursPoint[]): Map<string, number> {
+  const daily = new Map<string, number>();
+  const sorted = [...weekly].sort((a, b) => a.date.localeCompare(b.date));
+  if (sorted.length === 0) return daily;
+
+  const gaps = sorted.slice(1).map((point, index) => {
+    const prev = parseDateOnlyMs(dayKey(sorted[index].date));
+    const curr = parseDateOnlyMs(dayKey(point.date));
+    return (curr - prev) / 86_400_000;
+  });
+  const typicalGap = medianGapDays(gaps);
+
+  if (typicalGap <= 2) {
+    for (const point of sorted) {
+      const key = dayKey(point.date);
+      daily.set(key, Math.max(daily.get(key) || 0, point.weeklyHours));
+    }
+    return daily;
+  }
+
+  for (let index = 0; index < sorted.length; index++) {
+    const periodEnd = dayKey(sorted[index].date);
+    const periodStart =
+      index === 0
+        ? addUtcDays(periodEnd, -Math.max(1, Math.round(typicalGap)) + 1)
+        : addUtcDays(dayKey(sorted[index - 1].date), 1);
+    distributeHoursEvenly(periodStart, periodEnd, sorted[index].weeklyHours, daily);
+  }
+
+  return daily;
+}
+
+function cumulativeHoursToDailyMap(cumulative: ManualHoursPoint[]): Map<string, number> {
+  const daily = new Map<string, number>();
+  const sorted = [...cumulative].sort((a, b) => a.date.localeCompare(b.date));
+
+  for (let index = 1; index < sorted.length; index++) {
+    const prev = sorted[index - 1];
+    const curr = sorted[index];
+    const delta = curr.hours - prev.hours;
+    if (delta <= 0) continue;
+
+    const gapDays =
+      (parseDateOnlyMs(dayKey(curr.date)) - parseDateOnlyMs(dayKey(prev.date))) / 86_400_000;
+    if (gapDays <= 1.5) {
+      const key = dayKey(curr.date);
+      daily.set(key, Math.max(daily.get(key) || 0, delta));
+    } else if (gapDays <= 8) {
+      distributeHoursEvenly(addUtcDays(dayKey(prev.date), 1), dayKey(curr.date), delta, daily);
+    }
+  }
+
+  return daily;
+}
+
+function kvHistoryToDailyMap(history: { date: string; hours: number }[]): Map<string, number> {
+  const daily = new Map<string, number>();
+  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+
+  for (let index = 1; index < sorted.length; index++) {
+    const prev = sorted[index - 1];
+    const curr = sorted[index];
+    const delta = curr.hours - prev.hours;
+    if (delta > 0) {
+      const key = dayKey(curr.date);
+      daily.set(key, Math.max(daily.get(key) || 0, delta));
+    }
+  }
+
+  return daily;
+}
+
+function mergeDailyMaps(...maps: Map<string, number>[]): Map<string, number> {
+  const merged = new Map<string, number>();
+
+  for (const map of maps) {
+    for (const [day, hours] of map) {
+      if (hours > 0) {
+        merged.set(day, Math.max(merged.get(day) || 0, hours));
+      }
+    }
+  }
+
+  return merged;
+}
+
+/** Build a day → broadcast hours map from Softcon weekly bars, cumulative points, and KV snapshots. */
+export function buildDailyBroadcastHoursMap(
+  channelId: string,
+  streamerHistory: { date: string; hours: number }[] = [],
+  targetTotal?: number
+): Map<string, number> {
+  const weeklyDaily = weeklyHoursToDailyMap(getManualWeeklyHoursHistory(channelId));
+  const cumulativeDaily = cumulativeHoursToDailyMap(
+    getManualCumulativeHoursHistory(channelId, targetTotal)
+  );
+  const kvDaily = kvHistoryToDailyMap(streamerHistory);
+
+  const merged = mergeDailyMaps(weeklyDaily, cumulativeDaily);
+  for (const [day, hours] of kvDaily) {
+    if (hours > 0) merged.set(day, hours);
+  }
+
+  return merged;
+}
+
+function getWeekStartMonday(dateStr: string): string {
+  const date = new Date(parseDateOnlyMs(dayKey(dateStr)));
+  const weekday = date.getUTCDay();
+  const diff = weekday === 0 ? -6 : 1 - weekday;
+  date.setUTCDate(date.getUTCDate() + diff);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatActivityDayLabel(dateStr: string): string {
+  const [, month, day] = dayKey(dateStr).split("-");
+  return `${month}/${day}`;
+}
+
+function formatActivityWeekLabel(weekStart: string): string {
+  const end = addUtcDays(weekStart, 6);
+  return `${formatActivityDayLabel(weekStart)}~${formatActivityDayLabel(end)}`;
+}
+
+export function resolveBroadcastActivityEndDay(
+  channelId: string,
+  streamerHistory: { date: string; hours: number }[] = [],
+  lastUpdated?: string
+): string {
+  const candidates = [
+    lastUpdated ? dayKey(lastUpdated) : "",
+    ...getManualWeeklyHoursHistory(channelId).map((point) => dayKey(point.date)),
+    ...streamerHistory.map((point) => dayKey(point.date)),
+  ].filter(Boolean);
+
+  if (candidates.length === 0) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return candidates.sort().at(-1)!;
+}
+
+export function getBroadcastActivityBars(
+  channelId: string,
+  streamerHistory: { date: string; hours: number }[] = [],
+  targetTotal?: number,
+  range: BroadcastActivityRange = "7d",
+  referenceEndDay?: string
+): BroadcastActivityBar[] {
+  const endDay = referenceEndDay || resolveBroadcastActivityEndDay(channelId, streamerHistory);
+  const lookbackDays = range === "7d" ? 6 : range === "30d" ? 29 : 89;
+  const startDay = addUtcDays(endDay, -lookbackDays);
+  const dailyMap = buildDailyBroadcastHoursMap(channelId, streamerHistory, targetTotal);
+
+  if (range === "90d") {
+    const weekMap = new Map<string, number>();
+    for (let current = startDay; current <= endDay; current = addUtcDays(current, 1)) {
+      const weekKey = getWeekStartMonday(current);
+      weekMap.set(weekKey, (weekMap.get(weekKey) || 0) + (dailyMap.get(current) || 0));
+    }
+
+    return Array.from(weekMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, hours]) => ({
+        key,
+        label: formatActivityWeekLabel(key),
+        hours: Math.round(hours * 10) / 10,
+      }));
+  }
+
+  const bars: BroadcastActivityBar[] = [];
+  for (let current = startDay; current <= endDay; current = addUtcDays(current, 1)) {
+    bars.push({
+      key: current,
+      label: formatActivityDayLabel(current),
+      hours: Math.round((dailyMap.get(current) || 0) * 10) / 10,
+    });
+  }
+
+  return bars;
+}
+
+export function hasBroadcastActivityData(
+  channelId: string,
+  streamerHistory: { date: string; hours: number }[] = []
+): boolean {
+  const daily = buildDailyBroadcastHoursMap(channelId, streamerHistory);
+  return daily.size > 0 || getManualWeeklyHoursHistory(channelId).length > 0;
+}
+
 type StreamerHistoryRow = {
   date: string;
   hours: number;
