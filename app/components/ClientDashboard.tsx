@@ -855,8 +855,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       streamer.totalLiveHours
     );
     const hasManualHoursHistory = manualHoursHistory.length > 0;
+    const kvHourRows = (streamer.history || []).filter((row) => Number.isFinite(row.hours));
+    const useKvHourHistory = kvHourRows.length >= 2;
 
-    if (!hasManualHoursHistory && debutRef) {
+    if (!useKvHourHistory && !hasManualHoursHistory && debutRef) {
       points.push({
         date: parseSafeDate(debutRef),
         hours: 0,
@@ -865,7 +867,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
-    if (!hasManualHoursHistory) {
+    if (!useKvHourHistory && !hasManualHoursHistory) {
       streamerMilestones.forEach((m) => {
         points.push({
           date: parseSafeDate(m.date),
@@ -876,7 +878,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
-    if (hasManualHoursHistory) {
+    if (useKvHourHistory) {
+      kvHourRows.forEach((row) => {
+        points.push({
+          date: parseHistoryDate(row.date),
+          hours: row.hours,
+          label: `${Math.round(row.hours).toLocaleString()}시간`,
+          isMilestone: false,
+        });
+      });
+    } else if (hasManualHoursHistory) {
       manualHoursHistory.forEach((point) => {
         points.push({
           date: parseHistoryDate(point.date),
@@ -1112,36 +1123,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       uniquePoints.push(p);
     });
 
-    if (
-      points.length < 2 &&
-      currentFollowers > 0 &&
-      streamer.totalLiveHours === 0
-    ) {
-      const withoutZeroBaseline = uniquePoints.filter((p) => p.followers > 0);
-
-      if (withoutZeroBaseline.length >= 2) {
-        return withoutZeroBaseline;
-      }
-
-      const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
-      const previousDate = new Date(snapshotDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return [
-        {
-          date: previousDate,
-          followers: currentFollowers,
-          label: `${formatFollowers(currentFollowers)} (기준값)`,
-          isMilestone: false,
-        },
-        {
-          date: snapshotDate,
-          followers: currentFollowers,
-          label: `${formatFollowers(currentFollowers)}`,
-          isMilestone: false,
-        },
-      ];
-    }
-
-    return uniquePoints;
+    let followerPeak = 0;
+    return uniquePoints.map((point) => {
+      followerPeak = Math.max(followerPeak, point.followers);
+      return { ...point, followers: followerPeak };
+    });
   };
 
   // Helper date utilities

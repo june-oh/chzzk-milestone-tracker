@@ -651,15 +651,21 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
     streamer.totalLiveHours
   );
   const historyByDate = new Map<string, StreamerHistoryRow>();
+  const kvDates = new Set<string>();
 
   (streamer.history || []).forEach((row) => {
-    historyByDate.set(row.date, { ...row });
+    const dateKey = row.date.slice(0, 10);
+    kvDates.add(dateKey);
+    historyByDate.set(dateKey, { ...row, date: dateKey });
   });
 
   manualHours.forEach((point) => {
-    const existing = historyByDate.get(point.date);
-    historyByDate.set(point.date, {
-      date: point.date,
+    const dateKey = point.date.slice(0, 10);
+    if (kvDates.has(dateKey)) return;
+
+    const existing = historyByDate.get(dateKey);
+    historyByDate.set(dateKey, {
+      date: dateKey,
       hours: point.hours,
       followers: existing?.followers,
     });
@@ -668,9 +674,12 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
   manualFollowers.forEach((point) => {
     if (point.followers <= 0) return;
 
-    const existing = historyByDate.get(point.date);
-    historyByDate.set(point.date, {
-      date: point.date,
+    const dateKey = point.date.slice(0, 10);
+    if (kvDates.has(dateKey)) return;
+
+    const existing = historyByDate.get(dateKey);
+    historyByDate.set(dateKey, {
+      date: dateKey,
       hours: existing?.hours ?? streamer.totalLiveHours,
       followers: point.followers,
     });
