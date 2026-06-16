@@ -577,13 +577,7 @@ export function buildDailyBroadcastHoursMap(
   const cumulativeDaily = cumulativeHoursToDailyMap(getManualCumulativeHoursHistory(channelId));
 
   if (hasDailyHoursCron(streamerHistory)) {
-    const merged = new Map(kvDaily);
-    for (const [day, hours] of mergeDailyMaps(cumulativeDaily, weeklyDaily)) {
-      if (!merged.has(day) || (merged.get(day) || 0) <= 0) {
-        merged.set(day, Math.min(MAX_DAILY_BROADCAST_HOURS, hours));
-      }
-    }
-    return merged;
+    return kvDaily;
   }
 
   // No daily cron — archived weekly distribution first, KV fills gaps.
