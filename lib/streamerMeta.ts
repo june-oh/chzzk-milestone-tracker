@@ -279,6 +279,52 @@ export function dropCorruptedFollowerSnapshots(
   });
 }
 
+/** Softcon archive + daily cron merged; cron wins on the same calendar day. */
+export function buildFollowerHistoryForChart(
+  channelId: string,
+  streamerHistory: { date: string; followers?: number }[] | undefined,
+  debutDate?: string
+): ManualFollowerPoint[] {
+  const byDate = new Map<string, ManualFollowerPoint>();
+
+  for (const point of getManualFollowerHistory(channelId)) {
+    const date = point.date.slice(0, 10);
+    byDate.set(date, { date, followers: point.followers });
+  }
+
+  for (const row of streamerHistory || []) {
+    if (row.followers === undefined) continue;
+    const date = row.date.slice(0, 10);
+    byDate.set(date, { date, followers: row.followers });
+  }
+
+  if (byDate.size === 0) return [];
+
+  return dropCorruptedFollowerSnapshots(
+    sanitizeFollowerHistoryForChart(
+      Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date)),
+      debutDate
+    )
+  ).filter((point) => point.followers > 0);
+}
+
+export function usesArchivedFollowerChart(
+  channelId: string,
+  streamerHistory: { date: string; followers?: number }[] | undefined
+): boolean {
+  if (!hasArchivedFollowerHistory(channelId)) return false;
+
+  const cronDates = new Set(
+    (streamerHistory || [])
+      .filter((row) => row.followers !== undefined && row.followers > 0)
+      .map((row) => row.date.slice(0, 10))
+  );
+
+  return getManualFollowerHistory(channelId).some(
+    (point) => !cronDates.has(point.date.slice(0, 10))
+  );
+}
+
 /** Cumulative broadcast hours built from archived weekly bars. */
 export function getManualCumulativeHoursHistory(
   channelId: string,
@@ -764,6 +810,20 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
       });
     });
   } else {
+    manualFollowers.forEach((point) => {
+      const dateKey = point.date.slice(0, 10);
+      const existing = Array.from(historyByDate.entries()).find(
+        ([key]) => key.slice(0, 10) === dateKey
+      )?.[1];
+      if (existing?.followers !== undefined && existing.followers > 0) return;
+
+      historyByDate.set(point.date, {
+        date: point.date,
+        hours: existing?.hours ?? streamer.totalLiveHours,
+        followers: point.followers,
+      });
+    });
+
     const cleanedFollowers = dropCorruptedFollowerSnapshots(
       Array.from(historyByDate.values())
         .filter((row) => row.followers !== undefined)
