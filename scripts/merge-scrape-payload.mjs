@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Merge followers JSON + hours JSON into one scrape file and append to softcon-history.json */
+/** Merge followers JSON + hours JSON into one scrape file and append to archived-history.json */
 import { readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const cfgText = fs.readFileSync(path.join(root, "lib/streamersConfig.ts"), "utf8");
-const soft = JSON.parse(fs.readFileSync(path.join(root, "data/softcon-history.json"), "utf8"));
+const soft = JSON.parse(fs.readFileSync(path.join(root, "data/archived-history.json"), "utf8"));
 const profiles = JSON.parse(fs.readFileSync(path.join(root, "data/namuwiki-profiles.json"), "utf8")).profiles;
 
 const PLANETA_DEBUT = {
@@ -91,5 +91,5 @@ console.log(`의심 케이스 ${issues.length}명\n`);
 for (const row of issues) {
   console.log(`- ${row.name}: ${row.reason}`);
   console.log(`  데뷔 ${row.debut ?? "?"} · firstLive ${row.firstLiveDate}`);
-  if (row.first) console.log(`  softcon ${row.first} → ${row.last} (${row.spanDays}일, ${row.points}점)`);
+  if (row.first) console.log(`  archived ${row.first} → ${row.last} (${row.spanDays}일, ${row.points}점)`);
 }

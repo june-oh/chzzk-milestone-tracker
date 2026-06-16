@@ -1,4 +1,4 @@
-import softconHistoryJson from "@/data/softcon-history.json";
+import archivedHistoryJson from "@/data/archived-history.json";
 
 export type GroupTag =
   | "CLUEZ"
@@ -38,14 +38,14 @@ export type ManualWeeklyHoursPoint = {
   weeklyHours: number;
 };
 
-type SoftconChannelHistory = {
+type ArchivedChannelHistory = {
   followers?: ManualFollowerPoint[];
   weeklyHours?: ManualWeeklyHoursPoint[];
   cumulativeHours?: ManualHoursPoint[];
   currentFollowers?: number;
 };
 
-const SOFTCON_HISTORY = softconHistoryJson as Record<string, SoftconChannelHistory>;
+const ARCHIVED_HISTORY = archivedHistoryJson as Record<string, ArchivedChannelHistory>;
 
 const GROUP_TAGS: Record<string, GroupTag> = {
   "a3ceb9179d99be8d1e63b3e911fcd16b": "CLUEZ", // 키유 Kiyuu
@@ -148,8 +148,8 @@ export function getDebutReferenceDate(channelId: string, firstLiveDate?: string)
   return trimmed || undefined;
 }
 
-function getSoftconEntry(channelId: string): SoftconChannelHistory | undefined {
-  const entry = SOFTCON_HISTORY[channelId];
+function getArchivedHistoryEntry(channelId: string): ArchivedChannelHistory | undefined {
+  const entry = ARCHIVED_HISTORY[channelId];
   if (!entry) return undefined;
   return entry;
 }
@@ -159,12 +159,12 @@ export function getGroupTag(channelId: string): GroupTag | undefined {
 }
 
 export function getManualFollowerHistory(channelId: string): ManualFollowerPoint[] {
-  const fromJson = getSoftconEntry(channelId)?.followers;
+  const fromJson = getArchivedHistoryEntry(channelId)?.followers;
   if (fromJson && fromJson.length > 0) return fromJson;
   return [];
 }
 
-/** Build monotonic cumulative hours from Softcon weekly bars, scaled to target total. */
+/** Build monotonic cumulative hours from archived weekly bars, scaled to target total. */
 export function buildCumulativeFromWeekly(
   weekly: ManualWeeklyHoursPoint[],
   targetTotal?: number
@@ -199,7 +199,7 @@ export function buildCumulativeFromWeekly(
 }
 
 export function getManualWeeklyHoursHistory(channelId: string): ManualWeeklyHoursPoint[] {
-  const fromJson = getSoftconEntry(channelId)?.weeklyHours;
+  const fromJson = getArchivedHistoryEntry(channelId)?.weeklyHours;
   if (fromJson && fromJson.length > 0) return fromJson;
   return [];
 }
@@ -245,12 +245,12 @@ export function sanitizeHoursHistoryForChart(
   return result;
 }
 
-/** Cumulative broadcast hours built from Softcon weekly bars. */
+/** Cumulative broadcast hours built from archived weekly bars. */
 export function getManualCumulativeHoursHistory(
   channelId: string,
   targetTotal?: number
 ): ManualHoursPoint[] {
-  const entry = getSoftconEntry(channelId);
+  const entry = getArchivedHistoryEntry(channelId);
   const weekly = entry?.weeklyHours;
   if (weekly && weekly.length > 0) {
     return buildCumulativeFromWeekly(weekly, targetTotal);
@@ -260,23 +260,23 @@ export function getManualCumulativeHoursHistory(
   return [];
 }
 
-export function hasSoftconHoursHistory(channelId: string): boolean {
+export function hasArchivedHoursHistory(channelId: string): boolean {
   return (
     getManualWeeklyHoursHistory(channelId).length > 0 ||
     getManualCumulativeHoursHistory(channelId).length > 0
   );
 }
 
-export function hasSoftconFollowerHistory(channelId: string): boolean {
+export function hasArchivedFollowerHistory(channelId: string): boolean {
   return getManualFollowerHistory(channelId).length > 0;
 }
 
-function parseSoftconDateMs(date: string): number {
+function parseHistoryDateMs(date: string): number {
   if (date.includes("T")) return new Date(date).getTime();
   return new Date(`${date}T12:00:00`).getTime();
 }
 
-/** Interpolate when a cumulative series crosses a target value (Softcon-sourced). */
+/** Interpolate when a cumulative series crosses a target value. */
 function projectSeriesCrossing(
   history: { date: string; value: number }[],
   target: number
@@ -286,20 +286,20 @@ function projectSeriesCrossing(
     const curr = history[i];
     if (prev.value <= target && curr.value >= target && curr.value > prev.value) {
       const ratio = (target - prev.value) / (curr.value - prev.value);
-      const ms = parseSoftconDateMs(prev.date) + ratio * (parseSoftconDateMs(curr.date) - parseSoftconDateMs(prev.date));
+      const ms = parseHistoryDateMs(prev.date) + ratio * (parseHistoryDateMs(curr.date) - parseHistoryDateMs(prev.date));
       return new Date(ms).toISOString();
     }
   }
   return null;
 }
 
-export function getSoftconHoursMilestoneDate(
+export function getArchivedHoursMilestoneDate(
   channelId: string,
   milestoneHours: number,
   targetTotal?: number,
   debutDate?: string
 ): string | null {
-  const entry = getSoftconEntry(channelId);
+  const entry = getArchivedHistoryEntry(channelId);
   const resolvedTarget = targetTotal ?? entry?.cumulativeHours?.[entry.cumulativeHours.length - 1]?.hours;
   let history = getManualCumulativeHoursHistory(channelId, resolvedTarget);
   if (debutDate) {
@@ -312,7 +312,7 @@ export function getSoftconHoursMilestoneDate(
   );
 }
 
-export function getSoftconFollowerMilestoneDate(channelId: string, milestoneFollowers: number): string | null {
+export function getArchivedFollowerMilestoneDate(channelId: string, milestoneFollowers: number): string | null {
   const history = getManualFollowerHistory(channelId);
   if (history.length === 0) return null;
   return projectSeriesCrossing(
@@ -490,7 +490,7 @@ function mergeDailyMaps(...maps: Map<string, number>[]): Map<string, number> {
   return merged;
 }
 
-/** Build a day → broadcast hours map from Softcon weekly bars, cumulative points, and KV snapshots. */
+/** Build a day → broadcast hours map from archived weekly bars, cumulative points, and KV snapshots. */
 export function buildDailyBroadcastHoursMap(
   channelId: string,
   streamerHistory: { date: string; hours: number }[] = [],
@@ -502,7 +502,7 @@ export function buildDailyBroadcastHoursMap(
   );
   const kvDaily = kvHistoryToDailyMap(streamerHistory);
 
-  // Prefer Softcon weekly distribution; KV only fills gaps (no overwrite spikes).
+  // Prefer archived weekly distribution; KV only fills gaps (no overwrite spikes).
   const merged = mergeDailyMaps(weeklyDaily);
   for (const [day, hours] of cumulativeDaily) {
     if (!merged.has(day) || (merged.get(day) || 0) <= 0) {
@@ -656,7 +656,7 @@ export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
   const latestManualFollowers =
     manualFollowers.length > 0
       ? manualFollowers[manualFollowers.length - 1].followers
-      : getSoftconEntry(streamer.channelId)?.currentFollowers;
+      : getArchivedHistoryEntry(streamer.channelId)?.currentFollowers;
 
   const latestManualHours =
     manualHours.length > 0 ? manualHours[manualHours.length - 1].hours : undefined;

@@ -18,11 +18,11 @@ import {
   getManualCumulativeHoursHistory,
   getManualFollowerHistory,
   getBroadcastActivityBars,
-  getSoftconFollowerMilestoneDate,
-  getSoftconHoursMilestoneDate,
+  getArchivedFollowerMilestoneDate,
+  getArchivedHoursMilestoneDate,
   hasBroadcastActivityData,
-  hasSoftconFollowerHistory,
-  hasSoftconHoursHistory,
+  hasArchivedFollowerHistory,
+  hasArchivedHoursHistory,
   resolveBroadcastActivityEndDay,
   sanitizeHoursHistoryForChart,
   type BroadcastActivityRange,
@@ -381,7 +381,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     };
   }, [initialStreamers]);
 
-  // Resolve milestone dates for dashboard lists: prefer Softcon/cron records, estimate only as last resort.
+  // Resolve milestone dates for dashboard lists: prefer archived/cron records, estimate only as last resort.
   const resolveMilestoneDateAndStatus = (log: Milestone) => {
     const type = log.type || "hours";
 
@@ -411,17 +411,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       ? getDebutReferenceDate(matchingStreamer.channelId, matchingStreamer.firstLiveDate) ?? undefined
       : undefined;
 
-    const softconDate =
+    const archivedDate =
       type === "hours"
-        ? getSoftconHoursMilestoneDate(
+        ? getArchivedHoursMilestoneDate(
             log.channelId,
             log.milestone,
             matchingStreamer?.totalLiveHours,
             debutRef
           )
-        : getSoftconFollowerMilestoneDate(log.channelId, log.milestone);
-    if (softconDate) {
-      return { date: softconDate, isEstimated: false };
+        : getArchivedFollowerMilestoneDate(log.channelId, log.milestone);
+    if (archivedDate) {
+      return { date: archivedDate, isEstimated: false };
     }
 
     if (log.date) {
@@ -434,8 +434,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
 
     const hasCollectedHistory =
       type === "hours"
-        ? hasSoftconHoursHistory(log.channelId)
-        : hasSoftconFollowerHistory(log.channelId);
+        ? hasArchivedHoursHistory(log.channelId)
+        : hasArchivedFollowerHistory(log.channelId);
     if (hasCollectedHistory) {
       return { date: log.date, isEstimated: false };
     }
@@ -810,16 +810,16 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     for (let m = 1; m <= milestoneCount; m++) {
       const milestoneVal = m * 1000;
 
-      const softconDate = getSoftconHoursMilestoneDate(
+      const archivedDate = getArchivedHoursMilestoneDate(
         streamer.channelId,
         milestoneVal,
         streamer.totalLiveHours,
         debutRef
       );
-      if (softconDate) {
+      if (archivedDate) {
         list.push({
           milestone: milestoneVal,
-          date: softconDate,
+          date: archivedDate,
           isEstimated: false,
         });
         continue;
@@ -980,11 +980,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       // Find exact match in database milestone list if exists
       const exactRecord = exactRecords.find((rec) => rec.milestone === milestoneVal);
 
-      const softconDate = getSoftconFollowerMilestoneDate(streamer.channelId, milestoneVal);
-      if (softconDate) {
+      const archivedDate = getArchivedFollowerMilestoneDate(streamer.channelId, milestoneVal);
+      if (archivedDate) {
         list.push({
           milestone: milestoneVal,
-          date: softconDate,
+          date: archivedDate,
           isEstimated: false,
         });
         continue;
@@ -1015,7 +1015,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         list.push({
           milestone: milestoneVal,
           date: new Date(estimatedMs).toISOString(),
-          isEstimated: !hasSoftconFollowerHistory(streamer.channelId),
+          isEstimated: !hasArchivedFollowerHistory(streamer.channelId),
         });
       } catch (err) {
         console.warn("Follower milestone estimation failed:", err);
@@ -1369,7 +1369,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       streamer.totalLiveHours,
       dataPeakHours
     );
-    const usesSoftconHours = hasSoftconHoursHistory(streamer.channelId);
+    const usesArchivedHours = hasArchivedHoursHistory(streamer.channelId);
     const baseChartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
@@ -1382,7 +1382,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       baseChartData,
       "hours",
       (value) =>
-        usesSoftconHours
+        usesArchivedHours
           ? `${value.toLocaleString()}시간`
           : `${value.toLocaleString()}시간 (추정)`
     );
@@ -1759,7 +1759,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     if (!hasBroadcastActivityData(streamer.channelId, streamer.history)) {
       return (
         <div className="w-full rounded-[24px] border border-dashed border-hairline bg-neutral-50 px-6 py-10 text-center text-[14px] font-medium text-neutral-500">
-          Softcon 방송 기록이 수집되면 최근 활동 막대 그래프가 표시됩니다.
+          방송 활동 기록이 충분히 쌓이면 최근 활동 막대 그래프가 표시됩니다.
         </div>
       );
     }
@@ -1897,7 +1897,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     };
     const chartMaxFollowers = Math.ceil((streamer.followerCount || 10000) / 10000) * 10000;
     const followerTicks = Array.from({ length: Math.floor(chartMaxFollowers / 10000) + 1 }, (_, index) => index * 10000);
-    const usesSoftconFollowers = hasSoftconFollowerHistory(streamer.channelId);
+    const usesArchivedFollowers = hasArchivedFollowerHistory(streamer.channelId);
     const baseChartData = chartPoints.map((p) => ({
       timestamp: p.date.getTime(),
       date: formatDateShort(p.date),
@@ -1910,7 +1910,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       baseChartData,
       "followers",
       (value) =>
-        usesSoftconFollowers ? formatFollowers(value) : `${formatFollowers(value)} (추정)`
+        usesArchivedFollowers ? formatFollowers(value) : `${formatFollowers(value)} (추정)`
     );
     const followerChartTimeTicks = buildChartTimeTicks(
       chartData[0]?.timestamp ?? 0,
@@ -2534,14 +2534,14 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                 </h3>
               </div>
               <div className="text-[12px] font-medium text-neutral-500">
-                Softcon 주간/일별 기록 + 최근 스냅샷 기준
+                치지직 API 스냅샷 · 보관 이력 기준
               </div>
             </div>
 
             {renderBroadcastActivityCharts(selectedStreamer)}
 
             <div className="bg-neutral-50 p-4 rounded-2xl border border-hairline-soft text-[13px] text-neutral-600 leading-relaxed text-center font-medium">
-              ✨ 7일·30일은 일별, 90일은 주별 방송 시간입니다. Softcon 주간 막대는 해당 기간 일수로 나눠 표시합니다.
+              ✨ 7일·30일은 일별, 90일은 주별 방송 시간입니다. 주간 구간 데이터는 해당 기간 일수로 나눠 표시합니다.
             </div>
           </div>
 

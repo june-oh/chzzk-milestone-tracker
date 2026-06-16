@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Patch one channel's hours in softcon-history.json from git HEAD + hours payload */
+/** Patch one channel's hours in archived-history.json from git HEAD + hours payload */
 import { execSync } from "child_process";
 import { readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
@@ -14,11 +14,11 @@ if (!channelId || !hoursPath) {
 
 const hoursPayload = JSON.parse(readFileSync(hoursPath, "utf8"));
 const db = JSON.parse(
-  execSync("git show HEAD:data/softcon-history.json", { encoding: "utf8" })
+  execSync("git show HEAD:data/archived-history.json", { encoding: "utf8" })
 );
 
 if (!db[channelId]) {
-  console.error(`Channel ${channelId} not in softcon-history.json`);
+  console.error(`Channel ${channelId} not in archived-history.json`);
   process.exit(1);
 }
 
@@ -30,7 +30,7 @@ db[channelId] = {
 };
 
 writeFileSync(
-  join(__dirname, "..", "data", "softcon-history.json"),
+  join(__dirname, "..", "data", "archived-history.json"),
   JSON.stringify(db, null, 2) + "\n",
   "utf8"
 );

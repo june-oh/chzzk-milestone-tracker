@@ -9,7 +9,7 @@ After completing a task that changes the repo, **commit and push without asking*
 
 ## When to commit
 
-- Feature fixes, data updates (`data/softcon-history.json`), scripts, UI changes — any intentional project change
+- Feature fixes, data updates (`data/archived-history.json`), scripts, UI changes — any intentional project change
 - Skip commit only when: user explicitly says not to, question-only/review-only with no file edits, or changes contain secrets (`.env`, credentials)
 
 ## Workflow

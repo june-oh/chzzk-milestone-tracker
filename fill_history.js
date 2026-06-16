@@ -1,8 +1,7 @@
 /**
  * CHZZK MILESTONE - Historical Milestone Importer
  * 
- * 이 스크립트는 소프트콘(https://viewership.softcone.net/) 등 외부 통계 사이트나
- * 개인 팬카페 공지사항 등에서 찾아낸 과거의 정확한 1,000시간 단위 마일스톤 달성 날짜를
+ * 이 스크립트는 팬카페 공지, 방송 기록 등에서 확인한 과거 1,000시간 단위 마일스톤 달성 날짜를
  * Vercel KV 데이터베이스에 직접 삽입하기 위한 도구입니다.
  * 
  * [사용법]

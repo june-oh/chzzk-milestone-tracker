@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const cfgText = fs.readFileSync(path.join(root, "lib/streamersConfig.ts"), "utf8");
-const soft = JSON.parse(fs.readFileSync(path.join(root, "data/softcon-history.json"), "utf8"));
+const soft = JSON.parse(fs.readFileSync(path.join(root, "data/archived-history.json"), "utf8"));
 
 function buildCumulativeFromWeekly(weekly, targetTotal) {
   if (weekly.length === 0) return [];

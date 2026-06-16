@@ -424,7 +424,7 @@ async function main() {
   const { FALLBACK_STREAMERS } = await import("../lib/streamersConfig.ts");
   const dataDir = join(__dirname, "../data");
   mkdirSync(dataDir, { recursive: true });
-  const outPath = join(dataDir, "softcon-history.json");
+  const outPath = join(dataDir, "archived-history.json");
 
   let output = {};
   try {

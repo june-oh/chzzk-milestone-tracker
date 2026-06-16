@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-/** Merge one channel scrape into data/softcon-history.json (never clobber manual data). */
+/** Merge one channel scrape into data/archived-history.json (never clobber manual data). */
 import { readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { mergeSoftconChannel } from "./softcon-merge-utils.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataPath = join(__dirname, "..", "data", "softcon-history.json");
+const dataPath = join(__dirname, "..", "data", "archived-history.json");
 const channelId = process.argv[2];
 const payloadPath = process.argv[3];
 const force = process.argv.includes("--force");
