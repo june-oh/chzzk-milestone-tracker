@@ -368,6 +368,30 @@ function distributeHoursEvenly(
   }
 }
 
+/** One calendar day cannot exceed 24 broadcast hours. */
+const MAX_DAILY_BROADCAST_HOURS = 24;
+
+function spreadHoursAcrossDays(
+  daily: Map<string, number>,
+  startDay: string,
+  endDay: string,
+  totalHours: number
+) {
+  if (totalHours <= 0 || startDay > endDay) return;
+
+  if (startDay === endDay) {
+    assignDailyHours(daily, startDay, totalHours);
+    return;
+  }
+
+  distributeHoursEvenly(startDay, endDay, totalHours, daily);
+}
+
+function assignDailyHours(daily: Map<string, number>, day: string, hours: number) {
+  if (hours <= 0) return;
+  daily.set(day, Math.min(MAX_DAILY_BROADCAST_HOURS, Math.max(daily.get(day) || 0, hours)));
+}
+
 function weeklyHoursToDailyMap(weekly: ManualWeeklyHoursPoint[]): Map<string, number> {
   const daily = new Map<string, number>();
   const sorted = [...weekly].sort((a, b) => a.date.localeCompare(b.date));
@@ -380,21 +404,23 @@ function weeklyHoursToDailyMap(weekly: ManualWeeklyHoursPoint[]): Map<string, nu
   });
   const typicalGap = medianGapDays(gaps);
 
-  if (typicalGap <= 2) {
-    for (const point of sorted) {
-      const key = dayKey(point.date);
-      daily.set(key, Math.max(daily.get(key) || 0, point.weeklyHours));
-    }
-    return daily;
-  }
-
   for (let index = 0; index < sorted.length; index++) {
     const periodEnd = dayKey(sorted[index].date);
     const periodStart =
       index === 0
         ? addUtcDays(periodEnd, -Math.max(1, Math.round(typicalGap)) + 1)
         : addUtcDays(dayKey(sorted[index - 1].date), 1);
-    distributeHoursEvenly(periodStart, periodEnd, sorted[index].weeklyHours, daily);
+
+    const hours = sorted[index].weeklyHours;
+    const spanDays =
+      (parseDateOnlyMs(periodEnd) - parseDateOnlyMs(periodStart)) / 86_400_000 + 1;
+
+    // weeklyHours is always a period total — spread across the bar window, never one day.
+    if (spanDays <= 1 && hours <= MAX_DAILY_BROADCAST_HOURS) {
+      assignDailyHours(daily, periodEnd, hours);
+    } else {
+      spreadHoursAcrossDays(daily, periodStart, periodEnd, hours);
+    }
   }
 
   return daily;
@@ -412,11 +438,13 @@ function cumulativeHoursToDailyMap(cumulative: ManualHoursPoint[]): Map<string, 
 
     const gapDays =
       (parseDateOnlyMs(dayKey(curr.date)) - parseDateOnlyMs(dayKey(prev.date))) / 86_400_000;
-    if (gapDays <= 1.5) {
-      const key = dayKey(curr.date);
-      daily.set(key, Math.max(daily.get(key) || 0, delta));
-    } else if (gapDays <= 8) {
-      distributeHoursEvenly(addUtcDays(dayKey(prev.date), 1), dayKey(curr.date), delta, daily);
+    const startDay = addUtcDays(dayKey(prev.date), 1);
+    const endDay = dayKey(curr.date);
+
+    if (gapDays <= 1 && delta <= MAX_DAILY_BROADCAST_HOURS) {
+      assignDailyHours(daily, endDay, delta);
+    } else {
+      spreadHoursAcrossDays(daily, startDay, endDay, delta);
     }
   }
 
@@ -431,9 +459,17 @@ function kvHistoryToDailyMap(history: { date: string; hours: number }[]): Map<st
     const prev = sorted[index - 1];
     const curr = sorted[index];
     const delta = curr.hours - prev.hours;
-    if (delta > 0) {
-      const key = dayKey(curr.date);
-      daily.set(key, Math.max(daily.get(key) || 0, delta));
+    if (delta <= 0) continue;
+
+    const gapDays =
+      (parseDateOnlyMs(dayKey(curr.date)) - parseDateOnlyMs(dayKey(prev.date))) / 86_400_000;
+    const startDay = addUtcDays(dayKey(prev.date), 1);
+    const endDay = dayKey(curr.date);
+
+    if (gapDays <= 1 && delta <= MAX_DAILY_BROADCAST_HOURS) {
+      assignDailyHours(daily, endDay, delta);
+    } else {
+      spreadHoursAcrossDays(daily, startDay, endDay, delta);
     }
   }
 
@@ -446,7 +482,7 @@ function mergeDailyMaps(...maps: Map<string, number>[]): Map<string, number> {
   for (const map of maps) {
     for (const [day, hours] of map) {
       if (hours > 0) {
-        merged.set(day, Math.max(merged.get(day) || 0, hours));
+        merged.set(day, Math.min(MAX_DAILY_BROADCAST_HOURS, Math.max(merged.get(day) || 0, hours)));
       }
     }
   }
@@ -466,9 +502,17 @@ export function buildDailyBroadcastHoursMap(
   );
   const kvDaily = kvHistoryToDailyMap(streamerHistory);
 
-  const merged = mergeDailyMaps(weeklyDaily, cumulativeDaily);
+  // Prefer Softcon weekly distribution; KV only fills gaps (no overwrite spikes).
+  const merged = mergeDailyMaps(weeklyDaily);
+  for (const [day, hours] of cumulativeDaily) {
+    if (!merged.has(day) || (merged.get(day) || 0) <= 0) {
+      merged.set(day, Math.min(MAX_DAILY_BROADCAST_HOURS, hours));
+    }
+  }
   for (const [day, hours] of kvDaily) {
-    if (hours > 0) merged.set(day, hours);
+    if (!merged.has(day) || (merged.get(day) || 0) <= 0) {
+      merged.set(day, Math.min(MAX_DAILY_BROADCAST_HOURS, hours));
+    }
   }
 
   return merged;
@@ -540,10 +584,11 @@ export function getBroadcastActivityBars(
 
   const bars: BroadcastActivityBar[] = [];
   for (let current = startDay; current <= endDay; current = addUtcDays(current, 1)) {
+    const dayHours = Math.min(MAX_DAILY_BROADCAST_HOURS, dailyMap.get(current) || 0);
     bars.push({
       key: current,
       label: formatActivityDayLabel(current),
-      hours: Math.round((dailyMap.get(current) || 0) * 10) / 10,
+      hours: Math.round(dayHours * 10) / 10,
     });
   }
 

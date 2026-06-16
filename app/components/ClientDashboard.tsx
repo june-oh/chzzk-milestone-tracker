@@ -306,6 +306,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
   const [hoveredHoursPointState, setHoveredHoursPoint] = useState<HoursChartPoint | null>(null);
   const [hoveredFollowersPointState, setHoveredFollowersPoint] = useState<FollowersChartPoint | null>(null);
   const [chartMarkerTooltip, setChartMarkerTooltip] = useState<ChartMarkerTooltip>(null);
+  const [broadcastActivityRange, setBroadcastActivityRange] = useState<BroadcastActivityRange>("7d");
   const hoveredHoursPoint = hoveredHoursPointState ?? {
     x: 0,
     y: 0,
@@ -492,6 +493,10 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
         element.scrollIntoView({ behavior: "smooth" });
       }
     }
+  }, [activeStreamerId]);
+
+  useEffect(() => {
+    setBroadcastActivityRange("7d");
   }, [activeStreamerId]);
 
   // Deferred background refresh — SSR data renders first, API sync after paint
@@ -1766,93 +1771,117 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       streamer.lastUpdated
     );
 
-    const panels: { range: BroadcastActivityRange; title: string; subtitle: string }[] = [
-      { range: "7d", title: "최근 7일", subtitle: "일별 방송 시간" },
-      { range: "30d", title: "최근 30일", subtitle: "일별 방송 시간" },
-      { range: "90d", title: "최근 90일", subtitle: "주별 방송 시간" },
+    const rangeOptions: { range: BroadcastActivityRange; label: string; hint: string }[] = [
+      { range: "7d", label: "7일", hint: "일별" },
+      { range: "30d", label: "30일", hint: "일별" },
+      { range: "90d", label: "90일", hint: "주별" },
     ];
 
+    const activeOption = rangeOptions.find((option) => option.range === broadcastActivityRange) ?? rangeOptions[0];
+    const bars = getBroadcastActivityBars(
+      streamer.channelId,
+      streamer.history,
+      streamer.totalLiveHours,
+      broadcastActivityRange,
+      endDay
+    );
+    const maxHours = Math.max(...bars.map((bar) => bar.hours), 1);
+    const yMax = Math.ceil(maxHours * 1.15);
+    const totalHours = bars.reduce((sum, bar) => sum + bar.hours, 0);
+
     return (
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {panels.map(({ range, title, subtitle }) => {
-          const bars = getBroadcastActivityBars(
-            streamer.channelId,
-            streamer.history,
-            streamer.totalLiveHours,
-            range,
-            endDay
-          );
-          const maxHours = Math.max(...bars.map((bar) => bar.hours), 1);
-          const yMax = Math.ceil(maxHours * 1.15);
-          const totalHours = bars.reduce((sum, bar) => sum + bar.hours, 0);
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="inline-flex flex-wrap items-center gap-2 p-1 rounded-full border border-hairline bg-neutral-50">
+            {rangeOptions.map(({ range, label, hint }) => {
+              const active = broadcastActivityRange === range;
+              return (
+                <button
+                  key={range}
+                  type="button"
+                  onClick={() => setBroadcastActivityRange(range)}
+                  className={`inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-bold transition-colors ${
+                    active
+                      ? "bg-black text-white shadow-sm"
+                      : "text-neutral-600 hover:bg-white hover:text-black"
+                  }`}
+                >
+                  <span>{label}</span>
+                  <span className={`text-[10px] font-mono ${active ? "text-white/70" : "text-neutral-400"}`}>
+                    {hint}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-          return (
-            <div
-              key={range}
-              className="rounded-[24px] border border-hairline-soft bg-neutral-50 p-4 flex flex-col gap-3 min-h-[280px]"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">
-                    {subtitle}
-                  </div>
-                  <h4 className="font-sans text-[16px] font-bold text-black mt-0.5">{title}</h4>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="font-mono text-[10px] font-bold text-neutral-400 uppercase">합계</div>
-                  <div className="font-mono text-[14px] font-extrabold text-black">
-                    {Math.round(totalHours).toLocaleString()}h
-                  </div>
-                </div>
-              </div>
-
-              <div className="h-[220px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={bars} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="#e5e5e5" strokeDasharray="4 4" vertical={false} />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
-                      tickMargin={8}
-                      interval={range === "30d" ? 4 : range === "90d" ? 1 : 0}
-                      minTickGap={range === "30d" ? 8 : 4}
-                    />
-                    <YAxis
-                      domain={[0, yMax]}
-                      tick={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
-                      tickFormatter={(value) => `${value}h`}
-                      width={42}
-                    />
-                    <Tooltip
-                      cursor={{ fill: "rgba(0,0,0,0.04)" }}
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const item = payload[0].payload as { label: string; hours: number };
-                        return (
-                          <div className="rounded-[10px] border border-black bg-white px-3 py-2 text-left shadow-sm">
-                            <div className="font-mono text-[11px] font-bold text-neutral-400">{item.label}</div>
-                            <div className="mt-1 font-mono text-[14px] font-extrabold text-black">
-                              {item.hours.toLocaleString()}시간
-                            </div>
-                          </div>
-                        );
-                      }}
-                    />
-                    <Bar dataKey="hours" radius={[6, 6, 0, 0]} maxBarSize={range === "30d" ? 18 : 36}>
-                      {bars.map((bar) => (
-                        <Cell
-                          key={`${range}-${bar.key}`}
-                          fill={bar.hours > 0 ? accentHex : "#d4d4d4"}
-                          fillOpacity={bar.hours > 0 ? 0.92 : 0.35}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+          <div className="text-right">
+            <div className="font-mono text-[10px] font-bold text-neutral-400 uppercase">기간 합계</div>
+            <div className="font-mono text-[16px] font-extrabold text-black">
+              {Math.round(totalHours).toLocaleString()}시간
             </div>
-          );
-        })}
+          </div>
+        </div>
+
+        <div className="rounded-[24px] border border-hairline-soft bg-neutral-50 p-4 min-h-[300px]">
+          <div className="mb-3">
+            <div className="font-mono text-[10px] font-bold tracking-mono text-neutral-400 uppercase">
+              {activeOption.hint} · {activeOption.label}
+            </div>
+            <h4 className="font-sans text-[16px] font-bold text-black mt-0.5">
+              {broadcastActivityRange === "90d" ? "주간 방송 시간" : "일별 방송 시간"}
+            </h4>
+          </div>
+
+          <div className="h-[260px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={bars} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke="#e5e5e5" strokeDasharray="4 4" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
+                  tickMargin={8}
+                  interval={broadcastActivityRange === "30d" ? "preserveStartEnd" : 0}
+                  minTickGap={broadcastActivityRange === "30d" ? 12 : 4}
+                />
+                <YAxis
+                  domain={[0, yMax]}
+                  tick={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, fill: "#737373" }}
+                  tickFormatter={(value) => `${value}h`}
+                  width={42}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const item = payload[0].payload as { label: string; hours: number; key?: string };
+                    return (
+                      <div className="rounded-[10px] border border-black bg-white px-3 py-2 text-left shadow-sm">
+                        <div className="font-mono text-[11px] font-bold text-neutral-400">{item.label}</div>
+                        <div className="mt-1 font-mono text-[14px] font-extrabold text-black">
+                          {item.hours.toLocaleString()}시간
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar
+                  dataKey="hours"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={broadcastActivityRange === "30d" ? 22 : broadcastActivityRange === "90d" ? 48 : 40}
+                >
+                  {bars.map((bar) => (
+                    <Cell
+                      key={`${broadcastActivityRange}-${bar.key}`}
+                      fill={bar.hours > 0 ? accentHex : "#d4d4d4"}
+                      fillOpacity={bar.hours > 0 ? 0.92 : 0.35}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     );
   };
@@ -2512,7 +2541,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             {renderBroadcastActivityCharts(selectedStreamer)}
 
             <div className="bg-neutral-50 p-4 rounded-2xl border border-hairline-soft text-[13px] text-neutral-600 leading-relaxed text-center font-medium">
-              ✨ 최근 7일·30일은 하루 단위, 90일은 주 단위로 방송 시간을 보여줍니다. Softcon 주간 막대는 해당 기간 일수로 분배해 표시합니다.
+              ✨ 7일·30일은 일별, 90일은 주별 방송 시간입니다. Softcon 주간 막대는 해당 기간 일수로 나눠 표시합니다.
             </div>
           </div>
 
