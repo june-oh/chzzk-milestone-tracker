@@ -222,15 +222,20 @@ export function sanitizeHoursHistoryForChart(
   if (!Number.isFinite(debutMs)) return points;
 
   const debutDay = debutDate.slice(0, 10);
-  const onOrAfterDebut = [...points]
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .filter((p) => parseDateOnlyMs(p.date) >= debutMs);
+  const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
+
+  const beforeDebut = sorted.filter((point) => parseDateOnlyMs(point.date) < debutMs);
+  const baselineHours = beforeDebut.length > 0 ? beforeDebut[beforeDebut.length - 1].hours : 0;
+
+  const onOrAfterDebut = sorted.filter((point) => parseDateOnlyMs(point.date) >= debutMs);
 
   const result: ManualHoursPoint[] = [{ date: debutDay, hours: 0 }];
 
   for (const point of onOrAfterDebut) {
-    if (parseDateOnlyMs(point.date) === debutMs && point.hours <= 0) continue;
-    result.push(point);
+    const dateKey = point.date.slice(0, 10);
+    const rebasedHours = Math.max(0, Math.round(point.hours - baselineHours));
+    if (parseDateOnlyMs(dateKey) === debutMs && rebasedHours <= 0) continue;
+    result.push({ date: dateKey, hours: rebasedHours });
   }
 
   if (result.length === 1 && targetTotal !== undefined && targetTotal > 0) {
@@ -328,15 +333,33 @@ export function usesArchivedFollowerChart(
 /** Cumulative broadcast hours built from archived weekly bars. */
 export function getManualCumulativeHoursHistory(
   channelId: string,
-  targetTotal?: number
+  targetTotal?: number,
+  debutDate?: string
 ): ManualHoursPoint[] {
   const entry = getArchivedHistoryEntry(channelId);
-  const weekly = entry?.weeklyHours;
+  let weekly = entry?.weeklyHours;
   if (weekly && weekly.length > 0) {
-    return buildCumulativeFromWeekly(weekly, targetTotal);
+    if (debutDate) {
+      const debutMs = parseDateOnlyMs(debutDate.slice(0, 10));
+      if (Number.isFinite(debutMs) && parseDateOnlyMs(weekly[0].date) < debutMs) {
+        weekly = weekly.filter((week) => parseDateOnlyMs(week.date) >= debutMs);
+      }
+    }
+    if (weekly.length > 0) {
+      return buildCumulativeFromWeekly(weekly, targetTotal);
+    }
   }
-  const fromJson = entry?.cumulativeHours;
-  if (fromJson && fromJson.length > 0) return fromJson;
+
+  let fromJson = entry?.cumulativeHours;
+  if (fromJson && fromJson.length > 0) {
+    if (debutDate) {
+      const debutMs = parseDateOnlyMs(debutDate.slice(0, 10));
+      if (Number.isFinite(debutMs)) {
+        fromJson = fromJson.filter((point) => parseDateOnlyMs(point.date) >= debutMs);
+      }
+    }
+    return fromJson;
+  }
   return [];
 }
 
@@ -381,7 +404,7 @@ export function getArchivedHoursMilestoneDate(
 ): string | null {
   const entry = getArchivedHistoryEntry(channelId);
   const resolvedTarget = targetTotal ?? entry?.cumulativeHours?.[entry.cumulativeHours.length - 1]?.hours;
-  let history = getManualCumulativeHoursHistory(channelId, resolvedTarget);
+  let history = getManualCumulativeHoursHistory(channelId, resolvedTarget, debutDate);
   if (debutDate) {
     history = sanitizeHoursHistoryForChart(history, debutDate, resolvedTarget);
   }
@@ -760,6 +783,7 @@ type StreamerHistoryRow = {
 
 type EnrichableStreamer = {
   channelId: string;
+  firstLiveDate?: string;
   totalLiveHours: number;
   followerCount?: number;
   groupTag?: GroupTag;
@@ -768,10 +792,12 @@ type EnrichableStreamer = {
 
 export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
   const groupTag = getGroupTag(streamer.channelId);
+  const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
   const manualFollowers = getManualFollowerHistory(streamer.channelId);
   const manualHours = getManualCumulativeHoursHistory(
     streamer.channelId,
-    streamer.totalLiveHours
+    streamer.totalLiveHours,
+    debutRef
   );
   const historyByDate = new Map<string, StreamerHistoryRow>();
 

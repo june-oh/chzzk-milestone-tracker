@@ -860,7 +860,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     const points: { date: Date; hours: number; label: string; isMilestone: boolean }[] = [];
     const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
     const manualHoursHistory = sanitizeHoursHistoryForChart(
-      getManualCumulativeHoursHistory(streamer.channelId, streamer.totalLiveHours),
+      getManualCumulativeHoursHistory(streamer.channelId, streamer.totalLiveHours, debutRef),
       debutRef,
       streamer.totalLiveHours
     );
