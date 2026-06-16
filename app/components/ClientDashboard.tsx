@@ -2553,7 +2553,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
             {renderBroadcastActivityCharts(selectedStreamer)}
 
             <div className="bg-neutral-50 p-4 rounded-2xl border border-hairline-soft text-[13px] text-neutral-600 leading-relaxed text-center font-medium">
-              ✨ 7일·30일은 일별, 90일은 주별 방송 시간입니다. 주간 구간 데이터는 해당 기간 일수로 나눠 표시합니다.
+              ✨ 7일·30일은 일별, 90일은 주별 방송 시간입니다. 보관 이력의 주간 스냅샷을 기준으로 표시합니다.
             </div>
           </div>
 

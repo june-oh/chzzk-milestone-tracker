@@ -338,13 +338,6 @@ function addUtcDays(dateStr: string, days: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
-function medianGapDays(gaps: number[]): number {
-  const positive = gaps.filter((gap) => gap > 0);
-  if (positive.length === 0) return 7;
-  const sorted = [...positive].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
-}
-
 function distributeHoursEvenly(
   startDay: string,
   endDay: string,
@@ -405,26 +398,15 @@ function weeklyHoursToDailyMap(weekly: ManualWeeklyHoursPoint[]): Map<string, nu
   const sorted = [...weekly].sort((a, b) => a.date.localeCompare(b.date));
   if (sorted.length === 0) return daily;
 
-  const gaps = sorted.slice(1).map((point, index) => {
-    const prev = parseDateOnlyMs(dayKey(sorted[index].date));
-    const curr = parseDateOnlyMs(dayKey(point.date));
-    return (curr - prev) / 86_400_000;
-  });
-  const typicalGap = medianGapDays(gaps);
+  for (const point of sorted) {
+    const periodEnd = dayKey(point.date);
+    const hours = point.weeklyHours;
+    if (hours <= 0) continue;
 
-  for (let index = 0; index < sorted.length; index++) {
-    const periodEnd = dayKey(sorted[index].date);
-    const periodStart =
-      index === 0
-        ? addUtcDays(periodEnd, -Math.max(1, Math.round(typicalGap)) + 1)
-        : addUtcDays(dayKey(sorted[index - 1].date), 1);
+    // Archive bars are weekly totals; snapshot dates can be weeks apart.
+    const periodStart = addUtcDays(periodEnd, -6);
 
-    const hours = sorted[index].weeklyHours;
-    const spanDays =
-      (parseDateOnlyMs(periodEnd) - parseDateOnlyMs(periodStart)) / 86_400_000 + 1;
-
-    // weeklyHours is always a period total — spread across the bar window, never one day.
-    if (spanDays <= 1 && hours <= MAX_DAILY_BROADCAST_HOURS) {
+    if (periodStart >= periodEnd) {
       assignDailyHours(daily, periodEnd, hours);
     } else {
       spreadHoursAcrossDays(daily, periodStart, periodEnd, hours);
