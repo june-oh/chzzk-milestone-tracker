@@ -466,13 +466,25 @@ export function resolveFollowerMilestoneDate(
     debutDate?: string;
   } = {}
 ): string | null {
-  if (options.exactDate) return options.exactDate;
+  const chartHistory = buildFollowerHistoryForChart(
+    channelId,
+    options.cronHistory,
+    options.debutDate
+  );
+  const fromChart = projectFollowerMilestoneDate(chartHistory, milestoneFollowers);
 
-  const cronPoints = getCronFollowerHistoryForChart(options.cronHistory, options.debutDate);
-  if (cronPoints.length >= 3) {
-    const fromCron = projectFollowerMilestoneDate(cronPoints, milestoneFollowers);
-    if (fromCron) return fromCron;
+  if (fromChart && options.exactDate) {
+    const chartMs = parseHistoryDateMs(fromChart);
+    const exactMs = parseHistoryDateMs(options.exactDate);
+    // Cron/KV may log a milestone on first poll even when it was crossed months earlier.
+    if (exactMs > chartMs + 3 * 86_400_000) {
+      return fromChart;
+    }
+    return options.exactDate;
   }
+
+  if (fromChart) return fromChart;
+  if (options.exactDate) return options.exactDate;
 
   return getArchivedFollowerMilestoneDate(channelId, milestoneFollowers);
 }

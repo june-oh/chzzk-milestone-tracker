@@ -415,10 +415,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       ? getDebutReferenceDate(matchingStreamer.channelId, matchingStreamer.firstLiveDate) ?? undefined
       : undefined;
 
-    if (log.date) {
-      return { date: log.date, isEstimated: false };
-    }
-
     if (type === "hours") {
       const archivedHoursDate = getArchivedHoursMilestoneDate(
         log.channelId,
@@ -431,12 +427,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       }
     } else {
       const fromHistory = resolveFollowerMilestoneDate(log.channelId, log.milestone, {
+        exactDate: log.date,
         cronHistory: matchingStreamer?.history,
         debutDate: debutRef,
       });
       if (fromHistory) {
         return { date: fromHistory, isEstimated: false };
       }
+    }
+
+    if (log.date) {
+      return { date: log.date, isEstimated: false };
     }
 
     if (!matchingStreamer) {
