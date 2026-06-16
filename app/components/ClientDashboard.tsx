@@ -1209,6 +1209,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     });
   }, [streamers, selectedGroupFilters]);
 
+  const filteredChannelIds = useMemo(
+    () => new Set(filteredStreamers.map((streamer) => streamer.channelId)),
+    [filteredStreamers]
+  );
+
   const groupFilterBar = (
     <div className="flex flex-wrap items-center gap-2 mb-6">
       <span className="font-mono text-[11px] font-bold tracking-mono text-neutral-500 uppercase mr-1 shrink-0">
@@ -3140,13 +3145,24 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <tbody className="divide-y divide-hairline-soft">
                 {(() => {
                   const resolvedList = milestones
-                    .filter(log => !log.type || log.type === "hours")
-                    .map(log => {
+                    .filter((log) => filteredChannelIds.has(log.channelId))
+                    .filter((log) => !log.type || log.type === "hours")
+                    .map((log) => {
                       const res = resolveMilestoneDateAndStatus(log);
                       return { ...log, date: res.date, isEstimated: res.isEstimated };
                     })
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .slice(0, 5);
+
+                  if (resolvedList.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={3} className="py-8 text-center text-neutral-400 font-sans text-[14px]">
+                          선택한 소속에 해당하는 최근 방송 시간 마일스톤이 없습니다.
+                        </td>
+                      </tr>
+                    );
+                  }
 
                   return resolvedList.map((log, index) => {
                     const matchingStreamer = streamers.find(s => s.channelId === log.channelId);
@@ -3232,13 +3248,24 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
               <tbody className="divide-y divide-hairline-soft">
                 {(() => {
                   const resolvedList = milestones
-                    .filter(log => log.type === "followers")
-                    .map(log => {
+                    .filter((log) => filteredChannelIds.has(log.channelId))
+                    .filter((log) => log.type === "followers")
+                    .map((log) => {
                       const res = resolveMilestoneDateAndStatus(log);
                       return { ...log, date: res.date, isEstimated: res.isEstimated };
                     })
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .slice(0, 5);
+
+                  if (resolvedList.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={3} className="py-8 text-center text-neutral-400 font-sans text-[14px]">
+                          선택한 소속에 해당하는 최근 팔로워 마일스톤이 없습니다.
+                        </td>
+                      </tr>
+                    );
+                  }
 
                   return resolvedList.map((log, index) => {
                     const matchingStreamer = streamers.find(s => s.channelId === log.channelId);
