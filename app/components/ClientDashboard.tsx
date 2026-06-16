@@ -855,10 +855,8 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       streamer.totalLiveHours
     );
     const hasManualHoursHistory = manualHoursHistory.length > 0;
-    const kvHourRows = (streamer.history || []).filter((row) => Number.isFinite(row.hours));
-    const useKvHourHistory = kvHourRows.length >= 2;
 
-    if (!useKvHourHistory && !hasManualHoursHistory && debutRef) {
+    if (!hasManualHoursHistory && debutRef) {
       points.push({
         date: parseSafeDate(debutRef),
         hours: 0,
@@ -867,7 +865,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
-    if (!useKvHourHistory && !hasManualHoursHistory) {
+    if (!hasManualHoursHistory) {
       streamerMilestones.forEach((m) => {
         points.push({
           date: parseSafeDate(m.date),
@@ -878,16 +876,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     }
 
-    if (useKvHourHistory) {
-      kvHourRows.forEach((row) => {
-        points.push({
-          date: parseHistoryDate(row.date),
-          hours: row.hours,
-          label: `${Math.round(row.hours).toLocaleString()}시간`,
-          isMilestone: false,
-        });
-      });
-    } else if (hasManualHoursHistory) {
+    if (hasManualHoursHistory) {
       manualHoursHistory.forEach((point) => {
         points.push({
           date: parseHistoryDate(point.date),
@@ -1039,7 +1028,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     return list;
   };
 
-  // Follower growth curve — never force 0 at debut (pre-debut followers are valid).
   const getFullFollowerHistoryData = (streamer: Streamer, followerMilestones: { milestone: number; date: string }[]) => {
     const points: { date: Date; followers: number; label: string; isMilestone: boolean }[] = [];
     const currentFollowers = streamer.followerCount || 0;
@@ -1048,6 +1036,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       getManualFollowerHistory(streamer.channelId),
       debutRef
     );
+    const hasManualFollowerHistory = manualFollowerHistory.length > 0;
 
     followerMilestones.forEach((m) => {
       points.push({
@@ -1058,19 +1047,7 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       });
     });
 
-    const historyRows =
-      streamer.history?.filter((row) => row.followers !== undefined && row.followers > 0) ?? [];
-
-    if (historyRows.length > 0) {
-      historyRows.forEach((h) => {
-        points.push({
-          date: parseHistoryDate(h.date),
-          followers: h.followers!,
-          label: `${formatFollowers(h.followers)}`,
-          isMilestone: false,
-        });
-      });
-    } else if (manualFollowerHistory.length > 0) {
+    if (hasManualFollowerHistory) {
       manualFollowerHistory.forEach((point) => {
         points.push({
           date: parseHistoryDate(point.date),
@@ -1079,9 +1056,19 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
           isMilestone: false,
         });
       });
+    } else if (streamer.history && streamer.history.length > 0) {
+      streamer.history.forEach((h) => {
+        const hFollowers = h.followers !== undefined ? h.followers : (streamer.followerCount || 0);
+        points.push({
+          date: parseHistoryDate(h.date),
+          followers: hFollowers,
+          label: `${formatFollowers(hFollowers)}`,
+          isMilestone: false,
+        });
+      });
     }
 
-    if (points.length < 2 && currentFollowers > 0) {
+    if (!hasManualFollowerHistory && points.length < 2 && currentFollowers > 0) {
       const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
       const hasSnapshot = points.some((p) => p.date.getTime() === snapshotDate.getTime());
 
@@ -1123,11 +1110,38 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       uniquePoints.push(p);
     });
 
-    let followerPeak = 0;
-    return uniquePoints.map((point) => {
-      followerPeak = Math.max(followerPeak, point.followers);
-      return { ...point, followers: followerPeak };
-    });
+    if (
+      !hasManualFollowerHistory &&
+      streamer.totalLiveHours === 0 &&
+      currentFollowers > 0
+    ) {
+      const withoutZeroBaseline = uniquePoints.filter(
+        (p) => p.followers > 0 || (p.isMilestone && p.followers > 0)
+      );
+
+      if (withoutZeroBaseline.length >= 2) {
+        return withoutZeroBaseline;
+      }
+
+      const snapshotDate = parseHistoryDate(streamer.lastUpdated || new Date().toISOString());
+      const previousDate = new Date(snapshotDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return [
+        {
+          date: previousDate,
+          followers: currentFollowers,
+          label: `${formatFollowers(currentFollowers)} (기준값)`,
+          isMilestone: false,
+        },
+        {
+          date: snapshotDate,
+          followers: currentFollowers,
+          label: `${formatFollowers(currentFollowers)}`,
+          isMilestone: false,
+        },
+      ];
+    }
+
+    return uniquePoints;
   };
 
   // Helper date utilities

@@ -634,52 +634,36 @@ type EnrichableStreamer = {
   channelId: string;
   totalLiveHours: number;
   followerCount?: number;
-  firstLiveDate?: string;
   groupTag?: GroupTag;
   history?: StreamerHistoryRow[];
 };
 
 export function enrichStreamer<T extends EnrichableStreamer>(streamer: T): T {
   const groupTag = getGroupTag(streamer.channelId);
-  const debutRef = getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate);
-  const manualFollowers = sanitizeFollowerHistoryForChart(
-    getManualFollowerHistory(streamer.channelId),
-    debutRef
-  );
+  const manualFollowers = getManualFollowerHistory(streamer.channelId);
   const manualHours = getManualCumulativeHoursHistory(
     streamer.channelId,
     streamer.totalLiveHours
   );
   const historyByDate = new Map<string, StreamerHistoryRow>();
-  const kvDates = new Set<string>();
 
   (streamer.history || []).forEach((row) => {
-    const dateKey = row.date.slice(0, 10);
-    kvDates.add(dateKey);
-    historyByDate.set(dateKey, { ...row, date: dateKey });
+    historyByDate.set(row.date, { ...row });
   });
 
   manualHours.forEach((point) => {
-    const dateKey = point.date.slice(0, 10);
-    if (kvDates.has(dateKey)) return;
-
-    const existing = historyByDate.get(dateKey);
-    historyByDate.set(dateKey, {
-      date: dateKey,
+    const existing = historyByDate.get(point.date);
+    historyByDate.set(point.date, {
+      date: point.date,
       hours: point.hours,
       followers: existing?.followers,
     });
   });
 
   manualFollowers.forEach((point) => {
-    if (point.followers <= 0) return;
-
-    const dateKey = point.date.slice(0, 10);
-    if (kvDates.has(dateKey)) return;
-
-    const existing = historyByDate.get(dateKey);
-    historyByDate.set(dateKey, {
-      date: dateKey,
+    const existing = historyByDate.get(point.date);
+    historyByDate.set(point.date, {
+      date: point.date,
       hours: existing?.hours ?? streamer.totalLiveHours,
       followers: point.followers,
     });
