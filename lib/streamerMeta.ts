@@ -349,10 +349,59 @@ export function getArchivedHoursMilestoneDate(
 export function getArchivedFollowerMilestoneDate(channelId: string, milestoneFollowers: number): string | null {
   const history = getManualFollowerHistory(channelId);
   if (history.length === 0) return null;
+  return projectFollowerMilestoneDate(history, milestoneFollowers);
+}
+
+export function projectFollowerMilestoneDate(
+  points: ManualFollowerPoint[],
+  milestoneFollowers: number
+): string | null {
+  if (points.length === 0) return null;
   return projectSeriesCrossing(
-    history.map((point) => ({ date: point.date, value: point.followers })),
+    points.map((point) => ({ date: point.date, value: point.followers })),
     milestoneFollowers
   );
+}
+
+export function getCronFollowerHistoryForChart(
+  history: { date: string; followers?: number }[] | undefined,
+  debutDate?: string
+): ManualFollowerPoint[] {
+  return dropCorruptedFollowerSnapshots(
+    sanitizeFollowerHistoryForChart(
+      (history || [])
+        .filter((row) => row.followers !== undefined)
+        .map((row) => ({
+          date: row.date.slice(0, 10),
+          followers: row.followers!,
+        })),
+      debutDate
+    )
+  ).filter((point) => point.followers > 0);
+}
+
+export function hasDailyFollowerCron(history: { date: string; followers?: number }[] | undefined): boolean {
+  return getCronFollowerHistoryForChart(history).length >= 3;
+}
+
+export function resolveFollowerMilestoneDate(
+  channelId: string,
+  milestoneFollowers: number,
+  options: {
+    exactDate?: string;
+    cronHistory?: { date: string; followers?: number }[];
+    debutDate?: string;
+  } = {}
+): string | null {
+  if (options.exactDate) return options.exactDate;
+
+  const cronPoints = getCronFollowerHistoryForChart(options.cronHistory, options.debutDate);
+  if (cronPoints.length >= 3) {
+    const fromCron = projectFollowerMilestoneDate(cronPoints, milestoneFollowers);
+    if (fromCron) return fromCron;
+  }
+
+  return getArchivedFollowerMilestoneDate(channelId, milestoneFollowers);
 }
 
 export type BroadcastActivityBar = {

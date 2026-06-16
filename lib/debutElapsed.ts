@@ -38,6 +38,32 @@ export function getDebutDayCount(firstLiveDate: string | Date | undefined, now =
   return diff + 1;
 }
 
+/** Calendar days from debut to a target date (KST). Debut day = 0, the next day = 1. */
+export function getDaysSinceDebut(
+  debutDate: string | undefined,
+  targetDate: string | Date | undefined
+): number | null {
+  if (!debutDate || !targetDate) return null;
+
+  const debutParts = parseCalendarDate(String(debutDate));
+  if (!debutParts) return null;
+
+  const target =
+    targetDate instanceof Date
+      ? targetDate
+      : new Date(
+          String(targetDate).includes("T")
+            ? String(targetDate)
+            : `${String(targetDate).slice(0, 10)}T12:00:00`
+        );
+  if (Number.isNaN(target.getTime())) return null;
+
+  const targetParts = getKstCalendarParts(target);
+  const diff = calendarDayDiff(debutParts, targetParts);
+  if (diff < 0) return null;
+  return diff;
+}
+
 /** D+N badge for profile cards (debut day = D+1, KST). */
 export function formatDebutDPlus(firstLiveDate: string | Date | undefined, now = new Date()): string | null {
   const days = getDebutDayCount(firstLiveDate, now);

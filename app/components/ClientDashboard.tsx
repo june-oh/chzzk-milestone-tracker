@@ -18,8 +18,8 @@ import {
   getManualCumulativeHoursHistory,
   getManualFollowerHistory,
   getBroadcastActivityBars,
-  getArchivedFollowerMilestoneDate,
   getArchivedHoursMilestoneDate,
+  resolveFollowerMilestoneDate,
   hasBroadcastActivityData,
   hasArchivedFollowerHistory,
   hasArchivedHoursHistory,
@@ -33,7 +33,7 @@ import type { GroupTag } from "@/lib/streamerMeta";
 import { resolveCardPalette, getGlassCardStyle, type CardSurfacePalette as GlassPalette } from "@/lib/cardPaletteUtils";
 import { getVerifiedNamuwikiThemePalette, hasVerifiedNamuwikiTheme } from "@/lib/namuwikiThemeColors";
 import { getBundledImageThemePalette } from "@/lib/imageThemeColors";
-import { formatDebutDPlus, formatDebutElapsed, getNextCommemorativeEvent } from "@/lib/debutElapsed";
+import { formatDebutDPlus, formatDebutElapsed, getDaysSinceDebut, getNextCommemorativeEvent } from "@/lib/debutElapsed";
 import StatCounter from "./StatCounter";
 
 interface StreamerHistory {
@@ -413,21 +413,28 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
       ? getDebutReferenceDate(matchingStreamer.channelId, matchingStreamer.firstLiveDate) ?? undefined
       : undefined;
 
-    const archivedDate =
-      type === "hours"
-        ? getArchivedHoursMilestoneDate(
-            log.channelId,
-            log.milestone,
-            matchingStreamer?.totalLiveHours,
-            debutRef
-          )
-        : getArchivedFollowerMilestoneDate(log.channelId, log.milestone);
-    if (archivedDate) {
-      return { date: archivedDate, isEstimated: false };
-    }
-
     if (log.date) {
       return { date: log.date, isEstimated: false };
+    }
+
+    if (type === "hours") {
+      const archivedHoursDate = getArchivedHoursMilestoneDate(
+        log.channelId,
+        log.milestone,
+        matchingStreamer?.totalLiveHours,
+        debutRef
+      );
+      if (archivedHoursDate) {
+        return { date: archivedHoursDate, isEstimated: false };
+      }
+    } else {
+      const fromHistory = resolveFollowerMilestoneDate(log.channelId, log.milestone, {
+        cronHistory: matchingStreamer?.history,
+        debutDate: debutRef,
+      });
+      if (fromHistory) {
+        return { date: fromHistory, isEstimated: false };
+      }
     }
 
     if (!matchingStreamer) {
@@ -981,23 +988,17 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     for (let m = 1; m <= milestoneCount; m++) {
       const milestoneVal = m * 10000;
 
-      // Find exact match in database milestone list if exists
       const exactRecord = exactRecords.find((rec) => rec.milestone === milestoneVal);
+      const resolvedDate = resolveFollowerMilestoneDate(streamer.channelId, milestoneVal, {
+        exactDate: exactRecord?.date,
+        cronHistory: streamer.history,
+        debutDate: getDebutReferenceDate(streamer.channelId, streamer.firstLiveDate),
+      });
 
-      const archivedDate = getArchivedFollowerMilestoneDate(streamer.channelId, milestoneVal);
-      if (archivedDate) {
+      if (resolvedDate) {
         list.push({
           milestone: milestoneVal,
-          date: archivedDate,
-          isEstimated: false,
-        });
-        continue;
-      }
-
-      if (exactRecord) {
-        list.push({
-          milestone: milestoneVal,
-          date: exactRecord.date,
+          date: resolvedDate,
           isEstimated: false,
         });
         continue;
@@ -1367,16 +1368,6 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
     });
 
     return result.sort((a, b) => a.timestamp - b.timestamp);
-  };
-
-  const getDaysDiff = (date1Str: string, date2Str: string) => {
-    try {
-      const d1 = parseSafeDate(date1Str).getTime();
-      const d2 = parseSafeDate(date2Str).getTime();
-      return Math.round(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
-    } catch {
-      return 0;
-    }
   };
 
   // Render Full detailed SVG graph inside analytical detail view
@@ -2648,7 +2639,11 @@ export default function ClientDashboard({ initialStreamers, initialMilestones }:
                   }
 
                   return allStreamerMilestones.map((mRecord, idx) => {
-                    const daysTaken = getDaysDiff(selectedStreamer.firstLiveDate, mRecord.date);
+                    const debutRef = getDebutReferenceDate(
+                      selectedStreamer.channelId,
+                      selectedStreamer.firstLiveDate
+                    );
+                    const daysTaken = getDaysSinceDebut(debutRef, mRecord.date) ?? 0;
 
                     return (
                       <tr key={idx} className="hover:bg-neutral-50/50 transition-colors">
